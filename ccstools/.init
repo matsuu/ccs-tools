@@ -1,0 +1,106 @@
+#! /bin/bash
+#
+# Policy Loader.
+#
+# Copyright (C) 2005-2007  NTT DATA CORPORATION
+#
+# Version: 1.3.2   2007/02/14
+#
+# Run this script by passing init= to kernel command line option.
+# You had better not to register this script to /etc/ccs/manager.txt
+# because all programs can update policies before activating MAC
+# but this script needn't to be run again after MAC activated.
+#
+
+POLICY_DIR=/etc/ccs/
+STATUS=""
+TOMOYO_NOLOAD=0
+TOMOYO_QUIET=0
+
+REAL_INIT=/sbin/init
+PROC_UNMOUNT=0
+
+
+if [ ! -d /proc/self/ ]; then
+	mount -nt proc none /proc && PROC_UNMOUNT=1
+fi
+
+if [ ! -d /proc/ccs/ ]; then
+	[ $PROC_UNMOUNT == 1 ] && umount -n /proc
+	[ $$ == 1 ] && exec $REAL_INIT "$@"
+	echo "You can't run this program for this kernel."
+	exit 1
+fi
+
+for i in `cat /proc/cmdline`
+  do
+  case $i in
+	  (CCS=default)
+	  STATUS="default"
+	  ;;
+	  (CCS=disabled)
+	  STATUS="disabled"
+	  ;;
+	  (CCS=boottest)
+	  STATUS="boottest"
+	  ;;
+	  (CCS=*)
+	  STATUS=`echo $i | cut -b 5-`
+	  [ -r $POLICY_DIR/status-$STATUS.txt ] || STATUS=""
+	  ;;
+	  (TOMOYO_NOLOAD)
+	  TOMOYO_NOLOAD=1
+	  ;;
+	  (TOMOYO_QUIET)
+	  TOMOYO_QUIET=1
+	  ;;
+  esac
+done
+
+if [ "x$STATUS" == "x" ]; then
+	TMOUT=10
+	while :
+	  do
+	  echo "Press 'Enter' or wait for $TMOUT seconds to use default status."
+	  echo "You may input 'disabled' and press 'Enter' to disable MAC in case of emergency."
+	  STATUS=""
+	  read -p "> " STATUS
+	  [ "x$STATUS" == "x" ] && STATUS="default"
+	  [ "x$STATUS" == "xdefault" ] && break
+	  [ "x$STATUS" == "xdisabled" ] && break
+	  [ "x$STATUS" == "xboottest" ] && break
+	  [ -r $POLICY_DIR/status-$STATUS.txt ] && break
+	  [ "x$STATUS" == "xTOMOYO_NOLOAD" ] && TOMOYO_NOLOAD=1
+	  [ "x$STATUS" == "xTOMOYO_QUIET" ] && TOMOYO_QUIET=1
+	done
+fi
+
+[ -r $POLICY_DIR/manager.txt ] && cat $POLICY_DIR/manager.txt > /proc/ccs/policy/manager
+[ -r $POLICY_DIR/system_policy.txt ] && cat $POLICY_DIR/system_policy.txt > /proc/ccs/policy/system_policy
+[ -r $POLICY_DIR/exception_policy.txt ] && cat $POLICY_DIR/exception_policy.txt > /proc/ccs/policy/exception_policy
+[ $TOMOYO_NOLOAD == 0 ] && [ -r $POLICY_DIR/domain_policy.txt ] && cat $POLICY_DIR/domain_policy.txt > /proc/ccs/policy/domain_policy
+[ -r $POLICY_DIR/mapping.txt ] && cat $POLICY_DIR/mapping.txt > /proc/ccs/info/mapping
+
+if [ -r $POLICY_DIR/status-$STATUS.txt ]; then
+	cat $POLICY_DIR/status-$STATUS.txt > /proc/ccs/status
+fi
+if [ "x$STATUS" == "xdefault" ]; then
+	[ -r $POLICY_DIR/status.txt ] && cat $POLICY_DIR/status.txt > /proc/ccs/status
+fi
+if [ "x$STATUS" == "xdisabled" ]; then
+	for i in `seq 0 255`; do echo $i-COMMENT= > /proc/ccs/status; done
+	grep -vF -- -COMMENT= /proc/ccs/status | sed -e 's/[0-9]*$/0/' > /proc/ccs/status
+fi
+if [ "x$STATUS" == "xboottest" ]; then
+	echo '0-MAC_FOR_CAPABILITY::=0' > /proc/ccs/status
+fi
+if [ $TOMOYO_QUIET == 1 ]; then
+	grep -F TOMOYO_VERBOSE /proc/ccs/status | sed -e 's/[0-9]*$/0/' > /proc/ccs/status
+fi
+
+awk ' BEGIN { domain=0; acl=0; } { if ( $1 == "<kernel>" ) domain++; else if ( $1 != "" && $1 != "use_profile") acl++; } END { print domain " domains. " acl " ACL entries."; } ' /proc/ccs/policy/domain_policy
+awk ' BEGIN { shared_mem=0; private_mem=0; } { if ( $1 == "Shared:" ) shared_mem = $NF / 1024; else if ( $1 == "Private:" ) private_mem = $NF / 1024; } END { print shared_mem " KB shared. " private_mem " KB private."; } ' /proc/ccs/info/meminfo
+
+[ $PROC_UNMOUNT == 1 ] && umount -n /proc
+[ $$ == 1 ] && exec $REAL_INIT "$@"
+exit 1
