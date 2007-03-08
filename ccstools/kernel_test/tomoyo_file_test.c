@@ -67,12 +67,23 @@ static void StageFileTest(void) {
 
 	ShowPrompt("uselib()");
 	ShowResult(uselib("/bin/true"));
-	
+
 	{
-		char *argv[] = { (char *) 1, NULL }, *envp[] = { (char *) 1, NULL };
-		/* Use invalid address so that execve() won't terminate this program. */
+		int pipe_fd[2] = { EOF, EOF };
+		int err = 0;
+		fflush(stdout); fflush(stderr);
+		pipe(pipe_fd);
+		if (fork() == 0) {
+			execl("/bin/true", "/bin/true", NULL);
+			err = errno;
+			write(pipe_fd[1], &err, sizeof(err));
+			_exit(0);
+		}
+		close(pipe_fd[1]);
+		read(pipe_fd[0], &err, sizeof(err));
 		ShowPrompt("execve()");
-		ShowResult(execve("/bin/true", argv, envp));
+		errno = err;
+		ShowResult(err ? EOF : 0);
 	}
 
 	ShowPrompt("open(O_RDONLY)");
