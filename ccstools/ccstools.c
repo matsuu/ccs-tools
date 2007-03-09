@@ -97,14 +97,10 @@
 #define KEYWORD_ALIAS_LEN                (sizeof(KEYWORD_ALIAS) - 1)
 #define KEYWORD_ALLOW_ARGV0              "allow_argv0 "
 #define KEYWORD_ALLOW_ARGV0_LEN          (sizeof(KEYWORD_ALLOW_ARGV0) - 1)
-#define KEYWORD_ALLOW_BIND               "allow_bind "
-#define KEYWORD_ALLOW_BIND_LEN           (sizeof(KEYWORD_ALLOW_BIND) - 1)
 #define KEYWORD_ALLOW_CAPABILITY         "allow_capability "
 #define KEYWORD_ALLOW_CAPABILITY_LEN     (sizeof(KEYWORD_ALLOW_CAPABILITY) - 1)
 #define KEYWORD_ALLOW_CHROOT             "allow_chroot "
 #define KEYWORD_ALLOW_CHROOT_LEN         (sizeof(KEYWORD_ALLOW_CHROOT) - 1)
-#define KEYWORD_ALLOW_CONNECT            "allow_connect "
-#define KEYWORD_ALLOW_CONNECT_LEN        (sizeof(KEYWORD_ALLOW_CONNECT) - 1)
 #define KEYWORD_ALLOW_MOUNT              "allow_mount "
 #define KEYWORD_ALLOW_MOUNT_LEN          (sizeof(KEYWORD_ALLOW_MOUNT) - 1)
 #define KEYWORD_ALLOW_NETWORK            "allow_network "
@@ -3224,27 +3220,6 @@ static int CheckCondition(const char *condition) {
 	return 0;
 }
 
-static void CheckPortPolicy(char *data) {
-	unsigned int from, to;
-	char *cp;
-	if ((cp = FindConditionPart(data)) != NULL && !CheckCondition(cp)) return;
-	if (strchr(data, ' ')) goto out;
-	if (sscanf(data, "TCP/%u-%u", &from, &to) == 2) {
-		if (from <= to && to < 65536) return;
-	} else if (sscanf(data, "TCP/%u", &from) == 1) {
-		if (from < 65536) return;
-	} else if (sscanf(data, "UDP/%u-%u", &from, &to) == 2) {
-		if (from <= to && to < 65536) return;
-	} else if (sscanf(data, "UDP/%u", &from) == 1) {
-		if (from < 65536) return;
-	} else {
-		printf("%u: ERROR: Too few parameters.\n", line); errors++;
-		return;
-	}
- out:
-	printf("%u: ERROR: '%s' is a bad port number.\n", line, data); errors++;
-}
-
 static void CheckCapabilityPolicy(char *data) {
 	static const char *capability_keywords[] = {
 		"inet_tcp_create", "inet_tcp_listen", "inet_tcp_connect", "use_inet_udp", "use_inet_ip", "use_route", "use_packet",
@@ -3597,10 +3572,6 @@ static int checkpolicy_main(int argc, char *argv[]) {
 				}
 			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_CAPABILITY, KEYWORD_ALLOW_CAPABILITY_LEN) == 0) {
 				CheckCapabilityPolicy(shared_buffer + KEYWORD_ALLOW_CAPABILITY_LEN);
-			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_BIND, KEYWORD_ALLOW_BIND_LEN) == 0) {
-				CheckPortPolicy(shared_buffer + KEYWORD_ALLOW_BIND_LEN);
-			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_CONNECT, KEYWORD_ALLOW_CONNECT_LEN) == 0) {
-				CheckPortPolicy(shared_buffer + KEYWORD_ALLOW_CONNECT_LEN);
 			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_NETWORK, KEYWORD_ALLOW_NETWORK_LEN) == 0) {
 				CheckNetworkPolicy(shared_buffer + KEYWORD_ALLOW_NETWORK_LEN);
 			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_SIGNAL, KEYWORD_ALLOW_SIGNAL_LEN) == 0) {
@@ -4103,7 +4074,7 @@ static int patternize_main(int argc, char *argv[]) {
 					check_second = 1;
 				} else if (strcmp(cp, "<kernel>") == 0 || strcmp(cp, "use_profile") == 0
 						   || strcmp(cp, "allow_capability") == 0 || strcmp(cp, "allow_signal") == 0 ||
-						   strcmp(cp, "allow_bind") == 0 || strcmp(cp, "allow_connect") == 0 || strcmp(cp, "allow_network") == 0) {
+						   strcmp(cp, "allow_network") == 0) {
 					/* This entry is not pathname related permission. I don't convert. */
 					disabled = 1;
 				}
@@ -4199,7 +4170,7 @@ int main(int argc, char *argv[]) {
 	 * because it is dangerous to allow updating policies via unchecked argv[1].
 	 * You should use either "symbolic links with 'alias' directive" or "hard links".
 	 */
-	printf("ccstools version 1.3.3-pre1 build 2007/02/23\n");
+	printf("ccstools version 1.3.3-pre4 build 2007/03/09\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }
