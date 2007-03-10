@@ -1,4 +1,5 @@
 tomoyo: ccs-auditd ccs-queryd ccstree checkpolicy editpolicy editpolicy_offline findtemp ld-watch loadpolicy pathmatch patternize savepolicy setlevel setprofile sortpolicy realpath
+	chmod 755 *.sh .init domainmatch
 
 syaoran: makesyaoranconf
 

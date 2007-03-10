@@ -1,4 +1,5 @@
 all: sakura_bind_test sakura_filesystem_test tomoyo_capability_test tomoyo_file_test tomoyo_rewrite_test tomoyo_argv0_test tomoyo_network_test tomoyo_signal_test newns tomoyo_accept_test
+	chmod 755 testall.sh
 	@echo "You have compiled all programs for testing TOMOYO Linux's kernel."
 	@echo "Don't forget to register the pathname of these programs to /etc/ccs/manager.txt"
 	@echo "because these program needs to write to /proc/ccs/ interface."
