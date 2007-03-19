@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.3.2     2007/02/23
+ * Version: 1.3.3     2007/04/01
  *
  *   gcc -Wall -O3 -o ccstools ccstools.c -lncurses
  *
@@ -59,7 +59,6 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <syslog.h>
-#include <termios.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -105,6 +104,8 @@
 #define KEYWORD_ALLOW_MOUNT_LEN          (sizeof(KEYWORD_ALLOW_MOUNT) - 1)
 #define KEYWORD_ALLOW_NETWORK            "allow_network "
 #define KEYWORD_ALLOW_NETWORK_LEN        (sizeof(KEYWORD_ALLOW_NETWORK) - 1)
+#define KEYWORD_ALLOW_PIVOT_ROOT         "allow_pivot_root "
+#define KEYWORD_ALLOW_PIVOT_ROOT_LEN     (sizeof(KEYWORD_ALLOW_PIVOT_ROOT) - 1)
 #define KEYWORD_ALLOW_READ               "allow_read "
 #define KEYWORD_ALLOW_READ_LEN           (sizeof(KEYWORD_ALLOW_READ) - 1)
 #define KEYWORD_ALLOW_SIGNAL             "allow_signal "
@@ -3429,6 +3430,21 @@ static void CheckMountPolicy(char *data) {
 	printf("%u: ERROR: Too few parameters.\n", line); errors++;
 }
 
+static void CheckPivotRootPolicy(char *data) {
+	char *cp;
+	if ((cp = strchr(data, ' ')) == NULL) goto out;
+	*cp++ = '\0';
+	if (!IsCorrectPath(data, 1, 0, 1)) {
+		printf("%u: ERROR: '%s' is a bad directory.\n", line, data); errors++;
+	}
+	if (!IsCorrectPath(cp, 1, 0, 1)) {
+		printf("%u: ERROR: '%s' is a bad directory.\n", line, cp); errors++;
+	}
+	return;
+ out:
+	printf("%u: ERROR: Too few parameters.\n", line); errors++;
+}
+
 static void CheckReservedPortPolicy(char *data) {
 	unsigned int from, to;
 	if (strchr(data, ' ')) goto out;
@@ -3668,6 +3684,8 @@ static int checkpolicy_main(int argc, char *argv[]) {
 				if (!IsCorrectPath(shared_buffer, 1, 0, 1)) {
 					printf("%u: ERROR: '%s' is a bad pattern.\n", line, shared_buffer); errors++;
 				}
+			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_PIVOT_ROOT, KEYWORD_ALLOW_PIVOT_ROOT_LEN) == 0) {
+				CheckPivotRootPolicy(shared_buffer + KEYWORD_ALLOW_PIVOT_ROOT_LEN);
 			} else if (strncmp(shared_buffer, KEYWORD_DENY_AUTOBIND, KEYWORD_DENY_AUTOBIND_LEN) == 0) {
 				CheckReservedPortPolicy(shared_buffer + KEYWORD_DENY_AUTOBIND_LEN);
 			} else {
@@ -4170,7 +4188,7 @@ int main(int argc, char *argv[]) {
 	 * because it is dangerous to allow updating policies via unchecked argv[1].
 	 * You should use either "symbolic links with 'alias' directive" or "hard links".
 	 */
-	printf("ccstools version 1.3.3-pre4 build 2007/03/09\n");
+	printf("ccstools version 1.3.3-pre6 build 2007/03/19\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }

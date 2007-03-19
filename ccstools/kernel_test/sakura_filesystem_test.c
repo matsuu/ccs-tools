@@ -232,17 +232,23 @@ int main(int argc, char *argv[]) {
 
 	// Test pivot_root().
 	{
-		WriteStatus("DENY_PIVOT_ROOT=3\n");
-		ShowPrompt("pivot_root('/', '/')", 1);
+		WriteStatus("RESTRICT_PIVOT_ROOT=3\n");
+
+		WritePolicy("allow_pivot_root " TEST_DIR_BIND " " TEST_DIR_MOVE "\n");
+		ShowPrompt("pivot_root('" TEST_DIR_BIND "', '" TEST_DIR_MOVE "')", 0);
+		if (pivot_root(TEST_DIR_BIND, TEST_DIR_MOVE) == 0) printf("OK\n");
+		else printf("FAILED: %s\n", strerror(errno));
+
+		WritePolicy("delete allow_pivot_root " TEST_DIR_BIND " " TEST_DIR_MOVE "\n");
 		if (pivot_root("/", "/") == EOF && errno == EPERM) printf("OK: Permission denied.\n");
 		else printf("BUG: %s\n", strerror(errno));
 		
-		WriteStatus("DENY_PIVOT_ROOT=2\n");
+		WriteStatus("RESTRICT_PIVOT_ROOT=2\n");
 		ShowPrompt("pivot_root('/', '/')", 0);
 		if (pivot_root("/", "/") == 0 || errno != EPERM) printf("OK\n");
 		else printf("FAILED: %s\n", strerror(errno));
 		
-		WriteStatus("DENY_PIVOT_ROOT=0\n");
+		WriteStatus("RESTRICT_PIVOT_ROOT=0\n");
 	}
 	
 	rmdir(TEST_DIR_MOVE);

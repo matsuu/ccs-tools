@@ -173,7 +173,12 @@ static void StageCapabilityTest(void) {
 	ShowPrompt("SYS_CHROOT");
 	ShowResult(chroot("/"));
 	UnsetCapability("SYS_CHROOT");
-		
+
+	SetCapability("SYS_PIVOT_ROOT");
+	ShowPrompt("SYS_PIVOT_ROOT");
+	ShowResult(pivot_root("/", "/"));
+	UnsetCapability("SYS_PIVOT_ROOT");
+
 	signal(SIGINT, SIG_IGN);
 	SetCapability("SYS_KILL");
 	ShowPrompt("SYS_KILL(sys_kill())");
