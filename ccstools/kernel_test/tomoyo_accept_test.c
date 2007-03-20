@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Can't open /proc/ccs/status\n");
 		exit(1);
 	}
-	fprintf(fp_level, "255-COMMENT=Test\n255-TOMOYO_VERBOSE=0\n255-MAC_FOR_FILE=0\n255-MAX_ACCEPT_FILES=2048\n");
+	fprintf(fp_level, "255-COMMENT=Test\n255-TOMOYO_VERBOSE=0\n255-MAC_FOR_FILE=0\n255-MAX_ACCEPT_ENTRY=2048\n");
 	fflush(fp_level);
 	if ((fp_domain = fopen("/proc/ccs/policy/domain_policy", "w")) == NULL) {
 		fprintf(stderr, "Can't open /proc/ccs/policy/domain_policy\n");

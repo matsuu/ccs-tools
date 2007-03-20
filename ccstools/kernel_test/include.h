@@ -35,6 +35,7 @@ struct module;
 #include <utime.h>
 #include <arpa/inet.h>
 #include <linux/ip.h>
+#include <sched.h>
 
 #ifndef __NR_sys_kexec_load
 #ifdef __NR_kexec_load

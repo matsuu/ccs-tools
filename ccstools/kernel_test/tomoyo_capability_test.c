@@ -10,6 +10,12 @@
  */
 #include "include.h"
 
+static int child(void *arg) {
+	errno = 0;
+	pivot_root("/proc", "/proc/ccs");
+	return errno;
+}
+
 static int is_enforce = 0;
 
 static void ShowPrompt(const char *str) {
@@ -176,8 +182,17 @@ static void StageCapabilityTest(void) {
 
 	SetCapability("SYS_PIVOT_ROOT");
 	ShowPrompt("SYS_PIVOT_ROOT");
-	ShowResult(pivot_root("/", "/"));
-	UnsetCapability("SYS_PIVOT_ROOT");
+
+	{
+		int error;
+		char *stack = malloc(8192);
+		const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS, NULL);
+		while (waitpid(pid, &error, __WALL) == EOF && errno == EINTR);
+		free(stack);
+		errno = WIFEXITED(error) ? WEXITSTATUS(error) : -1;
+		ShowResult(errno ? EOF : 0);
+		UnsetCapability("SYS_PIVOT_ROOT");
+	}
 
 	signal(SIGINT, SIG_IGN);
 	SetCapability("SYS_KILL");

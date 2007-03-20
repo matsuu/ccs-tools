@@ -45,9 +45,23 @@ static void StageArgv0Test(void) {
 		snprintf(buffer, sizeof(buffer) - 1, "Executing /bin/true in permissive mode");
 		ShowPrompt(buffer);
 		wait(&status);
-		ShowResult(WEXITSTATUS(status));
+		errno = WEXITSTATUS(status);
+		ShowResult(errno ? EOF : 0);
+
 		is_enforce = 1; WriteStatus("MAC_FOR_ARGV0=3\n");
 		if (fork() == 0) {
+			execv("/bin/true", argv);
+			_exit(errno);
+		}
+		snprintf(buffer, sizeof(buffer) - 1, "Executing /bin/true in enforce mode");
+		ShowPrompt(buffer);
+		wait(&status);
+		errno = WEXITSTATUS(status);
+		ShowResult(errno ? EOF : 0);
+
+		is_enforce = 0; 
+		if (fork() == 0) {
+			argv[0] = "";
 			execv("/bin/true", argv);
 			_exit(errno);
 		}

@@ -24,6 +24,12 @@ static void ShowPrompt(const char *str, const int is_enforce) {
 #define MS_MOVE         8192
 #endif
 
+static int child(void *arg) {
+	errno = 0;
+	pivot_root("/proc", "/proc/ccs");
+	return errno;
+}
+
 static int system_fd = EOF;
 
 static void WritePolicy(const char *cp) {
@@ -232,23 +238,43 @@ int main(int argc, char *argv[]) {
 
 	// Test pivot_root().
 	{
+		int error;
+		char *stack = malloc(8192);
 		WriteStatus("RESTRICT_PIVOT_ROOT=3\n");
 
-		WritePolicy("allow_pivot_root " TEST_DIR_BIND " " TEST_DIR_MOVE "\n");
-		ShowPrompt("pivot_root('" TEST_DIR_BIND "', '" TEST_DIR_MOVE "')", 0);
-		if (pivot_root(TEST_DIR_BIND, TEST_DIR_MOVE) == 0) printf("OK\n");
+		WritePolicy("allow_pivot_root /proc/ /proc/ccs/\n");
+		ShowPrompt("pivot_root('/proc/', '/proc/ccs/')", 0);
+		{
+			const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS, NULL);
+			while (waitpid(pid, &error, __WALL) == EOF && errno == EINTR);
+		}
+		errno = WIFEXITED(error) ? WEXITSTATUS(error) : -1;
+		if (errno == 0) printf("OK\n");
 		else printf("FAILED: %s\n", strerror(errno));
 
-		WritePolicy("delete allow_pivot_root " TEST_DIR_BIND " " TEST_DIR_MOVE "\n");
-		if (pivot_root("/", "/") == EOF && errno == EPERM) printf("OK: Permission denied.\n");
+		WritePolicy("delete allow_pivot_root /proc/ /proc/ccs/\n");
+		ShowPrompt("pivot_root('/proc/', '/proc/ccs/')", 1);
+		{
+			const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS, NULL);
+			while (waitpid(pid, &error, __WALL) == EOF && errno == EINTR);
+		}
+		errno = WIFEXITED(error) ? WEXITSTATUS(error) : -1;
+		if (errno == EPERM) printf("OK: Permission denied.\n");
 		else printf("BUG: %s\n", strerror(errno));
 		
 		WriteStatus("RESTRICT_PIVOT_ROOT=2\n");
-		ShowPrompt("pivot_root('/', '/')", 0);
-		if (pivot_root("/", "/") == 0 || errno != EPERM) printf("OK\n");
+		ShowPrompt("pivot_root('/proc/', '/proc/ccs/')", 0);
+		{
+			const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS, NULL);
+			while (waitpid(pid, &error, __WALL) == EOF && errno == EINTR);
+		}
+		errno = WIFEXITED(error) ? WEXITSTATUS(error) : -1;
+		if (errno == 0) printf("OK\n");
 		else printf("FAILED: %s\n", strerror(errno));
 		
 		WriteStatus("RESTRICT_PIVOT_ROOT=0\n");
+
+		free(stack);
 	}
 	
 	rmdir(TEST_DIR_MOVE);
