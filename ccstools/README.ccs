@@ -1,7 +1,7 @@
 About this package:
 
 This package contains userland programs
-for TOMOYO Linux version 1.3.3 .
+for TOMOYO Linux version 1.4 .
 
 http://tomoyo.sourceforge.jp/
 
@@ -210,4 +210,4 @@ Version 1.3.2 2007/02/14   Usability enhancement release.
   Many tools were merged into single source code.
   Policy editor was redesigned.
 
-Version 1.3.3 2007/04/01   Usability enhancement release.
+Version 1.4   2007/04/01   Usability enhancement release.
