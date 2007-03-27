@@ -1748,7 +1748,7 @@ static const DOMAIN_KEEPER_ENTRY *IsDomainKeeper(const struct path_info *domainn
 		}
 		if (ptr->program && strcmp(ptr->program->name, program)) continue;
         if (ptr->is_not) return NULL;
-        flag = ptr;
+		flag = ptr;
 	}
 	return flag;
 }
@@ -1756,24 +1756,22 @@ static const DOMAIN_KEEPER_ENTRY *IsDomainKeeper(const struct path_info *domainn
 static const DOMAIN_INITIALIZER_ENTRY *IsDomainInitializer(const struct path_info *domainname, const char *program) {
 	int i;
 	const DOMAIN_INITIALIZER_ENTRY *flag = NULL;
-	if (strcmp(domainname->name, ROOT_NAME)) {
-		struct path_info last_name;
-		if ((last_name.name = strrchr(domainname->name, ' ')) != NULL) last_name.name++;
-		else last_name.name = domainname->name;
-		fill_path_info(&last_name);
-		for (i = 0; i < domain_initializer_list_len; i++) {
-			DOMAIN_INITIALIZER_ENTRY *ptr = &domain_initializer_list[i];
-			if (ptr->domainname) {
-				if (!ptr->is_last_name) {
-					if (pathcmp(ptr->domainname, domainname)) continue;
-				} else {
-					if (pathcmp(ptr->domainname, &last_name)) continue;
-				}
+	struct path_info last_name;
+	if ((last_name.name = strrchr(domainname->name, ' ')) != NULL) last_name.name++;
+	else last_name.name = domainname->name;
+	fill_path_info(&last_name);
+	for (i = 0; i < domain_initializer_list_len; i++) {
+		DOMAIN_INITIALIZER_ENTRY *ptr = &domain_initializer_list[i];
+		if (ptr->domainname) {
+			if (!ptr->is_last_name) {
+				if (pathcmp(ptr->domainname, domainname)) continue;
+			} else {
+				if (pathcmp(ptr->domainname, &last_name)) continue;
 			}
-			if (strcmp(ptr->program->name, program)) continue;
-			if (ptr->is_not) return NULL;
-			flag = ptr;
 		}
+		if (strcmp(ptr->program->name, program)) continue;
+		if (ptr->is_not) return NULL;
+		flag = ptr;
 	}
 	return flag;
 }
@@ -2078,10 +2076,10 @@ static void ReadDomainAndExceptionPolicy(void) {
 				*cp++ = '\0';
 				parent.name = shared_buffer;
 				fill_path_info(&parent);
-				if ((domain_initializer = IsDomainInitializer(&parent, cp)) != NULL) {
+				if ((domain_initializer = IsDomainInitializer(&parent, cp)) != NULL && strcmp(parent.name, ROOT_NAME)) {
 					domain_list[0][index].domain_initializer = domain_initializer;
 					domain_list[0][index].domain_keeper = NULL;
-				} else if ((domain_keeper = IsDomainKeeper(&parent, cp)) != NULL) {
+				} else if (!domain_initializer && (domain_keeper = IsDomainKeeper(&parent, cp)) != NULL) {
 					domain_list[0][index].domain_initializer = NULL;
 					domain_list[0][index].domain_keeper = domain_keeper;
 				}
@@ -2123,6 +2121,7 @@ static void ReadDomainAndExceptionPolicy(void) {
 			const struct path_info *domainname = domain_list[0][index].domainname;
 			const struct path_info **string_ptr = domain_list[0][index].string_ptr;
 			const int max_count = domain_list[0][index].string_count;
+			if (strcmp(domainname->name, ROOT_NAME) == 0) continue; // Don't create source domain under <kernel> because they will become target domains. 
 			for (i = 0; i < max_count; i++) {
 				const struct path_info *cp = string_ptr[i];
 				if (cp->name[0] == '@') {
@@ -4188,7 +4187,7 @@ int main(int argc, char *argv[]) {
 	 * because it is dangerous to allow updating policies via unchecked argv[1].
 	 * You should use either "symbolic links with 'alias' directive" or "hard links".
 	 */
-	printf("ccstools version 1.4-rc1 build 2007/03/25\n");
+	printf("ccstools version 1.4-rc2 build 2007/03/26\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }
