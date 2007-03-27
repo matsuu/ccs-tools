@@ -138,6 +138,8 @@
 #define KEYWORD_KEEP_DOMAIN_LEN          (sizeof(KEYWORD_KEEP_DOMAIN) - 1)
 #define KEYWORD_PATH_GROUP               "path_group "
 #define KEYWORD_PATH_GROUP_LEN           (sizeof(KEYWORD_PATH_GROUP) - 1)
+#define KEYWORD_ADDRESS_GROUP            "address_group "
+#define KEYWORD_ADDRESS_GROUP_LEN        (sizeof(KEYWORD_ADDRESS_GROUP) - 1)
 #define KEYWORD_NO_INITIALIZER           "no_" KEYWORD_INITIALIZER
 #define KEYWORD_NO_INITIALIZER_LEN       (sizeof(KEYWORD_NO_INITIALIZER) - 1)
 #define KEYWORD_NO_INITIALIZE_DOMAIN     "no_" KEYWORD_INITIALIZE_DOMAIN
@@ -3225,7 +3227,7 @@ static void CheckCapabilityPolicy(char *data) {
 		"inet_tcp_create", "inet_tcp_listen", "inet_tcp_connect", "use_inet_udp", "use_inet_ip", "use_route", "use_packet",
 		"SYS_MOUNT", "SYS_UMOUNT", "SYS_REBOOT", "SYS_CHROOT", "SYS_KILL", "SYS_VHANGUP", "SYS_TIME", "SYS_NICE", "SYS_SETHOSTNAME",
 		"use_kernel_module", "create_fifo", "create_block_dev", "create_char_dev", "create_unix_socket",
-		"SYS_LINK", "SYS_SYMLINK", "SYS_RENAME", "SYS_UNLINK", "SYS_CHMOD", "SYS_CHOWN", "SYS_IOCTL", "SYS_KEXEC_LOAD", NULL
+		"SYS_LINK", "SYS_SYMLINK", "SYS_RENAME", "SYS_UNLINK", "SYS_CHMOD", "SYS_CHOWN", "SYS_IOCTL", "SYS_KEXEC_LOAD", "SYS_PIVOT_ROOT", NULL
 	};
 	int i;
 	char *cp;
@@ -3316,7 +3318,7 @@ static void CheckNetworkPolicy(char *data) {
 		if (count == 8) ip = htonl((((u8) max_address[0]) << 24) + (((u8) max_address[1]) << 16) + (((u8) max_address[2]) << 8) + (u8) max_address[3]);
 		* (u32 *) max_address = ip;
 		is_ipv6 = 0;
-	} else {
+	} else if (*cp2 != '@') { // Don't reject address_group.
 		goto out;
 	}
 	if (strchr(cp1, ' ')) goto out;
@@ -3358,7 +3360,7 @@ static void CheckFilePolicy(char *data) {
 	*filename++ = '\0';
 	if ((cp = FindConditionPart(filename)) != NULL && !CheckCondition(cp)) return;
 	if (sscanf(data, "%u", &perm) == 1 && perm > 0 && perm <= 7) {
-		if (strendswith(filename, "/")) {
+		if (filename[0] != '@' && strendswith(filename, "/")) { // Don't reject path_group.
 			if ((perm & 2) == 0) {
 				printf("%u: WARNING: Directory '%s' without write permission will be ignored.\n", line, filename); warnings++;
 			}
@@ -3511,6 +3513,28 @@ static void CheckGroupPolicy(char *data) {
 		printf("%u: ERROR: '%s' is a bad pathname.\n", line, cp); errors++;
 	}
 }
+
+static void CheckAddressGroupPolicy(char *data) {
+	char *cp = strchr(data, ' ');
+	u16 min_address[8], max_address[8];
+	int count;
+	if (!cp) {
+		printf("%u: ERROR: Too few parameters.\n", line); errors++;
+		return;
+	}
+	*cp++ = '\0';
+	if ((count = sscanf(cp, "%hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx-%hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx",
+						&min_address[0], &min_address[1], &min_address[2], &min_address[3],
+						&min_address[4], &min_address[5], &min_address[6], &min_address[7],
+						&max_address[0], &max_address[1], &max_address[2], &max_address[3],
+						&max_address[4], &max_address[5], &max_address[6], &max_address[7])) == 8 || count == 16) {
+	} else if ((count = sscanf(cp, "%hu.%hu.%hu.%hu-%hu.%hu.%hu.%hu",
+							   &min_address[0], &min_address[1], &min_address[2], &min_address[3],
+ 							   &max_address[0], &max_address[1], &max_address[2], &max_address[3])) == 4 || count == 8) {
+	} else {
+		printf("%u: ERROR: '%s' is a bad address.\n", line, cp); errors++;
+	}
+}
 		
 static int checkpolicy_main(int argc, char *argv[]) {
 	int policy_type = POLICY_TYPE_UNKNOWN;
@@ -3625,6 +3649,8 @@ static int checkpolicy_main(int argc, char *argv[]) {
 				CheckDomainKeeperPolicy(shared_buffer + KEYWORD_NO_KEEP_DOMAIN_LEN);
 			} else if (strncmp(shared_buffer, KEYWORD_PATH_GROUP, KEYWORD_PATH_GROUP_LEN) == 0) {
 				CheckGroupPolicy(shared_buffer + KEYWORD_PATH_GROUP_LEN);
+			} else if (strncmp(shared_buffer, KEYWORD_ADDRESS_GROUP, KEYWORD_ADDRESS_GROUP_LEN) == 0) {
+				CheckAddressGroupPolicy(shared_buffer + KEYWORD_ADDRESS_GROUP_LEN);
 			} else if (strncmp(shared_buffer, KEYWORD_ALIAS, KEYWORD_ALIAS_LEN) == 0) {
 				char *cp;
 				RemoveHeader(shared_buffer, KEYWORD_ALIAS_LEN);
@@ -3847,6 +3873,7 @@ static int ccsqueryd_main(int argc, char *argv[]) {
     intrflush(stdscr, FALSE);
     keypad(stdscr, TRUE);
     clear(); refresh();
+	scrollok(stdscr, 1);
 	while (1) {
 		static int first = 1;
 		static unsigned int prev_serial = 0;
@@ -3913,6 +3940,7 @@ static int ccsqueryd_main(int argc, char *argv[]) {
 				initial_readline_data = cp;
 				readline_history_count = simple_add_history(cp, readline_history, readline_history_count, max_readline_history);
 				line = simple_readline(y, 0, "Enter new entry> ", readline_history, readline_history_count, 4000, 8);
+				scrollok(stdscr, 1);
 				printw("\n"); refresh();
 				if (line && *line) {
 					readline_history_count = simple_add_history(line, readline_history, readline_history_count, max_readline_history);
@@ -4187,7 +4215,7 @@ int main(int argc, char *argv[]) {
 	 * because it is dangerous to allow updating policies via unchecked argv[1].
 	 * You should use either "symbolic links with 'alias' directive" or "hard links".
 	 */
-	printf("ccstools version 1.4-rc2 build 2007/03/26\n");
+	printf("ccstools version 1.4-rc3 build 2007/03/27\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }
