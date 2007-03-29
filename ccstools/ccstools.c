@@ -2078,10 +2078,11 @@ static void ReadDomainAndExceptionPolicy(void) {
 				*cp++ = '\0';
 				parent.name = shared_buffer;
 				fill_path_info(&parent);
-				if ((domain_initializer = IsDomainInitializer(&parent, cp)) != NULL && strcmp(parent.name, ROOT_NAME)) {
+				if ((domain_initializer = IsDomainInitializer(&parent, cp)) != NULL) {
+					if (parent.total_len == ROOT_NAME_LEN) break; /* Initializer under <kernel> is reachable. */
 					domain_list[0][index].domain_initializer = domain_initializer;
 					domain_list[0][index].domain_keeper = NULL;
-				} else if (!domain_initializer && (domain_keeper = IsDomainKeeper(&parent, cp)) != NULL) {
+				} else if ((domain_keeper = IsDomainKeeper(&parent, cp)) != NULL) {
 					domain_list[0][index].domain_initializer = NULL;
 					domain_list[0][index].domain_keeper = domain_keeper;
 				}
@@ -2123,7 +2124,7 @@ static void ReadDomainAndExceptionPolicy(void) {
 			const struct path_info *domainname = domain_list[0][index].domainname;
 			const struct path_info **string_ptr = domain_list[0][index].string_ptr;
 			const int max_count = domain_list[0][index].string_count;
-			if (strcmp(domainname->name, ROOT_NAME) == 0) continue; // Don't create source domain under <kernel> because they will become target domains. 
+			if (domainname->total_len == ROOT_NAME_LEN) continue; // Don't create source domain under <kernel> because they will become target domains. 
 			for (i = 0; i < max_count; i++) {
 				const struct path_info *cp = string_ptr[i];
 				if (cp->name[0] == '@') {
@@ -4215,7 +4216,7 @@ int main(int argc, char *argv[]) {
 	 * because it is dangerous to allow updating policies via unchecked argv[1].
 	 * You should use either "symbolic links with 'alias' directive" or "hard links".
 	 */
-	printf("ccstools version 1.4-rc3 build 2007/03/27\n");
+	printf("ccstools version 1.4-rc4 build 2007/03/29\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }
