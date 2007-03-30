@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2007  NTT DATA CORPORATION
 #
-# Version: 1.3.2   2007/02/14
+# Version: 1.4   2007/04/01
 #
 # Run this script by passing init= to kernel command line option.
 # You had better not to register this script to /etc/ccs/manager.txt
