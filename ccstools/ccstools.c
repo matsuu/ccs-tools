@@ -369,6 +369,7 @@ static int IsCorrectPath(const char *filename, const int start_type, const int p
 			case 'X':   /* "\X" */
 			case 'a':   /* "\a" */
 			case 'A':   /* "\A" */
+			case '-':   /* "\-" */
 				if (pattern_type == -1) break; /* Must not contain pattern */
 				contains_pattern = 1;
 				continue;
@@ -397,7 +398,7 @@ static int IsCorrectPath(const char *filename, const int start_type, const int p
 	return 0;
 }
 
-static int FileMatchesToPattern(const char *filename, const char *filename_end, const char *pattern, const char *pattern_end) {
+static int FileMatchesToPattern2(const char *filename, const char *filename_end, const char *pattern, const char *pattern_end) {
 	while (filename < filename_end && pattern < pattern_end) {
 		if (*pattern != '\\') {
 			if (*filename++ != *pattern++) return 0;
@@ -448,7 +449,7 @@ static int FileMatchesToPattern(const char *filename, const char *filename_end, 
 				{
 					int i;
 					for (i = 0; i <= filename_end - filename; i++) {
-						if (FileMatchesToPattern(filename + i, filename_end, pattern + 1, pattern_end)) return 1;
+						if (FileMatchesToPattern2(filename + i, filename_end, pattern + 1, pattern_end)) return 1;
 						if ((c = filename[i]) == '.' && *pattern == '@') break;
 						if (c == '\\') {
 							if ((c = filename[i + 1]) == '\\') {
@@ -473,7 +474,7 @@ static int FileMatchesToPattern(const char *filename, const char *filename_end, 
 						while (((c = filename[j]) >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) j++;
 					}
 					for (i = 1; i <= j; i++) {
-						if (FileMatchesToPattern(filename + i, filename_end, pattern + 1, pattern_end)) return 1;
+						if (FileMatchesToPattern2(filename + i, filename_end, pattern + 1, pattern_end)) return 1;
 					}
 				}
 				return 0; /* Not matched or bad pattern. */
@@ -484,6 +485,22 @@ static int FileMatchesToPattern(const char *filename, const char *filename_end, 
 	}
 	while (*pattern == '\\' && (*(pattern + 1) == '*' || *(pattern + 1) == '@')) pattern += 2;
 	return (filename == filename_end && pattern == pattern_end);
+}
+
+static int FileMatchesToPattern(const char *filename, const char *filename_end, const char *pattern, const char *pattern_end) {
+	const char *pattern_start = pattern;
+	int first = 1;
+	int result;
+	while (pattern < pattern_end - 1) {
+		if (*pattern++ != '\\' || *pattern++ != '-') continue;
+		result = FileMatchesToPattern2(filename, filename_end, pattern_start, pattern - 2);
+		if (first) result = !result;
+		if (result) return 0;
+		first = 0;
+		pattern_start = pattern;
+	}
+	result = FileMatchesToPattern2(filename, filename_end, pattern_start, pattern_end);
+	return first ? result : !result;
 }
 
 /*
