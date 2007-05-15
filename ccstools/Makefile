@@ -9,9 +9,9 @@ cerberus: candy chaplet checktoken falsh gettoken groovy honey mailauth proxy ti
 # If you want to suppress "warning: pointer targets in passing argument ... differ in signedness" warning messages,
 # you can add "-Wno-pointer-sign" options to CFLAGS.
 #
-#CFLAGS=-Wall -Wno-pointer-sign -O3
+CFLAGS=-Wall -Wno-pointer-sign -O3
 #
-CFLAGS=-Wall -O3
+#CFLAGS=-Wall -O3
 
 CC=gcc
 
@@ -81,8 +81,8 @@ setprofile: ccstools
 sortpolicy: ccstools
 	ln -f ccstools sortpolicy
 
-ccstools: ccstools.c /usr/include/curses.h 
-	$(CC) $(CFLAGS) -o ccstools ccstools.c -lncurses
+ccstools: ccstools.src/*.c ccstools.src/*.h /usr/include/curses.h 
+	$(CC) $(CFLAGS) -o ccstools ccstools.src/*.c -lncurses
 
 realpath: realpath.c 
 	$(CC) $(CFLAGS) -o realpath realpath.c
