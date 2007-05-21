@@ -1,7 +1,7 @@
 About this package:
 
 This package contains userland programs
-for TOMOYO Linux version 1.4 .
+for TOMOYO Linux version 1.4.1 .
 
 http://tomoyo.sourceforge.jp/
 
@@ -216,3 +216,7 @@ Version 1.4   2007/04/01   x86_64 support release.
 
     editpolicy:
       Domain flags was wrong if "keep_domain <kernel>" is given.
+
+Version 1.4.1 2007/??/??   Minor update release.
+
+  Single source code was divided into many source code.
