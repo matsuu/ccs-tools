@@ -97,7 +97,7 @@ static void StageNetworkTest(void) {
 		snprintf(buffer, sizeof(buffer) - 1, "Client: Creating socket(PF_INET, SOCK_STREAM, 0)");
 		ShowPrompt(buffer);
 		fd2 = socket(PF_INET, SOCK_STREAM, 0);
-		ShowResult(fd1);
+		ShowResult(fd2);
 		
 		snprintf(buffer, sizeof(buffer) - 1, "Client: Connecting TCP 127.0.0.1 %d", ntohs(addr.sin_port));
 		is_enforce = 1; WriteStatus("MAC_FOR_NETWORK=3\n");
@@ -156,7 +156,7 @@ static void StageNetworkTest(void) {
 		snprintf(buffer, sizeof(buffer) - 1, "Client: Creating socket(PF_INET, SOCK_DGRAM, 0)");
 		ShowPrompt(buffer);
 		fd2 = socket(PF_INET, SOCK_DGRAM, 0);
-		ShowResult(fd1);
+		ShowResult(fd2);
 
 		getsockname(fd1, (struct sockaddr *) &addr, &size);
 		snprintf(buffer, sizeof(buffer) - 1, "Client: Connecting UDP 127.0.0.1 %d", ntohs(addr.sin_port));
@@ -222,7 +222,7 @@ static void StageNetworkTest(void) {
 		snprintf(buffer, sizeof(buffer) - 1, "Client: Creating socket(PF_INET, SOCK_RAW, IPPROTO_RAW)");
 		ShowPrompt(buffer);
 		fd2 = socket(PF_INET, SOCK_RAW, IPPROTO_RAW);
-		ShowResult(fd1);
+		ShowResult(fd2);
 
 		getsockname(fd1, (struct sockaddr *) &addr, &size);
 		snprintf(buffer, sizeof(buffer) - 1, "Client: Connecting RAW 127.0.0.1 %d", ntohs(addr.sin_port));
@@ -303,7 +303,7 @@ static void StageNetworkTest(void) {
 		snprintf(buffer, sizeof(buffer) - 1, "Client: Creating socket(PF_INET6, SOCK_STREAM, 0)");
 		ShowPrompt(buffer);
 		fd2 = socket(PF_INET6, SOCK_STREAM, 0);
-		ShowResult(fd1);
+		ShowResult(fd2);
 		
 		snprintf(buffer, sizeof(buffer) - 1, "Client: Connecting TCP 0:0:0:0:0:0:0:1 %d", ntohs(addr.sin6_port));
 		is_enforce = 1; WriteStatus("MAC_FOR_NETWORK=3\n");
@@ -362,7 +362,7 @@ static void StageNetworkTest(void) {
 		snprintf(buffer, sizeof(buffer) - 1, "Client: Creating socket(PF_INET6, SOCK_DGRAM, 0)");
 		ShowPrompt(buffer);
 		fd2 = socket(PF_INET6, SOCK_DGRAM, 0);
-		ShowResult(fd1);
+		ShowResult(fd2);
 
 		getsockname(fd1, (struct sockaddr *) &addr, &size);
 		snprintf(buffer, sizeof(buffer) - 1, "Client: Connecting UDP 0:0:0:0:0:0:0:1 %d", ntohs(addr.sin6_port));

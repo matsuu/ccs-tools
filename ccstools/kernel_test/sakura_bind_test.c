@@ -29,7 +29,7 @@ static void IPv4_TCP_Bind(void) {
 			if (bind(fd, (struct sockaddr *) &addr, sizeof(addr))) break;
 			size = sizeof(addr);
 			if (getsockname(fd, (struct sockaddr *) &addr, &size)) {
-				printf("getsockname() failed.\n"); fflush(stdout); exit(1);
+				printf("getsockname() failed.\n"); fflush(stdout); _exit(1);
 			} else {
 				const int port = ntohs(addr.sin_port);
 				if (!port || (port >= min_port && port <= max_port)) {
