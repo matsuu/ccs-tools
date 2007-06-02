@@ -10,6 +10,18 @@
 cd ${0%/*}
 export PATH=$PWD:/sbin:/bin:${PATH}
 
+PROFILE_TYPE="--full-profile"
+
+while [ $# -gt 0 ]
+do
+	case "$1" in
+	--file-only-profile|--full-profile)
+		PROFILE_TYPE="$1"
+		;;
+	esac
+	shift
+done
+
 if [ ! -d /etc/ccs/ ]; then
 	echo Creating policy directory.
 	mkdir -p /etc/ccs
@@ -29,9 +41,27 @@ fi
 
 if [ ! -r /etc/ccs/status.txt ]; then
 	echo Creating default profile.
-	cat > /etc/ccs/status.txt << EOF
-0-COMMENT=Disabled
-1-COMMENT=Accept Mode
+	case "$PROFILE_TYPE" in
+	--file-only-profile)
+		cat > /etc/ccs/status.txt << EOF
+0-COMMENT=-----Disabled Mode-----
+0-MAC_FOR_FILE=0
+0-TOMOYO_VERBOSE=0
+1-COMMENT=-----Accept Mode-----
+1-MAC_FOR_FILE=1
+1-TOMOYO_VERBOSE=0
+2-COMMENT=-----Permissive Mode-----
+2-MAC_FOR_FILE=2
+2-TOMOYO_VERBOSE=1
+3-COMMENT=-----Enforcing Mode-----
+3-MAC_FOR_FILE=3
+3-TOMOYO_VERBOSE=1
+EOF
+		;;
+	*)
+		cat > /etc/ccs/status.txt << EOF
+0-COMMENT=-----Disabled-----
+1-COMMENT=-----Accept Mode-----
 1-MAC_FOR_FILE=1
 1-MAC_FOR_ARGV0=1
 1-MAC_FOR_NETWORK=1
@@ -77,7 +107,7 @@ if [ ! -r /etc/ccs/status.txt ]; then
 1-MAC_FOR_CAPABILITY::SYS_IOCTL=1
 1-MAC_FOR_CAPABILITY::SYS_KEXEC_LOAD=1
 1-MAC_FOR_CAPABILITY::SYS_PIVOT_ROOT=1
-2-COMMENT=Permissive Mode
+2-COMMENT=-----Permissive Mode-----
 2-MAC_FOR_FILE=2
 2-MAC_FOR_ARGV0=2
 2-MAC_FOR_NETWORK=2
@@ -123,7 +153,7 @@ if [ ! -r /etc/ccs/status.txt ]; then
 2-MAC_FOR_CAPABILITY::SYS_IOCTL=2
 2-MAC_FOR_CAPABILITY::SYS_KEXEC_LOAD=2
 2-MAC_FOR_CAPABILITY::SYS_PIVOT_ROOT=2
-3-COMMENT=Enforcing Mode
+3-COMMENT=-----Enforcing Mode-----
 3-MAC_FOR_FILE=3
 3-MAC_FOR_ARGV0=3
 3-MAC_FOR_NETWORK=3
@@ -170,6 +200,8 @@ if [ ! -r /etc/ccs/status.txt ]; then
 3-MAC_FOR_CAPABILITY::SYS_KEXEC_LOAD=3
 3-MAC_FOR_CAPABILITY::SYS_PIVOT_ROOT=3
 EOF
+		;;
+	esac
 fi
 
 if [ ! -r /etc/ccs/exception_policy.txt ]; then
