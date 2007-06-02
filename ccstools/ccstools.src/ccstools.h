@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4.1-rc1       2007/05/21
+ * Version: 1.4.1-rc2       2007/06/03
  *
  */
 
@@ -104,8 +104,6 @@
 #define KEYWORD_SELECT_LEN               (sizeof(KEYWORD_SELECT) - 1)
 #define KEYWORD_UNDELETE                 "undelete "
 #define KEYWORD_UNDELETE_LEN             (sizeof(KEYWORD_UNDELETE) - 1)
-#define KEYWORD_DOMAIN_KEEPER            "keep_domain "
-#define KEYWORD_DOMAIN_KEEPER_LEN        (sizeof(KEYWORD_DOMAIN_KEEPER) - 1)
 #define KEYWORD_USE_PROFILE              "use_profile "
 #define KEYWORD_USE_PROFILE_LEN          (sizeof(KEYWORD_USE_PROFILE) - 1)
 #define KEYWORD_INITIALIZE_DOMAIN        "initialize_domain "

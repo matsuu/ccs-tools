@@ -375,10 +375,10 @@ static void CheckDomainKeeperEntry(const char *domainname, const char *program) 
 static void CheckDomainKeeperPolicy(char *data) {
 	char *cp = strstr(data, " from ");
     if (cp) {
-        *cp = '\0';
+	    *cp = '\0';
         CheckDomainKeeperEntry(cp + 6, data);
     } else {
-        CheckDomainKeeperEntry(data, NULL);
+	    CheckDomainKeeperEntry(data, NULL);
     }
 }
 
@@ -508,12 +508,7 @@ int checkpolicy_main(int argc, char *argv[]) {
 			if (strncmp(shared_buffer, KEYWORD_DELETE, KEYWORD_DELETE_LEN) == 0) {
 				RemoveHeader(shared_buffer, KEYWORD_DELETE_LEN);
 			}
-			if (strncmp(shared_buffer, KEYWORD_DOMAIN_KEEPER, KEYWORD_DOMAIN_KEEPER_LEN) == 0) {
-				RemoveHeader(shared_buffer, KEYWORD_DOMAIN_KEEPER_LEN);
-				if (!IsCorrectDomain(shared_buffer)) {
-					printf("%u: ERROR: '%s' is a bad domainname.\n", line, shared_buffer); errors++;
-				}
-			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_READ, KEYWORD_ALLOW_READ_LEN) == 0) {
+			if (strncmp(shared_buffer, KEYWORD_ALLOW_READ, KEYWORD_ALLOW_READ_LEN) == 0) {
 				RemoveHeader(shared_buffer, KEYWORD_ALLOW_READ_LEN);
 				if (!IsCorrectPath(shared_buffer, 1, -1, -1)) {
 					printf("%u: ERROR: '%s' is a bad pathname.\n", line, shared_buffer); errors++;
