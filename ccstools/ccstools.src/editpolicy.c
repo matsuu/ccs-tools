@@ -1253,6 +1253,23 @@ static int count(const unsigned char *array, const int len) {
 	return c;
 }
 
+static int SelectItem(const int current) {
+	if (current >= 0) {
+		int x, y;
+		if (current_screen == SCREEN_DOMAIN_LIST) {
+			if (IsDeletedDomain(current) || IsInitializerSource(current)) return 0;
+			domain_list_selected[current] ^= 1;
+		} else {
+			generic_acl_list_selected[current] ^= 1;
+		}
+		getyx(stdscr, y, x);
+		ShowList();
+		move(y, x);
+		return 1;
+	}
+	return 0;
+}
+
 static int GenericListLoop(void) {
 	static char *last_error = NULL;
 	static const int max_readline_history = 20;
@@ -1329,15 +1346,7 @@ static int GenericListLoop(void) {
 			PageDownKey();
 			break;
 		case ' ':
-			if (current >= 0) {
-				if (current_screen == SCREEN_DOMAIN_LIST) {
-					if (IsDeletedDomain(current) || IsInitializerSource(current)) break;
-					domain_list_selected[current] ^= 1;
-				} else {
-					generic_acl_list_selected[current] ^= 1;
-				}
-				ShowList();
-			}
+			SelectItem(current);
 			break;
 		case 'c':
 		case 'C':
@@ -1412,10 +1421,10 @@ static int GenericListLoop(void) {
 				int c;
 				move(1, 0);
 				if (current_screen == SCREEN_DOMAIN_LIST) {
-					if ((c = count(domain_list_selected, domain_list_count)) == 0) printw("Select domain using Space key first.");
+					if ((c = count(domain_list_selected, domain_list_count)) == 0 && (c = SelectItem(current)) == 0) printw("Select domain using Space key first.");
 					else printw("Delete selected domain%s? ('Y'es/'N'o)", c > 1 ? "s" : "");
 				} else {
-					if ((c = count(generic_acl_list_selected, generic_acl_list_count)) == 0) printw("Select entry using Space key first.");
+					if ((c = count(generic_acl_list_selected, generic_acl_list_count)) == 0 && (c = SelectItem(current)) == 0) printw("Select entry using Space key first.");
 					else printw("Delete selected entr%s? ('Y'es/'N'o)", c > 1 ? "ies" : "y");
 				}
 				clrtoeol();
@@ -1500,7 +1509,7 @@ static int GenericListLoop(void) {
 		case 's':
 		case 'S':
 			if (current_screen == SCREEN_DOMAIN_LIST) {
-				if (!count(domain_list_selected, domain_list_count)) {
+				if (!count(domain_list_selected, domain_list_count) && !SelectItem(current)) {
 					mvprintw(1, 0, "Select domain using Space key first."); clrtoeol(); refresh();
 				} else {
 					char *line = simple_readline(window_height - 1, 0, "Enter profile number> ", NULL, 0, 8, 1);
