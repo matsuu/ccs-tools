@@ -492,6 +492,8 @@ int checkpolicy_main(int argc, char *argv[]) {
 				if (sscanf(shared_buffer, "%u", &profile) != 1 || profile >= 256) {
 					printf("%u: ERROR: '%s' is a bad profile.\n", line, shared_buffer); errors++;
 				}
+			} else if (strcmp(shared_buffer, "quota_exceeded") == 0) {
+				/* Nothing to do. */
 			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_CAPABILITY, KEYWORD_ALLOW_CAPABILITY_LEN) == 0) {
 				CheckCapabilityPolicy(shared_buffer + KEYWORD_ALLOW_CAPABILITY_LEN);
 			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_NETWORK, KEYWORD_ALLOW_NETWORK_LEN) == 0) {
