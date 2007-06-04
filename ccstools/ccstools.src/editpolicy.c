@@ -446,8 +446,6 @@ int loadpolicy_main(int argc, char *argv[]) {
 					   "d : Load domain_policy.\n"
 					   "a : Load all policies.\n"
 					   "f : Delete on-memory policy before loading on-disk policy.\n\n", argv[0]);
-				printf("Note that 'accept mode' might be unable to append permissions for this program if 'f' is used "
-					   "because 'f' might delete 'domain for this program' and 'execute permission for parent domain'.\n");
 				return 0;
 			}
 		}

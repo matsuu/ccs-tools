@@ -460,7 +460,7 @@ int main(int argc, char *argv[]) {
 	 * because it is dangerous to allow updating policies via unchecked argv[1].
 	 * You should use either "symbolic links with 'alias' directive" or "hard links".
 	 */
-	printf("ccstools version 1.4-rc2 build 2007/06/03\n");
+	printf("ccstools version 1.4.1-rc2 build 2007/06/04\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }

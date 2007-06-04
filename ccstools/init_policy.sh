@@ -47,7 +47,7 @@ if [ ! -r /etc/ccs/status.txt ]; then
 0-COMMENT=-----Disabled Mode-----
 0-MAC_FOR_FILE=0
 0-TOMOYO_VERBOSE=0
-1-COMMENT=-----Accept Mode-----
+1-COMMENT=-----Accumulating Mode-----
 1-MAC_FOR_FILE=1
 1-TOMOYO_VERBOSE=0
 2-COMMENT=-----Permissive Mode-----
@@ -60,8 +60,8 @@ EOF
 		;;
 	*)
 		cat > /etc/ccs/status.txt << EOF
-0-COMMENT=-----Disabled-----
-1-COMMENT=-----Accept Mode-----
+0-COMMENT=-----Disabled Mode-----
+1-COMMENT=-----Accumulating Mode-----
 1-MAC_FOR_FILE=1
 1-MAC_FOR_ARGV0=1
 1-MAC_FOR_NETWORK=1
