@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2007  NTT DATA CORPORATION
 #
-# Version: 1.4.1   2007/05/30
+# Version: 1.4.1   2007/06/05
 #
 
 cd ${0%/*}
@@ -47,7 +47,7 @@ if [ ! -r /etc/ccs/status.txt ]; then
 0-COMMENT=-----Disabled Mode-----
 0-MAC_FOR_FILE=0
 0-TOMOYO_VERBOSE=0
-1-COMMENT=-----Accumulating Mode-----
+1-COMMENT=-----Learning Mode-----
 1-MAC_FOR_FILE=1
 1-TOMOYO_VERBOSE=0
 2-COMMENT=-----Permissive Mode-----
@@ -61,7 +61,7 @@ EOF
 	*)
 		cat > /etc/ccs/status.txt << EOF
 0-COMMENT=-----Disabled Mode-----
-1-COMMENT=-----Accumulating Mode-----
+1-COMMENT=-----Learning Mode-----
 1-MAC_FOR_FILE=1
 1-MAC_FOR_ARGV0=1
 1-MAC_FOR_NETWORK=1

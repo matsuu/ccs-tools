@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4.1-rc2       2007/06/03
+ * Version: 1.4.1   2007/06/05
  *
  */
 

@@ -1,3 +1,13 @@
+/*
+ * setlevel.c
+ *
+ * TOMOYO Linux's utilities.
+ *
+ * Copyright (C) 2005-2007  NTT DATA CORPORATION
+ *
+ * Version: 1.4.1   2007/06/05
+ *
+ */
 #include "ccstools.h"
 
 int setlevel_main(int argc, char *argv[]) {

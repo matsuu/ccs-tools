@@ -217,7 +217,7 @@ Version 1.4   2007/04/01   x86_64 support release.
     editpolicy:
       Domain flags was wrong if "keep_domain <kernel>" is given.
 
-Version 1.4.1 2007/??/??   Minor update release.
+Version 1.4.1 2007/06/05   Minor update release.
 
   Single source code was divided into many source code.
 
