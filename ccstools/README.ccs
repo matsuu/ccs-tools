@@ -1,7 +1,7 @@
 About this package:
 
 This package contains userland programs
-for TOMOYO Linux version 1.4.1 .
+for TOMOYO Linux version 1.4.2 .
 
 http://tomoyo.sourceforge.jp/
 
@@ -225,3 +225,8 @@ Version 1.4.1 2007/06/05   Minor update release.
 
     checkpolicy:
       "keep_domain" syntax was not checked correctly.
+
+Version 1.4.2 2007/07/13   Bug fix release.
+
+  .init:
+      Prompt message has changed.
