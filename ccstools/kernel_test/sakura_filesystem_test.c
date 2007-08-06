@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2006  NTT DATA CORPORATION
  *
- * Version: 1.4   2007/04/01
+ * Version: 1.5.0-pre   2007/08/06
  *
  */
 #include "include.h"
@@ -71,25 +71,25 @@ int main(int argc, char *argv[]) {
 		else printf("BUG: %s\n", strerror(errno));		
 		
 		// Test standard case
-		WritePolicy("allow_mount none " TEST_DIR " tmpfs\n");
+		WritePolicy("allow_mount none " TEST_DIR " tmpfs 0\n");
 		ShowPrompt("mount('none', '" TEST_DIR "', 'tmpfs') for '" TEST_DIR "'", 0);
 		if (mount("none", TEST_DIR, "tmpfs", 0, NULL) == 0) printf("OK\n");
 		else printf("FAILED: %s\n", strerror(errno));
-		WritePolicy("delete allow_mount none " TEST_DIR " tmpfs\n");
+		WritePolicy("delete allow_mount none " TEST_DIR " tmpfs 0\n");
 
 		// Test device_name with pattern
-		WritePolicy("allow_mount /dev/\\* " TEST_DIR " ext2 ro\n");
+		WritePolicy("allow_mount /dev/\\* " TEST_DIR " ext2 1\n");
 		ShowPrompt("mount('/dev/ram', '" TEST_DIR "', 'ext2') for '/dev/\\*'", 0);
 		if (mount("/dev/ram", TEST_DIR, "ext2", MS_RDONLY, NULL) == 0) printf("OK\n");
 		else printf("FAILED: %s\n", strerror(errno));
-		WritePolicy("delete allow_mount /dev/\\* " TEST_DIR " ext2 ro\n");
+		WritePolicy("delete allow_mount /dev/\\* " TEST_DIR " ext2 1\n");
 			
 		// Test dir_name with pattern
-		WritePolicy("allow_mount none " TEST_DIR_PATTERN " tmpfs\n");
+		WritePolicy("allow_mount none " TEST_DIR_PATTERN " tmpfs 0\n");
 		ShowPrompt("mount('none', '" TEST_DIR "', 'tmpfs') for '" TEST_DIR_PATTERN "'", 0);
 		if (mount("none", TEST_DIR, "tmpfs", 0, NULL) == 0) printf("OK\n");
 		else printf("FAILED: %s\n", strerror(errno));
-		WritePolicy("delete allow_mount none " TEST_DIR_PATTERN " tmpfs\n");
+		WritePolicy("delete allow_mount none " TEST_DIR_PATTERN " tmpfs 0\n");
 
 		WriteStatus("RESTRICT_MOUNT=0\n");
 		while (umount(TEST_DIR) == 0);
@@ -116,27 +116,27 @@ int main(int argc, char *argv[]) {
 		else printf("BUG: %s\n", strerror(errno));
 		
 		// Test remount case
-		WritePolicy("allow_mount any " TEST_DIR " --remount\n");
+		WritePolicy("allow_mount any " TEST_DIR " --remount 0\n");
 		ShowPrompt("mount('" TEST_DIR "', MS_REMOUNT)", 0);
 		if (mount("none", TEST_DIR, "tmpfs", MS_REMOUNT, NULL) == 0) printf("OK\n");
 		else printf("FAILED: %s\n", strerror(errno));
-		WritePolicy("delete allow_mount any " TEST_DIR " --remount\n");
+		WritePolicy("delete allow_mount any " TEST_DIR " --remount 0\n");
 
 		// Test bind case
-		WritePolicy("allow_mount " TEST_DIR " " TEST_DIR_BIND " --bind\n");
+		WritePolicy("allow_mount " TEST_DIR " " TEST_DIR_BIND " --bind 0\n");
 		ShowPrompt("mount('" TEST_DIR "', '" TEST_DIR_BIND "', MS_BIND)", 0);
 		if (mount(TEST_DIR, TEST_DIR_BIND, NULL, MS_BIND, NULL) == 0) printf("OK\n");
 		else printf("FAILED: %s\n", strerror(errno));
 		umount(TEST_DIR_BIND);
-		WritePolicy("delete allow_mount " TEST_DIR " " TEST_DIR_BIND " --bind\n");
+		WritePolicy("delete allow_mount " TEST_DIR " " TEST_DIR_BIND " --bind 0\n");
 
 		// Test move case
-		WritePolicy("allow_mount " TEST_DIR " " TEST_DIR_MOVE " --move\n");
+		WritePolicy("allow_mount " TEST_DIR " " TEST_DIR_MOVE " --move 0\n");
 		ShowPrompt("mount('" TEST_DIR "', '" TEST_DIR_MOVE "', MS_MOVE)", 0);
 		if (mount(TEST_DIR, TEST_DIR_MOVE, NULL, MS_MOVE, NULL) == 0) printf("OK\n");
 		else printf("FAILED: %s\n", strerror(errno));
 		umount(TEST_DIR_MOVE);
-		WritePolicy("delete allow_mount " TEST_DIR " " TEST_DIR_MOVE " --move\n");
+		WritePolicy("delete allow_mount " TEST_DIR " " TEST_DIR_MOVE " --move 0\n");
 
 		WriteStatus("RESTRICT_MOUNT=0\n");
 		while (umount(TEST_DIR) == 0);
