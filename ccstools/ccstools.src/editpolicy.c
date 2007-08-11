@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4.1   2007/06/05
+ * Version: 1.5.0-pre   2007/08/12
  *
  */
 #include "ccstools.h"
@@ -15,26 +15,26 @@
 #define OFF 0
 #define ON !OFF
 enum color_pair {	NORMAL,
-					DOMAIN_HEAD, DOMAIN_CURSOR,
-					SYSTEM_HEAD, SYSTEM_CURSOR,
-					EXCEPTION_HEAD, EXCEPTION_CURSOR,
-					ACL_HEAD, ACL_CURSOR,
-					DISP_ERR }; 
+			DOMAIN_HEAD, DOMAIN_CURSOR,
+			SYSTEM_HEAD, SYSTEM_CURSOR,
+			EXCEPTION_HEAD, EXCEPTION_CURSOR,
+			ACL_HEAD, ACL_CURSOR,
+			DISP_ERR }; 
 
 static void ColorInit(void){
 	start_color();
 	init_pair(DOMAIN_HEAD, COLOR_BLACK, COLOR_GREEN);
 	init_pair(DOMAIN_CURSOR, COLOR_BLACK, COLOR_GREEN);
-
+	
 	init_pair(SYSTEM_HEAD, COLOR_WHITE, COLOR_BLUE);
 	init_pair(SYSTEM_CURSOR, COLOR_WHITE, COLOR_BLUE);
 
 	init_pair(EXCEPTION_HEAD, COLOR_BLACK, COLOR_CYAN);
 	init_pair(EXCEPTION_CURSOR, COLOR_BLACK, COLOR_CYAN);
-
+	
 	init_pair(ACL_HEAD, COLOR_BLACK, COLOR_YELLOW);
 	init_pair(ACL_CURSOR, COLOR_BLACK, COLOR_YELLOW);
-
+	
 	init_pair(DISP_ERR, COLOR_RED, COLOR_BLACK);
 }
 
@@ -109,15 +109,15 @@ static char *ReadFile(const char *filename) {
 	return read_buffer;
 }
 
-static GROUP_ENTRY *group_list = NULL;
+static struct group_entry *group_list = NULL;
 static int group_list_len = 0;
 
-static DOMAIN_INFO *domain_list = NULL, *shadow_domain_list = NULL;
+static struct domain_info *domain_list = NULL, *shadow_domain_list = NULL;
 static int domain_list_count = 0, shadow_domain_list_count = 0;
 static unsigned char *domain_list_selected = NULL;
 
 static void SwapDomainList(void) {
-	DOMAIN_INFO *tmp_list = domain_list;
+	struct domain_info *tmp_list = domain_list;
 	int tmp_list_count = domain_list_count;
 	domain_list = shadow_domain_list;
 	domain_list_count = shadow_domain_list_count;
@@ -216,8 +216,8 @@ static int FindOrAssignNewDomain(const char *domainname, const int is_domain_ini
 	int index;
 	if ((index = FindDomain(domainname, is_domain_initializer_source, is_domain_deleted)) == EOF) {
 		if (IsCorrectDomain(domainname)) {
-			if ((domain_list = (DOMAIN_INFO *) realloc(domain_list, (domain_list_count + 1) * sizeof(DOMAIN_INFO))) == NULL) OutOfMemory();
-			memset(&domain_list[domain_list_count], 0, sizeof(DOMAIN_INFO));
+			if ((domain_list = (struct domain_info *) realloc(domain_list, (domain_list_count + 1) * sizeof(struct domain_info))) == NULL) OutOfMemory();
+			memset(&domain_list[domain_list_count], 0, sizeof(struct domain_info));
 			if ((saved_domainname = SaveName(domainname)) == NULL) OutOfMemory();
 			domain_list[domain_list_count].domainname = saved_domainname;
 			domain_list[domain_list_count].is_domain_initializer_source = is_domain_initializer_source;
@@ -240,7 +240,7 @@ static void DeleteDomain(const int index) {
 }
 
 static int domainname_compare(const void *a, const void *b) {
-	return strcmp(((DOMAIN_INFO *) a)->domainname->name, ((DOMAIN_INFO *) b)->domainname->name);
+	return strcmp(((struct domain_info *) a)->domainname->name, ((struct domain_info *) b)->domainname->name);
 }
 
 static int path_info_compare(const void *a, const void *b) {
@@ -252,7 +252,7 @@ static int path_info_compare(const void *a, const void *b) {
 
 static void SortPolicy(void) {
 	int i;
-	qsort(domain_list, domain_list_count, sizeof(DOMAIN_INFO), domainname_compare);
+	qsort(domain_list, domain_list_count, sizeof(struct domain_info), domainname_compare);
 	for (i = 0; i < domain_list_count; i++) qsort(domain_list[i].string_ptr, domain_list[i].string_count, sizeof(struct path_info *), path_info_compare);
 }
 
@@ -682,22 +682,22 @@ static char **generic_acl_list = NULL;
 static int generic_acl_list_count = 0;
 static unsigned char *generic_acl_list_selected = NULL;
 
-static DOMAIN_KEEPER_ENTRY *domain_keeper_list = NULL;
+static struct domain_keeper_entry *domain_keeper_list = NULL;
 static int domain_keeper_list_len = 0;
-static DOMAIN_INITIALIZER_ENTRY *domain_initializer_list = NULL;
+static struct domain_initializer_entry *domain_initializer_list = NULL;
 static int domain_initializer_list_len = 0;
 
 ///////////////////////////  ACL HANDLER  //////////////////////////////
 
-static const DOMAIN_KEEPER_ENTRY *IsDomainKeeper(const struct path_info *domainname, const char *program) {
+static const struct domain_keeper_entry *IsDomainKeeper(const struct path_info *domainname, const char *program) {
 	int i;
-	const DOMAIN_KEEPER_ENTRY *flag = NULL;
+	const struct domain_keeper_entry *flag = NULL;
 	struct path_info last_name;
 	if ((last_name.name = strrchr(domainname->name, ' ')) != NULL) last_name.name++;
 	else last_name.name = domainname->name;
 	fill_path_info(&last_name);
 	for (i = 0; i < domain_keeper_list_len; i++) {
-		DOMAIN_KEEPER_ENTRY *ptr = &domain_keeper_list[i];
+		struct domain_keeper_entry *ptr = &domain_keeper_list[i];
 		if (!ptr->is_last_name) {
 			if (pathcmp(ptr->domainname, domainname)) continue;
 		} else {
@@ -710,15 +710,15 @@ static const DOMAIN_KEEPER_ENTRY *IsDomainKeeper(const struct path_info *domainn
 	return flag;
 }
 
-static const DOMAIN_INITIALIZER_ENTRY *IsDomainInitializer(const struct path_info *domainname, const char *program) {
+static const struct domain_initializer_entry *IsDomainInitializer(const struct path_info *domainname, const char *program) {
 	int i;
-	const DOMAIN_INITIALIZER_ENTRY *flag = NULL;
+	const struct domain_initializer_entry *flag = NULL;
 	struct path_info last_name;
 	if ((last_name.name = strrchr(domainname->name, ' ')) != NULL) last_name.name++;
 	else last_name.name = domainname->name;
 	fill_path_info(&last_name);
 	for (i = 0; i < domain_initializer_list_len; i++) {
-		DOMAIN_INITIALIZER_ENTRY *ptr = &domain_initializer_list[i];
+		struct domain_initializer_entry *ptr = &domain_initializer_list[i];
 		if (ptr->domainname) {
 			if (!ptr->is_last_name) {
 				if (pathcmp(ptr->domainname, domainname)) continue;
@@ -834,7 +834,7 @@ static void ReadGenericPolicy(void) {
 }
 
 static int AddDomainInitializerEntry(const char *domainname, const char *program, const int is_not, const int is_oldstyle) {
-	DOMAIN_INITIALIZER_ENTRY *ptr;
+	struct domain_initializer_entry *ptr;
 	int is_last_name = 0;
 	if (!IsCorrectPath(program, 1, 0, -1)) return -EINVAL;
 	if (domainname) {
@@ -844,9 +844,9 @@ static int AddDomainInitializerEntry(const char *domainname, const char *program
 			return -EINVAL;
 		}
 	}
-	if ((domain_initializer_list = (DOMAIN_INITIALIZER_ENTRY *) realloc(domain_initializer_list, (domain_initializer_list_len + 1) * sizeof(DOMAIN_INITIALIZER_ENTRY))) == NULL) OutOfMemory();
+	if ((domain_initializer_list = (struct domain_initializer_entry *) realloc(domain_initializer_list, (domain_initializer_list_len + 1) * sizeof(struct domain_initializer_entry))) == NULL) OutOfMemory();
 	ptr = &domain_initializer_list[domain_initializer_list_len++];
-	memset(ptr, 0, sizeof(DOMAIN_INITIALIZER_ENTRY));
+	memset(ptr, 0, sizeof(struct domain_initializer_entry));
 	if ((ptr->program = SaveName(program)) == NULL) OutOfMemory();
 	if (domainname && (ptr->domainname = SaveName(domainname)) == NULL) OutOfMemory();
 	ptr->is_not = is_not;
@@ -866,7 +866,7 @@ static int AddDomainInitializerPolicy(char *data, const int is_not, const int is
 }
 
 static int AddDomainKeeperEntry(const char *domainname, const char *program, const int is_not) {
-	DOMAIN_KEEPER_ENTRY *ptr;
+	struct domain_keeper_entry *ptr;
 	int is_last_name = 0;
 	if (IsCorrectPath(domainname, 1, -1, -1)) {
 		is_last_name = 1;
@@ -874,9 +874,9 @@ static int AddDomainKeeperEntry(const char *domainname, const char *program, con
 		return -EINVAL;
 	}
 	if (program && !IsCorrectPath(program, 1, 0, -1)) return -EINVAL;
-	if ((domain_keeper_list = (DOMAIN_KEEPER_ENTRY *) realloc(domain_keeper_list, (domain_keeper_list_len + 1) * sizeof(DOMAIN_KEEPER_ENTRY))) == NULL) OutOfMemory();
+	if ((domain_keeper_list = (struct domain_keeper_entry *) realloc(domain_keeper_list, (domain_keeper_list_len + 1) * sizeof(struct domain_keeper_entry))) == NULL) OutOfMemory();
 	ptr = &domain_keeper_list[domain_keeper_list_len++];
-	memset(ptr, 0, sizeof(DOMAIN_KEEPER_ENTRY));
+	memset(ptr, 0, sizeof(struct domain_keeper_entry));
 	if ((ptr->domainname = SaveName(domainname)) == NULL) OutOfMemory();
 	if (program && (ptr->program = SaveName(program)) == NULL) OutOfMemory();
 	ptr->is_not = is_not;
@@ -897,7 +897,7 @@ static int AddDomainKeeperPolicy(char *data, const int is_not) {
 static int AddGroupEntry(const char *group_name, const char *member_name, const int is_delete) {
 	const struct path_info *saved_group_name, *saved_member_name;
 	int i, j;
-	GROUP_ENTRY *group = NULL;
+	struct group_entry *group = NULL;
 	if (!IsCorrectPath(group_name, 0, 0, 0) ||
 		!IsCorrectPath(member_name, 0, 0, 0)) return -EINVAL;
 	if ((saved_group_name = SaveName(group_name)) == NULL ||
@@ -919,9 +919,9 @@ static int AddGroupEntry(const char *group_name, const char *member_name, const 
 	}
 	if (is_delete) return -ENOENT;
 	if (i == group_list_len) {
-		if ((group_list = (GROUP_ENTRY *) realloc(group_list, (group_list_len + 1) * sizeof(GROUP_ENTRY))) == NULL) OutOfMemory();
+		if ((group_list = (struct group_entry *) realloc(group_list, (group_list_len + 1) * sizeof(struct group_entry))) == NULL) OutOfMemory();
 		group = &group_list[group_list_len++];
-		memset(group, 0, sizeof(GROUP_ENTRY));
+		memset(group, 0, sizeof(struct group_entry));
 		group->group_name = saved_group_name;
 	}
 	if ((group->member_name = (const struct path_info **) realloc(group->member_name, (group->member_name_len + 1) * sizeof(const struct path_info *))) == NULL) OutOfMemory();
@@ -936,7 +936,7 @@ static int AddGroupPolicy(char *data, const int is_delete) {
 	return AddGroupEntry(data, cp, is_delete);
 }
 
-static GROUP_ENTRY *FindGroup(const char *group_name) {
+static struct group_entry *FindGroup(const char *group_name) {
 	int i;
 	for (i = 0; i < group_list_len; i++) {
 		if (strcmp(group_name, group_list[i].group_name->name) == 0) return &group_list[i];
@@ -956,8 +956,8 @@ static void AssignDomainInitializerSource(const struct path_info *domainname, co
 }
 
 static int domainname_attribute_compare(const void *a, const void *b) {
-	const int k = strcmp(((DOMAIN_INFO *) a)->domainname->name, ((DOMAIN_INFO *) b)->domainname->name);
-	if (k > 0 || (k == 0 && ((DOMAIN_INFO *) a)->is_domain_initializer_source < ((DOMAIN_INFO *) b)->is_domain_initializer_source)) return 1;
+	const int k = strcmp(((struct domain_info *) a)->domainname->name, ((struct domain_info *) b)->domainname->name);
+	if (k > 0 || (k == 0 && ((struct domain_info *) a)->is_domain_initializer_source < ((struct domain_info *) b)->is_domain_initializer_source)) return 1;
 	return k;
 }
 
@@ -1051,7 +1051,7 @@ static void ReadDomainAndExceptionPolicy(void) {
 			char *cp;
 			if ((cp = strchr(DomainName(index), ' ')) != NULL && strchr(cp + 1, ' ') == NULL) {
 				for (i = 0; i < domain_initializer_list_len; i++) {
-					DOMAIN_INITIALIZER_ENTRY *ptr = &domain_initializer_list[i];
+					struct domain_initializer_entry *ptr = &domain_initializer_list[i];
 					if (ptr->is_not) continue;
 					if (strcmp(ptr->program->name, cp + 1)) continue;
 					domain_list[index].is_domain_initializer_target = 1;
@@ -1062,7 +1062,7 @@ static void ReadDomainAndExceptionPolicy(void) {
 		// Find domain keeper domains.
 		for (index = 0; index < max_index; index++) {
 			for (i = 0; i < domain_keeper_list_len; i++) {
-				DOMAIN_KEEPER_ENTRY *ptr = &domain_keeper_list[i];
+				struct domain_keeper_entry *ptr = &domain_keeper_list[i];
 				if (ptr->is_not) continue;
 				if (!ptr->is_last_name) {
 					if (pathcmp(ptr->domainname, domain_list[index].domainname)) continue;
@@ -1083,7 +1083,7 @@ static void ReadDomainAndExceptionPolicy(void) {
 			for (i = 0; i < max_count; i++) {
 				const struct path_info *cp = string_ptr[i];
 				if (cp->name[0] == '@') {
-					GROUP_ENTRY *group = FindGroup(cp->name + 1);
+					struct group_entry *group = FindGroup(cp->name + 1);
 					if (group) {
 						for (j = 0; j < group->member_name_len; j++) AssignDomainInitializerSource(domainname, group->member_name[j]->name);
 					}
@@ -1109,7 +1109,7 @@ static void ReadDomainAndExceptionPolicy(void) {
 
 	}
 	// Sort by domain name.
-	qsort(domain_list, domain_list_count, sizeof(DOMAIN_INFO), domainname_attribute_compare);
+	qsort(domain_list, domain_list_count, sizeof(struct domain_info), domainname_attribute_compare);
 
 	// Assign domain numbers.
 	{
@@ -1383,6 +1383,202 @@ static int SelectItem(const int current) {
 		return 1;
 	}
 	return 0;
+}
+
+static int PathMatchesToPattern(const struct path_info *pathname0, const struct path_info *pattern0) {
+	//if (!pathname || !pattern) return 0;
+	const char *pathname = pathname0->name, *pattern = pattern0->name;
+	const int len = pattern0->const_len;
+	if (!pattern0->is_patterned) return !pathcmp(pathname0, pattern0);
+	if (pathname0->depth != pattern0->depth) return 0;
+	if (strncmp(pathname, pattern, len)) return 0;
+	pathname += len; pattern += len;
+	while (*pathname && *pattern) {
+		const char *pathname_delimiter = strchr(pathname, '/'), *pattern_delimiter = strchr(pattern, '/');
+		if (!pathname_delimiter) pathname_delimiter = strchr(pathname, '\0');
+		if (!pattern_delimiter) pattern_delimiter = strchr(pattern, '\0');
+		if (!FileMatchesToPattern(pathname, pathname_delimiter, pattern, pattern_delimiter)) return 0;
+		pathname = *pathname_delimiter ? pathname_delimiter + 1 : pathname_delimiter;
+		pattern = *pattern_delimiter ? pattern_delimiter + 1 : pattern_delimiter;
+	}
+	while (*pattern == '\\' && (*(pattern + 1) == '*' || *(pattern + 1) == '@')) pattern += 2;
+	return (!*pathname && !*pattern);
+}
+
+static void split_acl(char *data, struct path_info *arg1, struct path_info *arg2, struct path_info *arg3) {
+	/* data = word[0] word[1] ... word[n-1] word[n] if cond[0] cond[1] ... cond[m] */
+	/*                                        */
+	/* arg1 = word[0]                         */
+	/* arg2 = word[1] ... word[n-1] word[n]   */
+	/* arg3 = if cond[0] cond[1] ... cond[m]  */
+	char *cp;
+	arg1->name = data;
+	cp = strstr(data, " if ");
+	if (cp) *cp++ = '\0';
+	else cp = "";
+	arg3->name = cp;
+	cp = strchr(data, ' ');
+	if (cp) *cp++ = '\0';
+	else cp = "";
+	arg2->name = cp;
+	fill_path_info(arg1);
+	fill_path_info(arg2);
+	fill_path_info(arg3);
+}
+
+static void try_optimize(const int current) {
+	char *cp;
+	const char *directive;
+	int directive_index, directive_len, index;
+	struct path_info sarg1, sarg2, sarg3;
+	struct path_info darg1, darg2, darg3;
+	static const char *directive_list[30] = {
+		[0]  = "1 ",
+		[1]  = "2 ",
+		[2]  = "3 ",
+		[3]  = "4 ",
+		[4]  = "5 ",
+		[5]  = "6 ",
+		[6]  = "7 ",
+		[7]  = "allow_create ",
+		[8]  = "allow_unlink ",
+		[9]  = "allow_mkdir ",
+		[10] = "allow_rmdir ",
+		[11] = "allow_mkfifo ",
+		[12] = "allow_mksock ",
+		[13] = "allow_mkblock ",
+		[14] = "allow_mkchar ",
+		[15] = "allow_truncate ",
+		[16] = "allow_symlink ",
+		[17] = "allow_link ",
+		[18] = "allow_rename ",
+		[19] = "allow_rewrite ",
+		[20] = "allow_argv0 ",
+		[21] = "allow_signal ",
+		[22] = "allow_network UDP bind ",
+		[23] = "allow_network UDP connect ",
+		[24] = "allow_network TCP bind ",
+		[25] = "allow_network TCP listen ",
+		[26] = "allow_network TCP connect ",
+		[27] = "allow_network TCP accept ",
+		[28] = "allow_network RAW bind ",
+		[29] = "allow_network RAW connect ",
+	};
+	if (current < 0) return;
+	cp = generic_acl_list[current];
+	for (directive_index = 0; directive_index < 30; directive_index++) {
+		if (strncmp(cp, directive_list[directive_index], strlen(directive_list[directive_index])) == 0) break;
+	}
+	if (directive_index == 30) return;
+	cp = strdup(cp);
+	if (!cp) return;
+	
+	directive = directive_list[directive_index];
+	directive_len = strlen(directive);
+
+	split_acl(cp + directive_len, &sarg1, &sarg2, &sarg3);
+	
+	get();
+	for (index = 0; index < list_item_count[current_screen]; index++) {
+		const char *cp = generic_acl_list[index];
+		if (index == current) continue;
+		if (generic_acl_list_selected[index]) continue;
+		if (strncmp(cp, directive, directive_len)) continue;
+		memmove(shared_buffer, cp, shared_buffer_len - 1);
+		
+		split_acl(shared_buffer + directive_len, &darg1, &darg2, &darg3);
+	
+		/* Compare condition part. */
+		if (pathcmp(&sarg3, &darg3)) continue;
+
+		/* Compare first word. */
+		if (directive_index < 21) {
+			if (pathcmp(&sarg1, &darg1)) {
+				const int may_use_pattern = !darg1.is_patterned;
+				if (darg1.name[0] == '@') continue;
+				if (sarg1.name[0] == '@') {
+					/* path_group component. */
+					int i;
+					struct group_entry *group = FindGroup(sarg1.name + 1);
+					if (!group) continue;
+					for (i = 0; i < group->member_name_len; i++) {
+						const struct path_info *member_name = group->member_name[i];
+						if (!pathcmp(member_name, &darg1)) break;
+						if (may_use_pattern && PathMatchesToPattern(&darg1, member_name)) break;
+					}
+					if (i == group->member_name_len) continue;
+				} else {
+					/* Pathname component. */
+					if (!may_use_pattern || !PathMatchesToPattern(&darg1, &sarg1)) continue;
+				}
+			}
+		} else if (directive_index == 21) {
+			/* Signal number component. */
+			if (strcmp(sarg1.name, darg1.name)) continue;
+		} else {
+			if (sarg1.name[0] == '@') {
+				/* IP address group component. */
+			} else {
+				/* IP address component. */
+			}
+		}
+
+		/* Compare rest words. */
+		if (directive_index == 18 || directive_index == 19) {
+			if (pathcmp(&sarg2, &darg2)) {
+				const int may_use_pattern = !darg2.is_patterned;
+				if (darg2.name[0] == '@') continue;
+				if (sarg2.name[0] == '@') {
+					/* path_group component. */
+					int i;
+					struct group_entry *group = FindGroup(sarg2.name + 1);
+					if (!group) continue;
+					for (i = 0; i < group->member_name_len; i++) {
+						const struct path_info *member_name = group->member_name[i];
+						if (!pathcmp(member_name, &darg2)) break;
+						if (may_use_pattern && PathMatchesToPattern(&darg2, member_name)) break;
+					}
+					if (i == group->member_name_len) continue;
+				} else {
+					/* Pathname component. */
+					if (!may_use_pattern || !PathMatchesToPattern(&darg2, &sarg2)) continue;
+				}
+			}
+		} else if (directive_index == 21) {
+			/* Domainname component. */
+			char c;
+			if (strncmp(sarg2.name, darg2.name, sarg2.total_len)) continue;
+			c = darg2.name[sarg2.total_len];
+			if (c && c != ' ') continue;
+		} else if (directive_index >= 22) {
+			/* Port number component. */
+			unsigned int smin, smax, dmin, dmax;
+			switch (sscanf(sarg2.name, "%u-%u", &smin, &smax)) {
+			case 1:
+				smax = smin;
+			case 2:
+				break;
+			default:
+				continue;
+			}
+			switch (sscanf(darg2.name, "%u-%u", &dmin, &dmax)) {
+			case 1:
+				dmax = dmin;
+			case 2:
+				break;
+			default:
+				continue;
+			}
+			if (smin > dmin || smax < dmax) continue;
+		} else {
+			/* This must be empty. */
+			if (sarg2.total_len || darg2.total_len) continue;
+		}
+		generic_acl_list_selected[index] = 1;
+	}
+	put();
+	free(cp);
+	ShowList();
 }
 
 static int GenericListLoop(void) {
@@ -1669,6 +1865,10 @@ static int GenericListLoop(void) {
 			goto start2;
 		case KEY_IC:
 			if (current >= 0) readline_history_count = simple_add_history(current_screen == SCREEN_DOMAIN_LIST ? DomainName(current) : generic_acl_list[current], readline_history, readline_history_count, max_readline_history);
+			break;
+		case 'o':
+		case 'O':
+			try_optimize(current);
 			break;
 		case '?':
 			{

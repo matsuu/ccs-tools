@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4.1   2007/06/05
+ * Version: 1.5.0-pre   2007/08/12
  *
  */
 #include "ccstools.h"
@@ -65,7 +65,7 @@ static const char *ReadInfo(const pid_t pid, int *profile) {
 	return "<UNKNOWN>";
 }
 
-static TASK_ENTRY *task_list = NULL;
+static struct task_entry *task_list = NULL;
 static int task_list_len = 0;
 
 static void Dump(const pid_t pid, const int depth) {
@@ -139,7 +139,7 @@ int ccstree_main(int argc, char *argv[]) {
 				memset(buffer, 0, sizeof(buffer));
 				snprintf(buffer, sizeof(buffer) - 1, "/proc/%u/exe", pid);
 				if (show_all || readlink(buffer, test, sizeof(test)) > 0) {
-					task_list = (TASK_ENTRY *) realloc(task_list, (task_list_len + 1) * sizeof(TASK_ENTRY));
+					task_list = (struct task_entry *) realloc(task_list, (task_list_len + 1) * sizeof(struct task_entry));
 					task_list[task_list_len].pid = pid;
 					task_list[task_list_len].ppid = GetPPID(pid);
 					task_list[task_list_len].done = 0;

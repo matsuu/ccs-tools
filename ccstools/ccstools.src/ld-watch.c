@@ -5,13 +5,13 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4.1   2007/06/05
+ * Version: 1.5.0-pre   2007/08/12
  *
  */
 #include "ccstools.h"
 
 int ldwatch_main(int argc, char *argv[]) {
-	DLL_PATHNAME_ENTRY *entry_list = NULL;
+	struct dll_pathname_entry *entry_list = NULL;
 	int entry_list_count = 0;
 	FILE *fp_policy;
 	if (argc > 1 && strcmp(argv[1], "--help") == 0) {
@@ -75,7 +75,7 @@ int ldwatch_main(int argc, char *argv[]) {
 					}
 					// Add an entry.
 					pathname = strdup(cp);
-					entry_list = (DLL_PATHNAME_ENTRY *) realloc(entry_list, (entry_list_count + 1) * sizeof(DLL_PATHNAME_ENTRY));
+					entry_list = (struct dll_pathname_entry *) realloc(entry_list, (entry_list_count + 1) * sizeof(struct dll_pathname_entry));
 					entry_list[entry_list_count].pathname = pathname;
 					entry_list[entry_list_count++].real_pathname = real_pathname;
 					printf("Added %s : %s\n", pathname, real_pathname);
@@ -90,7 +90,7 @@ int ldwatch_main(int argc, char *argv[]) {
 		}
 		// Check entries for update.
 		for (i = 0; i < entry_list_count; i++) {
-			DLL_PATHNAME_ENTRY *ptr = &entry_list[i];
+			struct dll_pathname_entry *ptr = &entry_list[i];
 			char *real_pathname = realpath(ptr->pathname, NULL);
 			if (real_pathname && strcmp(ptr->real_pathname, real_pathname)) {
 				printf("Changed %s : %s -> %s\n", ptr->pathname, ptr->real_pathname, real_pathname);

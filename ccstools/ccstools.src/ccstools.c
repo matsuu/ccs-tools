@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4.1   2007/06/05
+ * Version: 1.5.0-pre   2007/08/12
  *
  */
 #include "ccstools.h"
@@ -338,11 +338,11 @@ void fill_path_info(struct path_info *ptr) {
 }
 
 const struct path_info *SaveName(const char *name) {
-	static FREE_MEMORY_BLOCK_LIST fmb_list = { NULL, NULL, 0 };
-	static SAVENAME_ENTRY name_list[SAVENAME_MAX_HASH]; /* The list of names. */
-	SAVENAME_ENTRY *ptr, *prev = NULL;
+	static struct free_memory_block_list fmb_list = { NULL, NULL, 0 };
+	static struct savename_entry name_list[SAVENAME_MAX_HASH]; /* The list of names. */
+	struct savename_entry *ptr, *prev = NULL;
 	unsigned int hash;
-	FREE_MEMORY_BLOCK_LIST *fmb = &fmb_list;
+	struct free_memory_block_list *fmb = &fmb_list;
 	int len;
 	static int first_call = 1;
 	if (!name) return NULL;
@@ -372,15 +372,15 @@ const struct path_info *SaveName(const char *name) {
 			fmb = fmb->next;
 		} else {
 			char *cp;
-			if ((cp = (char *) malloc(PAGE_SIZE)) == NULL || (fmb->next = (FREE_MEMORY_BLOCK_LIST *) alloc_element(sizeof(FREE_MEMORY_BLOCK_LIST))) == NULL) OutOfMemory();
+			if ((cp = (char *) malloc(PAGE_SIZE)) == NULL || (fmb->next = (struct free_memory_block_list *) alloc_element(sizeof(struct free_memory_block_list))) == NULL) OutOfMemory();
 			memset(cp, 0, PAGE_SIZE);
 			fmb = fmb->next;
 			fmb->ptr = cp;
 			fmb->len = PAGE_SIZE;
 		}
 	}
-	if ((ptr = (SAVENAME_ENTRY *) alloc_element(sizeof(SAVENAME_ENTRY))) == NULL) OutOfMemory();
-	memset(ptr, 0, sizeof(SAVENAME_ENTRY));
+	if ((ptr = (struct savename_entry *) alloc_element(sizeof(struct savename_entry))) == NULL) OutOfMemory();
+	memset(ptr, 0, sizeof(struct savename_entry));
 	ptr->entry.name = fmb->ptr;
 	memmove(fmb->ptr, name, len);
 	fill_path_info(&ptr->entry);
@@ -388,7 +388,7 @@ const struct path_info *SaveName(const char *name) {
 	fmb->len -= len;
 	prev->next = ptr; /* prev != NULL because name_list is not empty. */
 	if (fmb->len == 0) {
-		FREE_MEMORY_BLOCK_LIST *ptr = &fmb_list;
+		struct free_memory_block_list *ptr = &fmb_list;
 		while (ptr->next != fmb) ptr = ptr->next; ptr->next = fmb->next;
 	}
  out:
@@ -459,7 +459,7 @@ int main(int argc, char *argv[]) {
 	 * because it is dangerous to allow updating policies via unchecked argv[1].
 	 * You should use either "symbolic links with 'alias' directive" or "hard links".
 	 */
-	printf("ccstools version 1.4.1 build 2007/06/05\n");
+	printf("ccstools version 1.5.0-pre build 2007/08/12\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4.1   2007/06/05
+ * Version: 1.5.0-pre   2007/08/12
  *
  */
 
@@ -134,54 +134,54 @@
 
 /***** STRUCTURES DEFINITION START *****/
 
-typedef struct path_info {
-    const char *name;
-    u32 hash;        /* = full_name_hash(name, strlen(name)) */
-    u16 total_len;   /* = strlen(name)                       */
-    u16 const_len;   /* = const_part_length(name)            */
-    u8 is_dir;       /* = strendswith(name, "/")             */
-    u8 is_patterned; /* = PathContainsPattern(name)          */
-    u16 depth;       /* = PathDepth(name)                    */
-} PATH_INFO;
+struct path_info {
+	const char *name;
+	u32 hash;        /* = full_name_hash(name, strlen(name)) */
+	u16 total_len;   /* = strlen(name)                       */
+	u16 const_len;   /* = const_part_length(name)            */
+	u8 is_dir;       /* = strendswith(name, "/")             */
+	u8 is_patterned; /* = PathContainsPattern(name)          */
+	u16 depth;       /* = PathDepth(name)                    */
+};
 
-typedef struct {
-    const struct path_info *group_name;
+struct group_entry {
+	const struct path_info *group_name;
 	const struct path_info **member_name;
 	int member_name_len;
-} GROUP_ENTRY;
+};
 
-typedef struct savename_entry {
+struct savename_entry {
 	struct savename_entry *next;
 	struct path_info entry;
-} SAVENAME_ENTRY;
+};
 
-typedef struct free_memory_block_list {
+struct free_memory_block_list {
 	struct free_memory_block_list *next;
 	char *ptr;
 	int len;
-} FREE_MEMORY_BLOCK_LIST;
+};
 
-typedef struct {
+struct dll_pathname_entry {
 	char *pathname;
 	char *real_pathname;
-} DLL_PATHNAME_ENTRY;
+};
 
-typedef struct domain_initializer_entry {
-    const struct path_info *domainname;    /* This may be NULL */
-    const struct path_info *program;
-    unsigned char is_not:1;
-	unsigned char is_last_name:1;
-	unsigned char is_oldstyle:1;
-} DOMAIN_INITIALIZER_ENTRY;
-
-typedef struct domain_keeper_entry {
-    const struct path_info *domainname;
-    const struct path_info *program;       /* This may be NULL */
+struct domain_initializer_entry {
+	const struct path_info *domainname;    /* This may be NULL */
+	const struct path_info *program;
 	unsigned char is_not:1;
 	unsigned char is_last_name:1;
-} DOMAIN_KEEPER_ENTRY;
+	unsigned char is_oldstyle:1;
+};
 
-typedef struct domain_info {
+struct domain_keeper_entry {
+	const struct path_info *domainname;
+	const struct path_info *program;       /* This may be NULL */
+	unsigned char is_not:1;
+	unsigned char is_last_name:1;
+};
+
+struct domain_info {
 	const struct path_info *domainname;
 	const struct domain_initializer_entry *domain_initializer; /* This may be NULL */
 	const struct domain_keeper_entry *domain_keeper;           /* This may be NULL */
@@ -194,13 +194,13 @@ typedef struct domain_info {
 	unsigned char is_domain_keeper:1;
 	unsigned char is_domain_unreachable:1;
 	unsigned char is_domain_deleted:1;
-} DOMAIN_INFO;
+};
 
-typedef struct {
+struct task_entry {
 	pid_t pid;
 	pid_t ppid;
 	u8 done;
-} TASK_ENTRY;
+};
 
 /***** STRUCTURES DEFINITION END *****/
 
