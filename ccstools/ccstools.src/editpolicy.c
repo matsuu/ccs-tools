@@ -10,6 +10,75 @@
  */
 #include "ccstools.h"
 
+/// add color start
+#ifdef COLOR_ON
+#define OFF 0
+#define ON !OFF
+enum color_pair {	NORMAL,
+					DOMAIN_HEAD, DOMAIN_CURSOR,
+					SYSTEM_HEAD, SYSTEM_CURSOR,
+					EXCEPTION_HEAD, EXCEPTION_CURSOR,
+					ACL_HEAD, ACL_CURSOR,
+					DISP_ERR }; 
+
+static void ColorInit(void){
+	start_color();
+	init_pair(DOMAIN_HEAD, COLOR_BLACK, COLOR_GREEN);
+	init_pair(DOMAIN_CURSOR, COLOR_BLACK, COLOR_GREEN);
+
+	init_pair(SYSTEM_HEAD, COLOR_WHITE, COLOR_BLUE);
+	init_pair(SYSTEM_CURSOR, COLOR_WHITE, COLOR_BLUE);
+
+	init_pair(EXCEPTION_HEAD, COLOR_BLACK, COLOR_CYAN);
+	init_pair(EXCEPTION_CURSOR, COLOR_BLACK, COLOR_CYAN);
+
+	init_pair(ACL_HEAD, COLOR_BLACK, COLOR_YELLOW);
+	init_pair(ACL_CURSOR, COLOR_BLACK, COLOR_YELLOW);
+
+	init_pair(DISP_ERR, COLOR_RED, COLOR_BLACK);
+}
+
+static void ColorSave(int flg) {
+	static int save_color = NORMAL;
+	if (flg == ON)
+		save_color = getattrs(stdscr);
+	else
+		attrset(save_color);
+}
+
+#define colorChange(attr, flg)	{flg ? attron(COLOR_PAIR(attr)) : attroff(COLOR_PAIR(attr));}
+#define attrChange(attr, flg)	{flg ? attron(attr) : attroff(attr);}
+
+#define sttrSave()		ColorSave(ON)
+#define sttrRestore()	ColorSave(OFF)
+
+#define colorHead()	( \
+	(current_screen == SCREEN_DOMAIN_LIST) ? DOMAIN_HEAD \
+			: (current_screen == SCREEN_SYSTEM_LIST) ? SYSTEM_HEAD \
+			: (current_screen == SCREEN_EXCEPTION_LIST) ? EXCEPTION_HEAD \
+			: ACL_HEAD )
+
+#define colorCursor()	( \
+	(current_screen == SCREEN_DOMAIN_LIST) ? DOMAIN_CURSOR \
+			: (current_screen == SCREEN_SYSTEM_LIST) ? SYSTEM_CURSOR \
+			: (current_screen == SCREEN_EXCEPTION_LIST) ? EXCEPTION_CURSOR \
+			: ACL_CURSOR )
+
+
+
+#else	// no color
+
+#define ColorInit()
+#define colorChange(attr, flg)
+#define attrChange(attr, flg)
+#define sttrSave()
+#define sttrRestore()
+#define colorHead()
+#define colorCursor()
+
+#endif
+/// add color end
+
 static int string_acl_compare(const void *a, const void *b) {
 	const char *a0 = * (char **) a;
 	const char *b0 = * (char **) b;
@@ -1091,15 +1160,19 @@ static void ShowList(void) {
 		refresh();
 		return;
 	}
+	colorChange(colorHead(), ON);  // add color
 	if (current_screen == SCREEN_DOMAIN_LIST) mvprintw(0, 0, "<<< Domain Transition Editor >>>      %d domain%c    '?' for help", list_item_count[SCREEN_DOMAIN_LIST] - unnumbered_domain_count, list_item_count[SCREEN_DOMAIN_LIST] - unnumbered_domain_count > 1 ? 's' : ' ');
 	else mvprintw(0, 0, "<<< %s Editor >>>      %d entr%s    '?' for help", list_caption, list_item_count[current_screen], list_item_count[current_screen] > 1 ? "ies" : "y");
+	colorChange(colorHead(), OFF);  // add color
 	eat_col = max_eat_col[current_screen];
 	max_col = 0;
 	if (current_screen == SCREEN_ACL_LIST) {
 		get();
 		memset(shared_buffer, 0, shared_buffer_len);
 		snprintf(shared_buffer, shared_buffer_len - 1, "%s", eat(current_domain));
+		colorChange(colorHead(), ON);  // add color
 		mvprintw(2, 0, "%s", shared_buffer);
+		colorChange(colorHead(), OFF);  // add color
 		put();
 	}
 	for (i = 0; i < body_lines; i++) {
@@ -1217,6 +1290,35 @@ static int GetCurrent(void) {
 	return current_item_index[current_screen] + current_y[current_screen];
 }
 
+/// add color start
+#ifdef COLOR_ON
+static int before_current[MAXSCREEN] = {-1, -1, -1, -1};
+static int before_y[MAXSCREEN] = {-1, -1, -1, -1};
+
+static void LineDraw(void) {
+	int current = GetCurrent();
+	int y, x;
+
+	if (current == EOF) return;
+
+	getyx(stdscr, y, x);
+	if (-1 < before_current[current_screen] && current != before_current[current_screen]){
+		move(header_lines + before_y[current_screen], 0);
+		chgat(-1, A_NORMAL, NORMAL, NULL);
+	}
+
+	move(y, x);
+	chgat(-1, A_NORMAL, colorCursor(), NULL);
+	touchwin(stdscr);
+
+	before_current[current_screen] = current;
+	before_y[current_screen] = current_y[current_screen];
+}
+#else
+#define LineDraw()
+#endif
+/// add color end
+
 static void ShowCurrent(void) {
 	if (current_screen == SCREEN_DOMAIN_LIST) {
 		get();
@@ -1226,10 +1328,13 @@ static void ShowCurrent(void) {
 		if (window_width < shared_buffer_len) shared_buffer[window_width] = '\0';
 		move(2, 0);
 		clrtoeol();
+		attrChange(A_REVERSE, ON);  // add color
 		printw("%s", shared_buffer);
+		attrChange(A_REVERSE, OFF);  // add color
 		put();
 	}
 	move(header_lines + current_y[current_screen], 0);
+	LineDraw();     // add color
 	refresh();
 }
 
@@ -1271,7 +1376,9 @@ static int SelectItem(const int current) {
 			generic_acl_list_selected[current] ^= 1;
 		}
 		getyx(stdscr, y, x);
+		sttrSave();		// add color
 		ShowList();
+		sttrRestore();	// add color
 		move(y, x);
 		return 1;
 	}
@@ -1380,7 +1487,9 @@ static int GenericListLoop(void) {
 				int index;
 				char *line;
 			input_path:
+				attrChange(A_BOLD, ON);	// add color
 				line = simple_readline(window_height - 1, 0, "Search> ", readline_history, readline_history_count, 4000, 8);
+				attrChange(A_BOLD, OFF);	// add color
 				if (line && *line) {
 					readline_history_count = simple_add_history(line, readline_history, readline_history_count, max_readline_history);
 					free(search_buffer[current_screen]); search_buffer[current_screen] = line; line = NULL;
@@ -1428,6 +1537,7 @@ static int GenericListLoop(void) {
 			{
 				int c;
 				move(1, 0);
+				colorChange(DISP_ERR, ON);	// add color
 				if (current_screen == SCREEN_DOMAIN_LIST) {
 					if ((c = count(domain_list_selected, domain_list_count)) == 0 && (c = SelectItem(current)) == 0) printw("Select domain using Space key first.");
 					else printw("Delete selected domain%s? ('Y'es/'N'o)", c > 1 ? "s" : "");
@@ -1435,6 +1545,7 @@ static int GenericListLoop(void) {
 					if ((c = count(generic_acl_list_selected, generic_acl_list_count)) == 0 && (c = SelectItem(current)) == 0) printw("Select entry using Space key first.");
 					else printw("Delete selected entr%s? ('Y'es/'N'o)", c > 1 ? "ies" : "y");
 				}
+				colorChange(DISP_ERR, OFF);	// add color
 				clrtoeol();
 				refresh();
 				if (!c) break;
@@ -1470,7 +1581,9 @@ static int GenericListLoop(void) {
 		case 'a':
 		case 'A':
 			{
+				attrChange(A_BOLD, ON);	// add color
 				char *line = simple_readline(window_height - 1, 0, "Enter new entry> ", readline_history, readline_history_count, 8192, 8);
+				attrChange(A_BOLD, OFF);	// add color
 				if (line && *line) {
 					readline_history_count = simple_add_history(line, readline_history, readline_history_count, max_readline_history);
 					if (current_screen == SCREEN_DOMAIN_LIST && !IsCorrectDomain(line)) {
@@ -1520,7 +1633,9 @@ static int GenericListLoop(void) {
 				if (!count(domain_list_selected, domain_list_count) && !SelectItem(current)) {
 					mvprintw(1, 0, "Select domain using Space key first."); clrtoeol(); refresh();
 				} else {
+					attrChange(A_BOLD, ON);	// add color
 					char *line = simple_readline(window_height - 1, 0, "Enter profile number> ", NULL, 0, 8, 1);
+					attrChange(A_BOLD, OFF);	// add color
 					if (line && *line) {
 						FILE *fp = open_write(DOMAIN_POLICY_FILE);
 						if (fp) {
@@ -1797,6 +1912,7 @@ int editpolicy_main(int argc, char *argv[]) {
 		}
 	}
 	initscr();
+	ColorInit();	// add color
 	cbreak();
 	noecho();
 	nonl();
