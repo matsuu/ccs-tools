@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4.1   2007/06/05
+ * Version: 1.5.0-pre   2007/08/12
  *
  */
 #include "ccstools.h"
@@ -22,7 +22,7 @@ int setlevel_main(int argc, char *argv[]) {
 		fprintf(stderr, "Can't open %s\n", policy_file);
 		return 1;
 	} else if (write(fd, "", 0) != 0) {
-		fprintf(stderr, "You need to register this program to /proc/ccs/policy/manager to run this program.\n");
+		fprintf(stderr, "You need to register this program to /proc/ccs/manager to run this program.\n");
 		return 1;
 	}
 	if (argc > 1) {

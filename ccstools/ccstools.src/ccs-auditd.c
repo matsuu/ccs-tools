@@ -5,19 +5,19 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4.1   2007/06/05
+ * Version: 1.5.0-pre   2007/08/12
  *
  */
 #include "ccstools.h"
 
 int ccsauditd_main(int argc, char *argv[]) {
 	static const char * const procfile_path[CCS_AUDITD_MAX_FILES] = {
-		"/proc/ccs/info/grant_log",
-		"/proc/ccs/info/reject_log"
+		"/proc/ccs/grant_log",
+		"/proc/ccs/reject_log"
 	};	
 	int i, fd_in[CCS_AUDITD_MAX_FILES], fd_out[CCS_AUDITD_MAX_FILES];
 	const char *logfile_path[2] = { "/dev/null", "/dev/null" };
-	if (access("/proc/ccs/policy/", F_OK)) {
+	if (access("/proc/ccs/", F_OK)) {
 		fprintf(stderr, "You can't run this daemon for this kernel.\n");
 		return 0;
 	}

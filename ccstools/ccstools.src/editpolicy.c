@@ -360,7 +360,7 @@ int savepolicy_main(int argc, char *argv[]) {
 	struct tm *tm = localtime(&now);
 	memset(filename, 0, sizeof(filename));
 	if (access("/proc/self/", F_OK)) mount("/proc", "/proc", "proc", 0, NULL);
-	if (access("/proc/ccs/policy/", F_OK)) {
+	if (access("/proc/ccs/", F_OK)) {
 		fprintf(stderr, "You can't run this program for this kernel.\n");
 		return 0;
 	}
@@ -404,15 +404,15 @@ int savepolicy_main(int argc, char *argv[]) {
 	}
 
 	/* Exclude nonexistent policy. */
-	if (access("/proc/ccs/policy/system_policy", R_OK)) save_system_policy = 0;
-	if (access("/proc/ccs/policy/exception_policy", R_OK)) save_exception_policy = 0;
-	if (access("/proc/ccs/policy/domain_policy", R_OK)) save_domain_policy = 0;
+	if (access("/proc/ccs/system_policy", R_OK)) save_system_policy = 0;
+	if (access("/proc/ccs/exception_policy", R_OK)) save_exception_policy = 0;
+	if (access("/proc/ccs/domain_policy", R_OK)) save_domain_policy = 0;
 
 	/* Repeat twice so that necessary permissions for this program are included in domain policy. */
 	for (repeat = 0; repeat < 2; repeat++) {
 
 		if (save_system_policy) {
-			char *new_policy = ReadFile("/proc/ccs/policy/system_policy");
+			char *new_policy = ReadFile("/proc/ccs/system_policy");
 			char *old_policy = ReadFile("system_policy.txt");
 			if (new_policy && (force_save || !old_policy || strcmp(new_policy, old_policy))) {
 				int fd;
@@ -432,7 +432,7 @@ int savepolicy_main(int argc, char *argv[]) {
 		}
 		
 		if (save_exception_policy) {
-			char *new_policy = ReadFile("/proc/ccs/policy/exception_policy");
+			char *new_policy = ReadFile("/proc/ccs/exception_policy");
 			char *old_policy = ReadFile("exception_policy.txt");
 			if (new_policy && (force_save || !old_policy || strcmp(new_policy, old_policy))) {
 				int fd;
@@ -454,7 +454,7 @@ int savepolicy_main(int argc, char *argv[]) {
 	}
 	
 	if (save_domain_policy) {
-		ReadDomainPolicy("/proc/ccs/policy/domain_policy");
+		ReadDomainPolicy("/proc/ccs/domain_policy");
 		for (repeat = 0; repeat < 10; repeat++) {
 			//if (repeat) printf("Domain policy has changed while saving domain policy. Retrying.\n");
 			if (access("domain_policy.txt", R_OK) == 0) {
@@ -478,7 +478,7 @@ int savepolicy_main(int argc, char *argv[]) {
 			}
 			/* Has domain policy changed while saving domain policy? */
 			ClearDomainPolicy();
-			ReadDomainPolicy("/proc/ccs/policy/domain_policy");
+			ReadDomainPolicy("/proc/ccs/domain_policy");
 			if (IsSameDomainList()) break;
 			SwapDomainList(); ClearDomainPolicy(); SwapDomainList();
 		}
@@ -498,7 +498,7 @@ int loadpolicy_main(int argc, char *argv[]) {
 	int load_exception_policy = 0;
 	int load_domain_policy = 0;
 	int refresh_policy = 0;
-	if (access("/proc/ccs/policy/", F_OK)) {
+	if (access("/proc/ccs/", F_OK)) {
 		fprintf(stderr, "You can't run this program for this kernel.\n");
 		return 0;
 	}
@@ -540,15 +540,15 @@ int loadpolicy_main(int argc, char *argv[]) {
 			fprintf(stderr, "Can't open system_policy.txt\n");
 			goto out_system;
 		}
-		if ((proc_fp = fopen("/proc/ccs/policy/system_policy", "w")) == NULL) {
-			fprintf(stderr, "Can't open /proc/ccs/policy/system_policy\n");
+		if ((proc_fp = fopen("/proc/ccs/system_policy", "w")) == NULL) {
+			fprintf(stderr, "Can't open /proc/ccs/system_policy\n");
 			fclose(file_fp);
 			goto out_system;
 		}
 		if (refresh_policy) {
-			FILE *proc_clear_fp = fopen("/proc/ccs/policy/system_policy", "r");
+			FILE *proc_clear_fp = fopen("/proc/ccs/system_policy", "r");
 			if (!proc_clear_fp) {
-				fprintf(stderr, "Can't open /proc/ccs/policy/system_policy\n");
+				fprintf(stderr, "Can't open /proc/ccs/system_policy\n");
 				fclose(file_fp);
 				fclose(proc_fp);
 				goto out_system;
@@ -577,15 +577,15 @@ int loadpolicy_main(int argc, char *argv[]) {
 			fprintf(stderr, "Can't open exception_policy.txt\n");
 			goto out_exception;
 		}
-		if ((proc_fp = fopen("/proc/ccs/policy/exception_policy", "w")) == NULL) {
-			fprintf(stderr, "Can't open /proc/ccs/policy/exception_policy\n");
+		if ((proc_fp = fopen("/proc/ccs/exception_policy", "w")) == NULL) {
+			fprintf(stderr, "Can't open /proc/ccs/exception_policy\n");
 			fclose(file_fp);
 			goto out_exception;
 		}
 		if (refresh_policy) {
-			FILE *proc_clear_fp = fopen("/proc/ccs/policy/exception_policy", "r");
+			FILE *proc_clear_fp = fopen("/proc/ccs/exception_policy", "r");
 			if (!proc_clear_fp) {
-				fprintf(stderr, "Can't open /proc/ccs/policy/exception_policy\n");
+				fprintf(stderr, "Can't open /proc/ccs/exception_policy\n");
 				fclose(file_fp);
 				fclose(proc_fp);
 				goto out_exception;
@@ -610,17 +610,17 @@ int loadpolicy_main(int argc, char *argv[]) {
 
 	if (load_domain_policy) {
 		int new_index;
-		FILE *proc_fp = fopen("/proc/ccs/policy/domain_policy", "w");
+		FILE *proc_fp = fopen("/proc/ccs/domain_policy", "w");
 		struct path_info reserved;
 		reserved.name = "";
 		fill_path_info(&reserved);
 		if (!proc_fp) {
-			fprintf(stderr, "Can't open /proc/ccs/policy/domain_policy\n");
+			fprintf(stderr, "Can't open /proc/ccs/domain_policy\n");
 			goto out_domain;
 		}
 		ReadDomainPolicy("domain_policy.txt");
 		SwapDomainList();
-		ReadDomainPolicy("/proc/ccs/policy/domain_policy");
+		ReadDomainPolicy("/proc/ccs/domain_policy");
 		SwapDomainList();
 		if (domain_list_count == 0) {
 			fprintf(stderr, "Can't open domain_policy.txt\n");
@@ -2099,14 +2099,14 @@ int editpolicy_main(int argc, char *argv[]) {
 			put();
 		}
 	} else {
-		if (chdir("/proc/ccs/policy/")) {
+		if (chdir("/proc/ccs/")) {
 			fprintf(stderr, "You can't use this editor for this kernel.\n");
 			return 1;
 		}
 		{
 			const int fd1 = open(SYSTEM_POLICY_FILE, O_RDWR), fd2 = open(EXCEPTION_POLICY_FILE, O_RDWR), fd3 = open(DOMAIN_POLICY_FILE, O_RDWR);
 			if ((fd1 != EOF && write(fd1, "", 0) != 0) || (fd2 != EOF && write(fd2, "", 0) != 0) || (fd3 != EOF && write(fd3, "", 0) != 0)) {
-				fprintf(stderr, "You need to register this program to /proc/ccs/policy/manager to run this program.\n");
+				fprintf(stderr, "You need to register this program to /proc/ccs/manager to run this program.\n");
 				return 1;
 			}
 			close(fd1); close(fd2); close(fd3);

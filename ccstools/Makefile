@@ -82,7 +82,7 @@ sortpolicy: ccstools
 	ln -f ccstools sortpolicy
 
 ccstools: ccstools.src/*.c ccstools.src/*.h /usr/include/curses.h 
-	$(CC) $(CFLAGS) -o ccstools ccstools.src/*.c -lncurses
+	$(CC) $(CFLAGS) -o ccstools ccstools.src/*.c -lncurses -DCOLOR_ON
 
 realpath: realpath.c 
 	$(CC) $(CFLAGS) -o realpath realpath.c

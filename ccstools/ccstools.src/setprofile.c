@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4.1   2007/06/05
+ * Version: 1.5.0-pre   2007/08/12
  *
  */
 #include "ccstools.h"
@@ -25,12 +25,12 @@ int setprofile_main(int argc, char *argv[]) {
 	}
 	for (i = start; i < argc; i++) NormalizeLine(argv[i]);
 	{
-		const int fd = open("/proc/ccs/policy/.domain_status", O_RDWR);
+		const int fd = open("/proc/ccs/.domain_status", O_RDWR);
 		if (fd == EOF) {
 			fprintf(stderr, "You can't run this daemon for this kernel.\n");
 			return 1;
 		} else if (write(fd, "", 0) != 0) {
-			fprintf(stderr, "You need to register this program to /proc/ccs/policy/manager to run this program.\n");
+			fprintf(stderr, "You need to register this program to /proc/ccs/manager to run this program.\n");
 			return 1;
 		}
 		close(fd);
@@ -55,7 +55,7 @@ int setprofile_main(int argc, char *argv[]) {
 			exit(1);
 		}
 	}
-	if ((fp_in = fopen("/proc/ccs/policy/.domain_status", "r")) == NULL || (fp_out = fopen("/proc/ccs/policy/.domain_status", "w")) == NULL) {
+	if ((fp_in = fopen("/proc/ccs/.domain_status", "r")) == NULL || (fp_out = fopen("/proc/ccs/.domain_status", "w")) == NULL) {
 		fprintf(stderr, "Can't open policy file.\n");
 		exit(1);
 	}

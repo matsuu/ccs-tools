@@ -26,17 +26,17 @@ int ldwatch_main(int argc, char *argv[]) {
 		return 0;
 	}
 	{
-		const int fd = open("/proc/ccs/policy/exception_policy", O_RDWR);
+		const int fd = open("/proc/ccs/exception_policy", O_RDWR);
 		if (fd == EOF) {
 			fprintf(stderr, "You can't run this daemon for this kernel.\n");
 			return 1;
 		} else if (write(fd, "", 0) != 0) {
-			fprintf(stderr, "You need to register this program to /proc/ccs/policy/manager to run this program.\n");
+			fprintf(stderr, "You need to register this program to /proc/ccs/manager to run this program.\n");
 			return 1;
 		}
 		close(fd);
 	}
-	if ((fp_policy = fopen("/proc/ccs/policy/exception_policy", "w")) == NULL) {
+	if ((fp_policy = fopen("/proc/ccs/exception_policy", "w")) == NULL) {
 		fprintf(stderr, "Can't open policy file.\n");
 		exit(1);
 	}
