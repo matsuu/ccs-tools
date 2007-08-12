@@ -78,7 +78,6 @@ fi
 [ -r $POLICY_DIR/system_policy.txt ] && cat $POLICY_DIR/system_policy.txt > /proc/ccs/system_policy
 [ -r $POLICY_DIR/exception_policy.txt ] && cat $POLICY_DIR/exception_policy.txt > /proc/ccs/exception_policy
 [ $TOMOYO_NOLOAD == 0 ] && [ -r $POLICY_DIR/domain_policy.txt ] && cat $POLICY_DIR/domain_policy.txt > /proc/ccs/domain_policy
-[ -r $POLICY_DIR/mapping.txt ] && cat $POLICY_DIR/mapping.txt > /proc/ccs/mapping
 
 if [ -r $POLICY_DIR/status-$STATUS.txt ]; then
 	cat $POLICY_DIR/status-$STATUS.txt > /proc/ccs/status
