@@ -5,15 +5,22 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4.1   2007/06/05
+ * Version: 1.5.0-pre   2007/08/12
  *
  */
 #include "ccstools.h"
 
 static int getch0(void) {
-	int c = getch();
+	static int enter_key = EOF;
+	int c;
+again:
+	c = getch();
 	if (c == 127) c = KEY_BACKSPACE;
 	//syslog(LOG_INFO, "getch0='%c' (%d)\n", c, c);
+	if (c == '\r' || c == '\n') {
+		if (enter_key == EOF) enter_key = c;
+		else if (c != enter_key) goto again;
+	}
 	return c;
 }
 
@@ -128,7 +135,7 @@ char *simple_readline(const int start_y, const int start_x, const char *prompt, 
 			buffer[++buffer_len] = '\0';
 			if (cur_pos < window_width - 1) cur_pos++;
 			else line_pos++;
-		} else if (c == '\r') {
+		} else if (c == '\r' || c == '\n') {
 			break;
 		} else if (c == KEY_BACKSPACE) {
 			if (line_pos + cur_pos) {

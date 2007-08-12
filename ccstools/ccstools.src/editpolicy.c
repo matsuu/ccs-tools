@@ -1632,7 +1632,7 @@ static int GenericListLoop(void) {
 		saved_current_item_index[current_screen] = current_item_index[current_screen];
 		saved_current_y[current_screen] = current_y[current_screen];
 		if (c == 'q' || c == 'Q') return MAXSCREEN;
-		if (c == '\r' && current_screen == SCREEN_ACL_LIST) return SCREEN_DOMAIN_LIST;
+		if ((c == '\r' || c == '\n') && current_screen == SCREEN_ACL_LIST) return SCREEN_DOMAIN_LIST;
 		if (c == '\t') {
 			if (current_screen == SCREEN_DOMAIN_LIST) return SCREEN_SYSTEM_LIST;
 			else if (current_screen == SCREEN_SYSTEM_LIST) return SCREEN_EXCEPTION_LIST;
@@ -1801,6 +1801,7 @@ static int GenericListLoop(void) {
 			}
 			break;
 		case '\r':
+		case '\n':
 			if (current_screen == SCREEN_DOMAIN_LIST) {
 				if (IsInitializerSource(current)) {
 					int redirect_index;
