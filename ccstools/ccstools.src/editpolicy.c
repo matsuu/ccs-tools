@@ -360,7 +360,7 @@ int savepolicy_main(int argc, char *argv[]) {
 	struct tm *tm = localtime(&now);
 	memset(filename, 0, sizeof(filename));
 	if (access("/proc/self/", F_OK)) mount("/proc", "/proc", "proc", 0, NULL);
-	if (access("/proc/ccs/", F_OK)) {
+	if (access(proc_policy_dir, F_OK)) {
 		fprintf(stderr, "You can't run this program for this kernel.\n");
 		return 0;
 	}
@@ -391,8 +391,8 @@ int savepolicy_main(int argc, char *argv[]) {
 			}
 		}
 	}
-	if (chdir("/etc/ccs/")) {
-		printf("Directory /etc/ccs/ doesn't exist.\n");
+	if (chdir(disk_policy_dir)) {
+		printf("Directory %s doesn't exist.\n", disk_policy_dir);
 		return 1;
 	}
 	if (access(".", W_OK) == EOF) {
@@ -404,16 +404,16 @@ int savepolicy_main(int argc, char *argv[]) {
 	}
 
 	/* Exclude nonexistent policy. */
-	if (access("/proc/ccs/system_policy", R_OK)) save_system_policy = 0;
-	if (access("/proc/ccs/exception_policy", R_OK)) save_exception_policy = 0;
-	if (access("/proc/ccs/domain_policy", R_OK)) save_domain_policy = 0;
+	if (access(proc_policy_system_policy, R_OK)) save_system_policy = 0;
+	if (access(proc_policy_exception_policy, R_OK)) save_exception_policy = 0;
+	if (access(proc_policy_domain_policy, R_OK)) save_domain_policy = 0;
 
 	/* Repeat twice so that necessary permissions for this program are included in domain policy. */
 	for (repeat = 0; repeat < 2; repeat++) {
 
 		if (save_system_policy) {
-			char *new_policy = ReadFile("/proc/ccs/system_policy");
-			char *old_policy = ReadFile("system_policy.txt");
+			char *new_policy = ReadFile(proc_policy_system_policy);
+			char *old_policy = ReadFile(disk_policy_system_policy);
 			if (new_policy && (force_save || !old_policy || strcmp(new_policy, old_policy))) {
 				int fd;
 				snprintf(filename, sizeof(filename) - 1, "system_policy.%02d-%02d-%02d.%02d:%02d:%02d.txt", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
@@ -421,7 +421,7 @@ int savepolicy_main(int argc, char *argv[]) {
 					ftruncate(fd, 0);
 					write(fd, new_policy, strlen(new_policy));
 					close(fd);
-					unlink("system_policy.txt");
+					unlink(disk_policy_system_policy);
 					symlink(filename, "system_policy.txt");
 				} else {
 					printf("Can't create %s\n", filename);
@@ -432,8 +432,8 @@ int savepolicy_main(int argc, char *argv[]) {
 		}
 		
 		if (save_exception_policy) {
-			char *new_policy = ReadFile("/proc/ccs/exception_policy");
-			char *old_policy = ReadFile("exception_policy.txt");
+			char *new_policy = ReadFile(proc_policy_exception_policy);
+			char *old_policy = ReadFile(disk_policy_exception_policy);
 			if (new_policy && (force_save || !old_policy || strcmp(new_policy, old_policy))) {
 				int fd;
 				snprintf(filename, sizeof(filename) - 1, "exception_policy.%02d-%02d-%02d.%02d:%02d:%02d.txt", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
@@ -441,7 +441,7 @@ int savepolicy_main(int argc, char *argv[]) {
 					ftruncate(fd, 0);
 					write(fd, new_policy, strlen(new_policy));
 					close(fd);
-					unlink("exception_policy.txt");
+					unlink(disk_policy_exception_policy);
 					symlink(filename, "exception_policy.txt");
 				} else {
 					printf("Can't create %s\n", filename);
@@ -454,12 +454,12 @@ int savepolicy_main(int argc, char *argv[]) {
 	}
 	
 	if (save_domain_policy) {
-		ReadDomainPolicy("/proc/ccs/domain_policy");
+		ReadDomainPolicy(proc_policy_domain_policy);
 		for (repeat = 0; repeat < 10; repeat++) {
 			//if (repeat) printf("Domain policy has changed while saving domain policy. Retrying.\n");
-			if (access("domain_policy.txt", R_OK) == 0) {
+			if (access(disk_policy_domain_policy, R_OK) == 0) {
 				SwapDomainList();
-				ReadDomainPolicy("domain_policy.txt");
+				ReadDomainPolicy(disk_policy_domain_policy);
 				SwapDomainList();
 			}
 			/* Need to save domain policy? */
@@ -470,7 +470,7 @@ int savepolicy_main(int argc, char *argv[]) {
 					ftruncate(fd, 0);
 					WriteDomainPolicy(fd);
 					close(fd);
-					unlink("domain_policy.txt");
+					unlink(disk_policy_domain_policy);
 					symlink(filename, "domain_policy.txt");
 				} else {
 					printf("Can't create %s\n", filename);
@@ -478,7 +478,7 @@ int savepolicy_main(int argc, char *argv[]) {
 			}
 			/* Has domain policy changed while saving domain policy? */
 			ClearDomainPolicy();
-			ReadDomainPolicy("/proc/ccs/domain_policy");
+			ReadDomainPolicy(proc_policy_domain_policy);
 			if (IsSameDomainList()) break;
 			SwapDomainList(); ClearDomainPolicy(); SwapDomainList();
 		}
@@ -498,7 +498,7 @@ int loadpolicy_main(int argc, char *argv[]) {
 	int load_exception_policy = 0;
 	int load_domain_policy = 0;
 	int refresh_policy = 0;
-	if (access("/proc/ccs/", F_OK)) {
+	if (access(proc_policy_dir, F_OK)) {
 		fprintf(stderr, "You can't run this program for this kernel.\n");
 		return 0;
 	}
@@ -529,26 +529,25 @@ int loadpolicy_main(int argc, char *argv[]) {
 			}
 		}
 	}
-	if (chdir("/etc/ccs/")) {
-		printf("Directory /etc/ccs/ doesn't exist.\n");
+	if (chdir(disk_policy_dir)) {
+		printf("Directory %s doesn't exist.\n", disk_policy_dir);
 		return 1;
 	}
-
 	if (load_system_policy) {
 		FILE *file_fp, *proc_fp;
-		if ((file_fp = fopen("system_policy.txt", "r")) == NULL) {
-			fprintf(stderr, "Can't open system_policy.txt\n");
+		if ((file_fp = fopen(disk_policy_system_policy, "r")) == NULL) {
+			fprintf(stderr, "Can't open %s\n", disk_policy_system_policy);
 			goto out_system;
 		}
-		if ((proc_fp = fopen("/proc/ccs/system_policy", "w")) == NULL) {
-			fprintf(stderr, "Can't open /proc/ccs/system_policy\n");
+		if ((proc_fp = fopen(proc_policy_system_policy, "w")) == NULL) {
+			fprintf(stderr, "Can't open %s\n", proc_policy_system_policy);
 			fclose(file_fp);
 			goto out_system;
 		}
 		if (refresh_policy) {
-			FILE *proc_clear_fp = fopen("/proc/ccs/system_policy", "r");
+			FILE *proc_clear_fp = fopen(proc_policy_system_policy, "r");
 			if (!proc_clear_fp) {
-				fprintf(stderr, "Can't open /proc/ccs/system_policy\n");
+				fprintf(stderr, "Can't open %s\n", proc_policy_system_policy);
 				fclose(file_fp);
 				fclose(proc_fp);
 				goto out_system;
@@ -573,19 +572,19 @@ int loadpolicy_main(int argc, char *argv[]) {
 	
 	if (load_exception_policy) {
 		FILE *file_fp, *proc_fp;
-		if ((file_fp = fopen("exception_policy.txt", "r")) == NULL) {
-			fprintf(stderr, "Can't open exception_policy.txt\n");
+		if ((file_fp = fopen(disk_policy_exception_policy, "r")) == NULL) {
+			fprintf(stderr, "Can't open %s\n", disk_policy_exception_policy);
 			goto out_exception;
 		}
-		if ((proc_fp = fopen("/proc/ccs/exception_policy", "w")) == NULL) {
-			fprintf(stderr, "Can't open /proc/ccs/exception_policy\n");
+		if ((proc_fp = fopen(proc_policy_exception_policy, "w")) == NULL) {
+			fprintf(stderr, "Can't open %s\n", proc_policy_exception_policy);
 			fclose(file_fp);
 			goto out_exception;
 		}
 		if (refresh_policy) {
-			FILE *proc_clear_fp = fopen("/proc/ccs/exception_policy", "r");
+			FILE *proc_clear_fp = fopen(proc_policy_exception_policy, "r");
 			if (!proc_clear_fp) {
-				fprintf(stderr, "Can't open /proc/ccs/exception_policy\n");
+				fprintf(stderr, "Can't open %s\n", proc_policy_exception_policy);
 				fclose(file_fp);
 				fclose(proc_fp);
 				goto out_exception;
@@ -610,20 +609,20 @@ int loadpolicy_main(int argc, char *argv[]) {
 
 	if (load_domain_policy) {
 		int new_index;
-		FILE *proc_fp = fopen("/proc/ccs/domain_policy", "w");
+		FILE *proc_fp = fopen(proc_policy_domain_policy, "w");
 		struct path_info reserved;
 		reserved.name = "";
 		fill_path_info(&reserved);
 		if (!proc_fp) {
-			fprintf(stderr, "Can't open /proc/ccs/domain_policy\n");
+			fprintf(stderr, "Can't open %s\n", proc_policy_domain_policy);
 			goto out_domain;
 		}
-		ReadDomainPolicy("domain_policy.txt");
+		ReadDomainPolicy(disk_policy_domain_policy);
 		SwapDomainList();
-		ReadDomainPolicy("/proc/ccs/domain_policy");
+		ReadDomainPolicy(proc_policy_domain_policy);
 		SwapDomainList();
 		if (domain_list_count == 0) {
-			fprintf(stderr, "Can't open domain_policy.txt\n");
+			fprintf(stderr, "Can't open %s\n", disk_policy_domain_policy);
 			fclose(proc_fp);
 			goto out_domain;
 		}
@@ -2057,8 +2056,8 @@ int editpolicy_main(int argc, char *argv[]) {
 	}
 	if (offline_mode) {
 		int fd[2];
-		if (chdir("/etc/ccs/")) {
-			fprintf(stderr, "/etc/ccs/ doesn't exist.\n");
+		if (chdir(disk_policy_dir)) {
+			printf("Directory %s doesn't exist.\n", disk_policy_dir);
 			return 1;
 		}
 		if (socketpair(PF_UNIX, SOCK_STREAM, 0, fd)) {
@@ -2081,17 +2080,17 @@ int editpolicy_main(int argc, char *argv[]) {
 			int fd, len;
 			FILE *fp;
 			get();
-			if ((fd = open("system_policy.txt", O_RDONLY)) != EOF) {
+			if ((fd = open(disk_policy_system_policy, O_RDONLY)) != EOF) {
 				fp = open_write(SYSTEM_POLICY_FILE);
 				while ((len = read(fd, shared_buffer, shared_buffer_len)) > 0) fwrite(shared_buffer, len, 1, fp);
 				fclose(fp); close(fd);
 			}
-			if ((fd = open("exception_policy.txt", O_RDONLY)) != EOF) {
+			if ((fd = open(disk_policy_exception_policy, O_RDONLY)) != EOF) {
 				fp = open_write(EXCEPTION_POLICY_FILE);
 				while ((len = read(fd, shared_buffer, shared_buffer_len)) > 0) fwrite(shared_buffer, len, 1, fp);
 				fclose(fp); close(fd);
 			}
-			if ((fd = open("domain_policy.txt", O_RDONLY)) != EOF) {
+			if ((fd = open(disk_policy_domain_policy, O_RDONLY)) != EOF) {
 				fp = open_write(DOMAIN_POLICY_FILE);
 				while ((len = read(fd, shared_buffer, shared_buffer_len)) > 0) fwrite(shared_buffer, len, 1, fp);
 				fclose(fp); close(fd);
@@ -2099,14 +2098,14 @@ int editpolicy_main(int argc, char *argv[]) {
 			put();
 		}
 	} else {
-		if (chdir("/proc/ccs/")) {
+		if (chdir(proc_policy_dir)) {
 			fprintf(stderr, "You can't use this editor for this kernel.\n");
 			return 1;
 		}
 		{
 			const int fd1 = open(SYSTEM_POLICY_FILE, O_RDWR), fd2 = open(EXCEPTION_POLICY_FILE, O_RDWR), fd3 = open(DOMAIN_POLICY_FILE, O_RDWR);
 			if ((fd1 != EOF && write(fd1, "", 0) != 0) || (fd2 != EOF && write(fd2, "", 0) != 0) || (fd3 != EOF && write(fd3, "", 0) != 0)) {
-				fprintf(stderr, "You need to register this program to /proc/ccs/manager to run this program.\n");
+				fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
 				return 1;
 			}
 			close(fd1); close(fd2); close(fd3);
@@ -2145,7 +2144,7 @@ int editpolicy_main(int argc, char *argv[]) {
 			if ((fp = open_read(SYSTEM_POLICY_FILE)) != NULL) {
 				while ((len = fread(buffer, 1, sizeof(buffer), fp)) > 0) write(fd, buffer, len);
 				close(fd); fclose(fp);
-				unlink("system_policy.txt");
+				unlink(disk_policy_system_policy);
 				symlink(filename, "system_policy.txt");
 			}
 		}
@@ -2154,7 +2153,7 @@ int editpolicy_main(int argc, char *argv[]) {
 			if ((fp = open_read(EXCEPTION_POLICY_FILE)) != NULL) {
 				while ((len = fread(buffer, 1, sizeof(buffer), fp)) > 0) write(fd, buffer, len);
 				close(fd); fclose(fp);
-				unlink("exception_policy.txt");
+				unlink(disk_policy_exception_policy);
 				symlink(filename, "exception_policy.txt");
 			}
 		}
@@ -2163,7 +2162,7 @@ int editpolicy_main(int argc, char *argv[]) {
 			if ((fp = open_read(DOMAIN_POLICY_FILE)) != NULL) {
 				while ((len = fread(buffer, 1, sizeof(buffer), fp)) > 0) write(fd, buffer, len);
 				close(fd); fclose(fp);
-				unlink("domain_policy.txt");
+				unlink(disk_policy_domain_policy);
 				symlink(filename, "domain_policy.txt");
 			}
 		}

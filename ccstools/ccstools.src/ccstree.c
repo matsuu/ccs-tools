@@ -111,9 +111,9 @@ static void DumpUnprocessed(void) {
 }
 
 int ccstree_main(int argc, char *argv[]) {
-	static const char *policy_file = "/proc/ccs/.process_status";
+	const char *policy_file = proc_policy_process_status;
 	static int show_all = 0;
-	if (access("/proc/ccs/", F_OK)) {
+	if (access(proc_policy_dir, F_OK)) {
 		fprintf(stderr, "You can't use this command for this kernel.\n");
 		return 1;
 	}

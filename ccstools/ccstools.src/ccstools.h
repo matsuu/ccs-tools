@@ -228,4 +228,22 @@ char *simple_readline(const int start_y, const int start_x, const char *prompt, 
 int simple_add_history(const char *buffer, const char **history, const int history_count, const int max_history);
 int getch2(void);
 
+extern const char *proc_policy_dir,
+	*disk_policy_dir,
+	*proc_policy_domain_policy,
+	*disk_policy_domain_policy,
+	*proc_policy_exception_policy,
+	*disk_policy_exception_policy,
+	*proc_policy_system_policy,
+	*disk_policy_system_policy,
+	*proc_policy_profile,
+	*disk_policy_profile,
+	*proc_policy_manager,
+	*disk_policy_manager,
+	*proc_policy_query,
+	*proc_policy_grant_log,
+	*proc_policy_reject_log,
+	*proc_policy_domain_status,
+	*proc_policy_process_status;
+
 /***** PROTOTYPES DEFINITION END *****/

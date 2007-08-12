@@ -25,19 +25,19 @@ int setprofile_main(int argc, char *argv[]) {
 	}
 	for (i = start; i < argc; i++) NormalizeLine(argv[i]);
 	{
-		const int fd = open("/proc/ccs/.domain_status", O_RDWR);
+		const int fd = open(proc_policy_domain_status, O_RDWR);
 		if (fd == EOF) {
 			fprintf(stderr, "You can't run this daemon for this kernel.\n");
 			return 1;
 		} else if (write(fd, "", 0) != 0) {
-			fprintf(stderr, "You need to register this program to /proc/ccs/manager to run this program.\n");
+			fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
 			return 1;
 		}
 		close(fd);
 	}
 	{
 		int profile_found = 0;
-		if ((fp_in = fopen("/proc/ccs/status", "r")) == NULL) {
+		if ((fp_in = fopen(proc_policy_profile, "r")) == NULL) {
 			fprintf(stderr, "Can't open policy file.\n");
 			exit(1);
 		}
@@ -55,7 +55,7 @@ int setprofile_main(int argc, char *argv[]) {
 			exit(1);
 		}
 	}
-	if ((fp_in = fopen("/proc/ccs/.domain_status", "r")) == NULL || (fp_out = fopen("/proc/ccs/.domain_status", "w")) == NULL) {
+	if ((fp_in = fopen(proc_policy_domain_status, "r")) == NULL || (fp_out = fopen(proc_policy_domain_status, "w")) == NULL) {
 		fprintf(stderr, "Can't open policy file.\n");
 		exit(1);
 	}

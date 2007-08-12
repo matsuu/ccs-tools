@@ -433,11 +433,47 @@ extern int ccsqueryd_main(int argc, char *argv[]);
 extern int ccsauditd_main(int argc, char *argv[]);
 extern int patternize_main(int argc, char *argv[]);
 
+const char *proc_policy_dir           = "/proc/ccs/",
+	*disk_policy_dir              = "/etc/ccs/",
+	*proc_policy_domain_policy    = "/proc/ccs/domain_policy",
+	*disk_policy_domain_policy    = "/etc/ccs/domain_policy.txt",
+	*proc_policy_exception_policy = "/proc/ccs/exception_policy",
+	*disk_policy_exception_policy = "/etc/ccs/exception_policy.txt",
+	*proc_policy_system_policy    = "/proc/ccs/system_policy",
+	*disk_policy_system_policy    = "/etc/ccs/system_policy.txt",
+	*proc_policy_profile          = "/proc/ccs/status",
+	*disk_policy_profile          = "/etc/ccs/status.txt",
+	*proc_policy_manager          = "/proc/ccs/manager",
+	*disk_policy_manager          = "/etc/ccs/manager.txt",
+	*proc_policy_query            = "/proc/ccs/query",
+	*proc_policy_grant_log        = "/proc/ccs/grant_log",
+	*proc_policy_reject_log       = "/proc/ccs/reject_log",
+	*proc_policy_domain_status    = "/proc/ccs/.domain_status",
+	*proc_policy_process_status   = "/proc/ccs/.process_status";
+
 int main(int argc, char *argv[]) {
 	const char *argv0 = argv[0];
 	if (!argv0) {
 		fprintf(stderr, "Function not specified.\n");
 		return 1;
+	}
+	if (access("/proc/tomoyo/", F_OK) == 0) {
+		proc_policy_dir              = "/proc/tomoyo/";
+		disk_policy_dir              = "/etc/tomoyo/";
+		disk_policy_domain_policy    = "/etc/tomoyo/domain_policy.txt";
+		proc_policy_exception_policy = "/proc/tomoyo/exception_policy";
+		disk_policy_exception_policy = "/etc/tomoyo/exception_policy.txt";
+		proc_policy_system_policy    = "/proc/tomoyo/system_policy";
+		disk_policy_system_policy    = "/etc/tomoyo/system_policy.txt";
+		proc_policy_profile          = "/proc/tomoyo/status";
+		disk_policy_profile          = "/etc/tomoyo/status.txt";
+		proc_policy_manager          = "/proc/tomoyo/manager";
+		disk_policy_manager          = "/etc/tomoyo/manager.txt";
+		proc_policy_query            = "/proc/tomoyo/query";
+		proc_policy_grant_log        = "/proc/tomoyo/grant_log";
+		proc_policy_reject_log       = "/proc/tomoyo/reject_log";
+		proc_policy_domain_status    = "/proc/tomoyo/.domain_status";
+		proc_policy_process_status   = "/proc/tomoyo/.process_status";
 	}
 	if (strrchr(argv0, '/')) argv0 = strrchr(argv0, '/') + 1;
 	if (strcmp(argv0, "sortpolicy") == 0) return sortpolicy_main(argc, argv);

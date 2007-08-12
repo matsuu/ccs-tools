@@ -11,10 +11,10 @@
 #include "ccstools.h"
 
 int setlevel_main(int argc, char *argv[]) {
-	static const char *policy_file = "/proc/ccs/status";
+	const char *policy_file = proc_policy_profile;
 	int i, fd;
 	char c;
-	if (access("/proc/ccs/", F_OK)) {
+	if (access(proc_policy_dir, F_OK)) {
 		fprintf(stderr, "You can't use this command for this kernel.\n");
 		return 1;
 	}
@@ -22,7 +22,7 @@ int setlevel_main(int argc, char *argv[]) {
 		fprintf(stderr, "Can't open %s\n", policy_file);
 		return 1;
 	} else if (write(fd, "", 0) != 0) {
-		fprintf(stderr, "You need to register this program to /proc/ccs/manager to run this program.\n");
+		fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
 		return 1;
 	}
 	if (argc > 1) {

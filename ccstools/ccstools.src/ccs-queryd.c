@@ -14,7 +14,7 @@ extern int query_fd;
 extern char *initial_readline_data;
 
 int ccsqueryd_main(int argc, char *argv[]) {
-	const int domain_policy_fd = open("/proc/ccs/domain_policy", O_WRONLY);
+	const int domain_policy_fd = open(proc_policy_domain_policy, O_WRONLY);
 	static const int max_readline_history = 20;
 	static const char **readline_history = NULL;
 	static int readline_history_count = 0;
@@ -27,12 +27,12 @@ int ccsqueryd_main(int argc, char *argv[]) {
 		printf("To terminate this program, use 'Ctrl-C'.\n");
 		return 0;
 	}
-	query_fd = open("/proc/ccs/query", O_RDWR);
+	query_fd = open(proc_policy_query, O_RDWR);
 	if (query_fd == EOF) {
 		fprintf(stderr, "You can't run this utility for this kernel.\n");
 		return 1;
 	} else if (write(query_fd, "", 0) != 0) {
-		fprintf(stderr, "You need to register this program to /proc/ccs/manager to run this program.\n");
+		fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
 		return 1;
 	}
 	readline_history = malloc(max_readline_history * sizeof(const char *));

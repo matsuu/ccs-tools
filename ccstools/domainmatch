@@ -1,6 +1,6 @@
 #! /bin/bash
 #
-# fgrep for domain /proc/ccs/domain_policy .
+# fgrep for domain /proc/{ccs,tomoyo}/domain_policy .
 #
 # Copyright (C) 2005-2007  NTT DATA CORPORATION
 #
@@ -11,6 +11,9 @@
 # Example: domainmatch /etc/fstab
 #
 
-awk -v STR="$1" -- ' BEGIN { flag = 0; } { if ( $1 == "<kernel>" ) { domain = $0; flag = 0; } else if (index($0, STR) > 0) { if (flag == 0) print domain; flag = 1; print $0; } } ' /proc/ccs/domain_policy 
+POLICY_FILE="/proc/ccs/domain_policy"
+[ -r /proc/tomoyo/domain_policy ] && POLICY_FILE="/proc/ccs/domain_policy"
 
-#awk -v STR="$1" -- ' { if ( $1 == "<kernel>" ) domain = $0; else if (index($0, STR) > 0) { print domain; print $0; } } ' /proc/ccs/domain_policy 
+awk -v STR="$1" -- ' BEGIN { flag = 0; } { if ( $1 == "<kernel>" ) { domain = $0; flag = 0; } else if (index($0, STR) > 0) { if (flag == 0) print domain; flag = 1; print $0; } } ' $POLICY_FILE 
+
+#awk -v STR="$1" -- ' { if ( $1 == "<kernel>" ) domain = $0; else if (index($0, STR) > 0) { print domain; print $0; } } ' $POLICY_FILE

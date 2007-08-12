@@ -11,13 +11,13 @@
 #include "ccstools.h"
 
 int ccsauditd_main(int argc, char *argv[]) {
-	static const char * const procfile_path[CCS_AUDITD_MAX_FILES] = {
-		"/proc/ccs/grant_log",
-		"/proc/ccs/reject_log"
+	const char *procfile_path[CCS_AUDITD_MAX_FILES] = {
+		proc_policy_grant_log,
+		proc_policy_reject_log
 	};	
 	int i, fd_in[CCS_AUDITD_MAX_FILES], fd_out[CCS_AUDITD_MAX_FILES];
 	const char *logfile_path[2] = { "/dev/null", "/dev/null" };
-	if (access("/proc/ccs/", F_OK)) {
+	if (access(proc_policy_dir, F_OK)) {
 		fprintf(stderr, "You can't run this daemon for this kernel.\n");
 		return 0;
 	}
