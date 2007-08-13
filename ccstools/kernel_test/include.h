@@ -3,9 +3,9 @@
  *
  * Common functions for testing TOMOYO Linux's kernel.
  *
- * Copyright (C) 2005-2006  NTT DATA CORPORATION
+ * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4   2007/04/01
+ * Version: 1.5.0-pre   2007/08/13
  *
  */
 #include <errno.h>
@@ -59,6 +59,36 @@ int reboot(int magic, int magic2, int flag, void *arg);
 int init_module(const char *name, struct module *image);
 int delete_module(const char *name);
 
+static const char *proc_policy_dir    = "/proc/ccs/",
+	*proc_policy_domain_policy    = "/proc/ccs/domain_policy",
+	*proc_policy_exception_policy = "/proc/ccs/exception_policy",
+	*proc_policy_system_policy    = "/proc/ccs/system_policy",
+	*proc_policy_profile          = "/proc/ccs/status",
+	*proc_policy_manager          = "/proc/ccs/manager",
+	*proc_policy_query            = "/proc/ccs/query",
+	*proc_policy_grant_log        = "/proc/ccs/grant_log",
+	*proc_policy_reject_log       = "/proc/ccs/reject_log",
+	*proc_policy_domain_status    = "/proc/ccs/.domain_status",
+	*proc_policy_process_status   = "/proc/ccs/.process_status",
+	*proc_policy_self_domain      = "/proc/ccs/self_domain";
+
+static void PreInit(void) {
+	if (access("/proc/tomoyo/", F_OK) == 0) {
+		proc_policy_dir              = "/proc/tomoyo/";
+		proc_policy_domain_policy    = "/proc/tomoyo/domain_policy";
+		proc_policy_exception_policy = "/proc/tomoyo/exception_policy";
+		proc_policy_system_policy    = "/proc/tomoyo/system_policy";
+		proc_policy_profile          = "/proc/tomoyo/status";
+		proc_policy_manager          = "/proc/tomoyo/manager";
+		proc_policy_query            = "/proc/tomoyo/query";
+		proc_policy_grant_log        = "/proc/tomoyo/grant_log";
+		proc_policy_reject_log       = "/proc/tomoyo/reject_log";
+		proc_policy_domain_status    = "/proc/tomoyo/.domain_status";
+		proc_policy_process_status   = "/proc/tomoyo/.process_status";
+		proc_policy_self_domain      = "/proc/tomoyo/self_domain";
+	}
+}
+
 static int status_fd = EOF;
 static int is_kernel26 = 0;
 static pid_t pid = 0;
@@ -68,10 +98,10 @@ static void WriteStatus(const char *cp) {
 }
 
 static void ClearStatus(void) {
-	FILE *fp = fopen("/proc/ccs/status", "r");
+	FILE *fp = fopen(proc_policy_profile, "r");
 	static char buffer[4096];
 	if (!fp) {
-		fprintf(stderr, "Can't open /proc/ccs/status\n");
+		fprintf(stderr, "Can't open %s\n", proc_policy_profile);
 		exit(1);
 	}
 	while (memset(buffer, 0, sizeof(buffer)), fgets(buffer, sizeof(buffer) - 10, fp)) {
@@ -93,34 +123,21 @@ static void ClearStatus(void) {
 }
 
 static void Init(void) {
+	PreInit();
 	pid = getpid();
-	if (access("/proc/ccs/", F_OK)) {
+	if (access(proc_policy_dir, F_OK)) {
 		fprintf(stderr, "You can't use this program for this kernel.\n");
 		exit(1);
 	}
-	if ((status_fd = open("/proc/ccs/status", O_WRONLY)) == EOF) {
-		fprintf(stderr, "Can't open /proc/ccs/status .\n");
+	if ((status_fd = open(proc_policy_profile, O_WRONLY)) == EOF) {
+		fprintf(stderr, "Can't open %s .\n", proc_policy_profile);
 		exit(1);
 	}
 	if (write(status_fd, "", 0) != 0) {
-		fprintf(stderr, "You need to register this program to /proc/ccs/policy/manager to run this program.\n");
+		fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
 		exit(1);
 	}
 	ClearStatus();
-	{
-		FILE *fp = fopen("/proc/ccs/info/trusted_pids", "r");
-		if (fp) {
-			const pid_t self = getpid();
-			unsigned int pid;
-			while (fscanf(fp, "%u", &pid) == 1) {
-				if (self == pid) {
-					fprintf(stderr, "You can't use this program inside trusted domain.\n");
-					exit(1);
-				}
-			}
-			fclose(fp);
-		}
-	}
 	{
 		FILE *fp = fopen("/proc/sys/kernel/osrelease", "r");
 		int version = 0;
@@ -133,13 +150,13 @@ static void Init(void) {
 	}
 	{
 		char buffer[4096];
-		FILE *fp = fopen("/proc/ccs/info/self_domain", "r");
+		FILE *fp = fopen(proc_policy_self_domain, "r");
 		memset(buffer, 0, sizeof(buffer));
 		if (fp) {
 			fgets(buffer, sizeof(buffer) - 1, fp);
 			fclose(fp);
 		} else exit(1);
-		fp = fopen("/proc/ccs/policy/.domain_status", "w");
+		fp = fopen(proc_policy_domain_status, "w");
 		if (fp) {
 			fprintf(fp, "255 %s\n", buffer);
 			fclose(fp);

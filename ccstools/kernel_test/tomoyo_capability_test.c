@@ -3,16 +3,16 @@
  *
  * Testing program for fs/tomoyo_capability.c
  *
- * Copyright (C) 2005-2006  NTT DATA CORPORATION
+ * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4   2007/04/01
+ * Version: 1.5.0-pre   2007/08/13
  *
  */
 #include "include.h"
 
 static int child(void *arg) {
 	errno = 0;
-	pivot_root("/proc", "/proc/ccs");
+	pivot_root("/proc", proc_policy_dir);
 	return errno;
 }
 
@@ -326,6 +326,7 @@ static void StageCapabilityTest(void) {
 }
 
 int main(int argc, char *argv[]) {
+	PreInit();
 	Init();
 	printf("***** Testing capability hooks in enforce mode. *****\n");
 	is_enforce = 1;

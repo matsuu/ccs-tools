@@ -3,9 +3,9 @@
  *
  * Testing program for fs/tomoyo_signal.c
  *
- * Copyright (C) 2005-2006  NTT DATA CORPORATION
+ * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4   2007/04/01
+ * Version: 1.5.0-pre   2007/08/13
  *
  */
 #include "include.h"
@@ -102,7 +102,8 @@ static int Parent(const char *self) {
 }
 
 int main(int argc, char *argv[]) {
-	if (access("/proc/ccs/", F_OK)) {
+	PreInit();
+	if (access(proc_policy_dir, F_OK)) {
 		fprintf(stderr, "You can't use this program for this kernel.\n");
 		return 1;
 	}

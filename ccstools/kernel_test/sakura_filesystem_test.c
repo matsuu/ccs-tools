@@ -3,9 +3,9 @@
  *
  * Testing program for fs/sakura_mount.c fs/sakura_umount.c fs/sakura_maymount.c fs/sakura_chroot.c fs/sakura_pivot.c
  *
- * Copyright (C) 2005-2006  NTT DATA CORPORATION
+ * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0-pre   2007/08/06
+ * Version: 1.5.0-pre   2007/08/13
  *
  */
 #include "include.h"
@@ -26,7 +26,7 @@ static void ShowPrompt(const char *str, const int is_enforce) {
 
 static int child(void *arg) {
 	errno = 0;
-	pivot_root("/proc", "/proc/ccs");
+	pivot_root("/proc", proc_policy_dir);
 	return errno;
 }
 
@@ -38,12 +38,12 @@ static void WritePolicy(const char *cp) {
 
 int main(int argc, char *argv[]) {
 	Init();
-	if ((system_fd = open("/proc/ccs/policy/system_policy", O_RDWR)) == EOF) {
-		fprintf(stderr, "Can't open /proc/ccs/policy/system_policy .\n");
+	if ((system_fd = open(proc_policy_system_policy, O_RDWR)) == EOF) {
+		fprintf(stderr, "Can't open %s .\n", proc_policy_system_policy);
 		return 1;
 	}
 	if (write(system_fd, "", 0) != 0) {
-		fprintf(stderr, "You need to register this program to /proc/ccs/policy/manager to run this program.\n");
+		fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
 		return 1;
 	}
 	
@@ -242,8 +242,10 @@ int main(int argc, char *argv[]) {
 		char *stack = malloc(8192);
 		WriteStatus("RESTRICT_PIVOT_ROOT=3\n");
 
-		WritePolicy("allow_pivot_root /proc/ /proc/ccs/\n");
-		ShowPrompt("pivot_root('/proc/', '/proc/ccs/')", 0);
+		snprintf(stack, 8191, "allow_pivot_root /proc/ %s\n", proc_policy_dir);
+		WritePolicy(stack);
+		snprintf(stack, 8191, "pivot_root('/proc/', '%s')", proc_policy_dir);
+		ShowPrompt(stack, 0);
 		{
 			const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS, NULL);
 			while (waitpid(pid, &error, __WALL) == EOF && errno == EINTR);
@@ -252,8 +254,10 @@ int main(int argc, char *argv[]) {
 		if (errno == 0) printf("OK\n");
 		else printf("FAILED: %s\n", strerror(errno));
 
-		WritePolicy("delete allow_pivot_root /proc/ /proc/ccs/\n");
-		ShowPrompt("pivot_root('/proc/', '/proc/ccs/')", 1);
+		snprintf(stack, 8191, "delete allow_pivot_root /proc/ %s\n", proc_policy_dir);
+		WritePolicy(stack);
+		snprintf(stack, 8191, "pivot_root('/proc/', '%s')", proc_policy_dir);
+		ShowPrompt(stack, 1);
 		{
 			const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS, NULL);
 			while (waitpid(pid, &error, __WALL) == EOF && errno == EINTR);
@@ -263,7 +267,8 @@ int main(int argc, char *argv[]) {
 		else printf("BUG: %s\n", strerror(errno));
 		
 		WriteStatus("RESTRICT_PIVOT_ROOT=2\n");
-		ShowPrompt("pivot_root('/proc/', '/proc/ccs/')", 0);
+		snprintf(stack, 8191, "pivot_root('/proc/', '%s')", proc_policy_dir);
+		ShowPrompt(stack, 0);
 		{
 			const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS, NULL);
 			while (waitpid(pid, &error, __WALL) == EOF && errno == EINTR);

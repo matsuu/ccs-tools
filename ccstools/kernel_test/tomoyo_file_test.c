@@ -3,9 +3,9 @@
  *
  * Testing program for fs/tomoyo_file.c
  *
- * Copyright (C) 2005-2006  NTT DATA CORPORATION
+ * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4   2007/04/01
+ * Version: 1.5.0-pre   2007/08/13
  *
  */
 #include "include.h"

@@ -3,9 +3,9 @@
  *
  * Testing program for fs/sakura_bind.c
  *
- * Copyright (C) 2005-2006  NTT DATA CORPORATION
+ * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4.1   2007/06/05
+ * Version: 1.5.0-pre   2007/08/13
  *
  */
 #include "include.h"
@@ -338,12 +338,12 @@ int main(int argc, char *argv[]) {
 	pid_t ipv4_pid = 0;
 	pid_t ipv6_pid = 0;
 	Init();
-	if ((system_fd = open("/proc/ccs/policy/system_policy", O_RDWR)) == EOF) {
-		fprintf(stderr, "Can't open /proc/ccs/policy/system_policy .\n");
+	if ((system_fd = open(proc_policy_system_policy, O_RDWR)) == EOF) {
+		fprintf(stderr, "Can't open %s .\n", proc_policy_system_policy);
 		return 1;
 	}
 	if (write(system_fd, "", 0) != 0) {
-		fprintf(stderr, "You need to register this program to /proc/ccs/policy/manager to run this program.\n");
+		fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
 		return 1;
 	}
 	{

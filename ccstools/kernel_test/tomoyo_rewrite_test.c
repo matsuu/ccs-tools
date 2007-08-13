@@ -3,9 +3,9 @@
  *
  * Testing program for fs/tomoyo_file.c
  *
- * Copyright (C) 2005-2006  NTT DATA CORPORATION
+ * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4   2007/04/01
+ * Version: 1.5.0-pre   2007/08/13
  *
  */
 #include "include.h"
@@ -43,32 +43,32 @@ static void AddDomainPolicy(const char *data) {
 	char buffer[4096];
 	FILE *fp;
 	SetStatus(0);
-	fp = fopen("/proc/ccs/info/self_domain", "r");
+	fp = fopen(proc_policy_self_domain, "r");
 	if (fp) {
 		fgets(buffer, sizeof(buffer) - 1, fp);
 		fclose(fp);
 	} else {
-		fprintf(stderr, "BUG! Can't read /proc/ccs/info/self_domain\n");
+		fprintf(stderr, "BUG! Can't read %s\n", proc_policy_self_domain);
 	}
-	fp = fopen("/proc/ccs/policy/domain_policy", "w");
+	fp = fopen(proc_policy_domain_policy, "w");
 	if (fp) {
 		fprintf(fp, "%s\n", buffer);
 		fprintf(fp, "%s\n", data);
 		fclose(fp);
 	} else {
-		fprintf(stderr, "BUG! Can't write /proc/ccs/policy/domain_policy\n");
+		fprintf(stderr, "BUG! Can't write %s\n", proc_policy_domain_policy);
 	}
 }
 
 static void AddExceptionPolicy(const char *data) {
 	FILE *fp;
 	SetStatus(0);
-	fp = fopen("/proc/ccs/policy/exception_policy", "w");
+	fp = fopen(proc_policy_exception_policy, "w");
 	if (fp) {
 		fprintf(fp, "%s\n", data);
 		fclose(fp);
 	} else {
-		fprintf(stderr, "BUG! Can't write /proc/ccs/policy/exception_policy\n");
+		fprintf(stderr, "BUG! Can't write %s\n", proc_policy_exception_policy);
 	}
 }
 

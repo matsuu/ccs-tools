@@ -5,16 +5,10 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4   2007/01/07
+ * Version: 1.5.0-pre   2007/08/13
  *
  */
-#include <errno.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include "include.h"
 
 static FILE *fp_domain = NULL, *fp_exception = NULL, *fp_level = NULL;
 
@@ -30,25 +24,25 @@ int main(int argc, char *argv[]) {
 	static const int truncate_flags[2] = { 0, O_TRUNC };
 	static const int append_flags[2] = { 0, O_APPEND };
 	memset(buffer, 0, sizeof(buffer));
-	
-	if ((fp_level = fopen("/proc/ccs/status", "w")) == NULL) {
-		fprintf(stderr, "Can't open /proc/ccs/status\n");
+	PreInit();
+	if ((fp_level = fopen(proc_policy_profile, "w")) == NULL) {
+		fprintf(stderr, "Can't open %s\n", proc_policy_profile);
 		exit(1);
 	}
 	fprintf(fp_level, "255-COMMENT=Test\n255-TOMOYO_VERBOSE=0\n255-MAC_FOR_FILE=0\n255-MAX_ACCEPT_ENTRY=2048\n");
 	fflush(fp_level);
-	if ((fp_domain = fopen("/proc/ccs/policy/domain_policy", "w")) == NULL) {
-		fprintf(stderr, "Can't open /proc/ccs/policy/domain_policy\n");
+	if ((fp_domain = fopen(proc_policy_domain_policy, "w")) == NULL) {
+		fprintf(stderr, "Can't open %s\n", proc_policy_domain_policy);
 		exit(1);
 	}
-	if ((fp_exception = fopen("/proc/ccs/policy/exception_policy", "w")) == NULL) {
-		fprintf(stderr, "Can't open /proc/ccs/policy/exception_policy\n");
+	if ((fp_exception = fopen(proc_policy_exception_policy, "w")) == NULL) {
+		fprintf(stderr, "Can't open %s\n", proc_policy_exception_policy);
 		exit(1);
 	}
 	{
-		FILE *fp = fopen("/proc/ccs/info/self_domain", "r");
+		FILE *fp = fopen(proc_policy_self_domain, "r");
 		if (!fp) {
-			fprintf(stderr, "Can't open /proc/ccs/info/self_domain\n");
+			fprintf(stderr, "Can't open %s\n", proc_policy_self_domain);
 			exit(1);
 		}
 		memset(self_domain, 0, sizeof(self_domain));
@@ -56,9 +50,9 @@ int main(int argc, char *argv[]) {
 		fclose(fp);
 	}
 	{
-		FILE *fp = fopen("/proc/ccs/policy/.domain_status", "w");
+		FILE *fp = fopen(proc_policy_domain_status, "w");
 		if (!fp) {
-			fprintf(stderr, "Can't open /proc/ccs/policy/.domain_status\n");
+			fprintf(stderr, "Can't open %s\n", proc_policy_domain_status);
 			exit(1);
 		}
 		fprintf(fp, "255 %s\n", self_domain);
