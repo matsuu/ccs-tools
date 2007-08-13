@@ -20,6 +20,9 @@ TOMOYO_QUIET=0
 REAL_INIT=/sbin/init
 PROC_UNMOUNT=0
 
+exec 0< /dev/console
+exec 1> /dev/console
+exec 2> /dev/console
 
 if [ ! -d /proc/self/ ]; then
 	mount -nt proc none /proc && PROC_UNMOUNT=1
