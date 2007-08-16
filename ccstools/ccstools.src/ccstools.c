@@ -460,6 +460,7 @@ int main(int argc, char *argv[]) {
 	if (access("/proc/tomoyo/", F_OK) == 0) {
 		proc_policy_dir              = "/proc/tomoyo/";
 		disk_policy_dir              = "/etc/tomoyo/";
+		proc_policy_domain_policy    = "/proc/tomoyo/domain_policy";
 		disk_policy_domain_policy    = "/etc/tomoyo/domain_policy.txt";
 		proc_policy_exception_policy = "/proc/tomoyo/exception_policy";
 		disk_policy_exception_policy = "/etc/tomoyo/exception_policy.txt";
