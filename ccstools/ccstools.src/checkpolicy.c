@@ -525,10 +525,6 @@ int checkpolicy_main(int argc, char *argv[]) {
 				if (!IsCorrectPath(shared_buffer, 1, -1, -1)) {
 					printf("%u: ERROR: '%s' is a bad pathname.\n", line, shared_buffer); errors++;
 				}
-			} else if (strncmp(shared_buffer, KEYWORD_INITIALIZER, KEYWORD_INITIALIZER_LEN) == 0) {
-				CheckDomainInitializerPolicy(shared_buffer + KEYWORD_INITIALIZER_LEN);
-			} else if (strncmp(shared_buffer, KEYWORD_NO_INITIALIZER, KEYWORD_NO_INITIALIZER_LEN) == 0) {
-				CheckDomainInitializerPolicy(shared_buffer + KEYWORD_NO_INITIALIZER_LEN);
 			} else if (strncmp(shared_buffer, KEYWORD_INITIALIZE_DOMAIN, KEYWORD_INITIALIZE_DOMAIN_LEN) == 0) {
 				CheckDomainInitializerPolicy(shared_buffer + KEYWORD_INITIALIZE_DOMAIN_LEN);
 			} else if (strncmp(shared_buffer, KEYWORD_NO_INITIALIZE_DOMAIN, KEYWORD_NO_INITIALIZE_DOMAIN_LEN) == 0) {

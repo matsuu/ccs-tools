@@ -96,8 +96,6 @@
 #define KEYWORD_DENY_UNMOUNT_LEN         (sizeof(KEYWORD_DENY_UNMOUNT) - 1)
 #define KEYWORD_FILE_PATTERN             "file_pattern "
 #define KEYWORD_FILE_PATTERN_LEN         (sizeof(KEYWORD_FILE_PATTERN) - 1)
-#define KEYWORD_INITIALIZER              "initializer "
-#define KEYWORD_INITIALIZER_LEN          (sizeof(KEYWORD_INITIALIZER) - 1)
 #define KEYWORD_MAC_FOR_CAPABILITY       "MAC_FOR_CAPABILITY::"
 #define KEYWORD_MAC_FOR_CAPABILITY_LEN   (sizeof(KEYWORD_MAC_FOR_CAPABILITY) - 1)
 #define KEYWORD_SELECT                   "select "
@@ -114,8 +112,6 @@
 #define KEYWORD_PATH_GROUP_LEN           (sizeof(KEYWORD_PATH_GROUP) - 1)
 #define KEYWORD_ADDRESS_GROUP            "address_group "
 #define KEYWORD_ADDRESS_GROUP_LEN        (sizeof(KEYWORD_ADDRESS_GROUP) - 1)
-#define KEYWORD_NO_INITIALIZER           "no_" KEYWORD_INITIALIZER
-#define KEYWORD_NO_INITIALIZER_LEN       (sizeof(KEYWORD_NO_INITIALIZER) - 1)
 #define KEYWORD_NO_INITIALIZE_DOMAIN     "no_" KEYWORD_INITIALIZE_DOMAIN
 #define KEYWORD_NO_INITIALIZE_DOMAIN_LEN (sizeof(KEYWORD_NO_INITIALIZE_DOMAIN) - 1)
 #define KEYWORD_NO_KEEP_DOMAIN           "no_" KEYWORD_KEEP_DOMAIN
@@ -171,7 +167,6 @@ struct domain_initializer_entry {
 	const struct path_info *program;
 	unsigned char is_not:1;
 	unsigned char is_last_name:1;
-	unsigned char is_oldstyle:1;
 };
 
 struct domain_keeper_entry {

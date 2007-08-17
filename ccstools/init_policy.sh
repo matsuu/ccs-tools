@@ -29,21 +29,21 @@ fi
 chmod 700 /etc/ccs/
 chown root:root /etc/ccs/
 
-if [ ! -r /etc/ccs/manager.txt ]; then
+if [ ! -r /etc/ccs/manager.conf ]; then
 	echo Creating manager policy.
-	echo $PWD/loadpolicy  > /etc/ccs/manager.txt
-	echo $PWD/editpolicy >> /etc/ccs/manager.txt
-	echo $PWD/setlevel   >> /etc/ccs/manager.txt
-	echo $PWD/setprofile >> /etc/ccs/manager.txt
-	echo $PWD/ld-watch   >> /etc/ccs/manager.txt
-	echo $PWD/ccs-queryd >> /etc/ccs/manager.txt
+	echo $PWD/loadpolicy  > /etc/ccs/manager.conf
+	echo $PWD/editpolicy >> /etc/ccs/manager.conf
+	echo $PWD/setlevel   >> /etc/ccs/manager.conf
+	echo $PWD/setprofile >> /etc/ccs/manager.conf
+	echo $PWD/ld-watch   >> /etc/ccs/manager.conf
+	echo $PWD/ccs-queryd >> /etc/ccs/manager.conf
 fi
 
-if [ ! -r /etc/ccs/status.txt ]; then
+if [ ! -r /etc/ccs/profile.conf ]; then
 	echo Creating default profile.
 	case "$PROFILE_TYPE" in
 	--file-only-profile)
-		cat > /etc/ccs/status.txt << EOF
+		cat > /etc/ccs/profile.conf << EOF
 0-COMMENT=-----Disabled Mode-----
 0-MAC_FOR_FILE=0
 0-TOMOYO_VERBOSE=0
@@ -59,7 +59,7 @@ if [ ! -r /etc/ccs/status.txt ]; then
 EOF
 		;;
 	*)
-		cat > /etc/ccs/status.txt << EOF
+		cat > /etc/ccs/profile.conf << EOF
 0-COMMENT=-----Disabled Mode-----
 1-COMMENT=-----Learning Mode-----
 1-MAC_FOR_FILE=1
@@ -204,8 +204,8 @@ EOF
 	esac
 fi
 
-if [ ! -r /etc/ccs/exception_policy.txt ]; then
+if [ ! -r /etc/ccs/exception_policy.conf ]; then
 	echo Creating exception policy. This will take several minutes.
-	make_exception.sh > /etc/ccs/exception_policy.txt
-	make_alias.sh >> /etc/ccs/exception_policy.txt
+	make_exception.sh > /etc/ccs/exception_policy.conf
+	make_alias.sh >> /etc/ccs/exception_policy.conf
 fi

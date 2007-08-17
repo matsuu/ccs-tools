@@ -6,8 +6,8 @@
 #
 # Version: 1.3.2   2007/02/14
 #
-# Run this script and add the output to /etc/ccs/exception_policy.txt .
-# You MUST review the content of /etc/ccs/exception_policy.txt
+# Run this script and add the output to /etc/ccs/exception_policy.conf .
+# You MUST review the content of /etc/ccs/exception_policy.conf
 # because there would be redundant or dangerous entries.
 #
 

@@ -6,8 +6,8 @@
 #
 # Version: 1.3.2   2007/02/14
 #
-# Run this script and add the output to /etc/ccs/exception_policy.txt .
-# You MUST review the content of /etc/ccs/exception_policy.txt
+# Run this script and add the output to /etc/ccs/exception_policy.conf .
+# You MUST review the content of /etc/ccs/exception_policy.conf
 # because there would be redundant or dangerous entries.
 #
 
@@ -46,9 +46,9 @@ echo 'file_pattern /dev/tty\$'
 #
 # Make patterns for policy directory.
 #
-echo 'file_pattern /etc/ccs/system_policy.\$-\$-\$.\$:\$:\$.txt'
-echo 'file_pattern /etc/ccs/exception_policy.\$-\$-\$.\$:\$:\$.txt'
-echo 'file_pattern /etc/ccs/domain_policy.\$-\$-\$.\$:\$:\$.txt'
+echo 'file_pattern /etc/ccs/system_policy.\$-\$-\$.\$:\$:\$.conf'
+echo 'file_pattern /etc/ccs/exception_policy.\$-\$-\$.\$:\$:\$.conf'
+echo 'file_pattern /etc/ccs/domain_policy.\$-\$-\$.\$:\$:\$.conf'
 
 #
 # Make patterns for unnamed pipes and sockets.

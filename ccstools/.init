@@ -4,16 +4,15 @@
 #
 # Copyright (C) 2005-2007  NTT DATA CORPORATION
 #
-# Version: 1.5.0-pre 2007/08/12
+# Version: 1.5.0-pre 2007/08/17
 #
-# Run this script by passing init= to kernel command line option.
-# You had better not to register this script to /etc/ccs/manager.txt
-# because all programs can update policies before activating MAC
-# but this script needn't to be run again after MAC activated.
+# This program is executed automatically by kernel
+# when execution of /sbin/init is requested by initrd.
 #
 
-POLICY_DIR=/etc/ccs/
-STATUS=""
+PROC_POLICY_DIR=/proc/ccs/
+DISK_POLICY_DIR=/etc/ccs/
+PROFILE=""
 TOMOYO_NOLOAD=0
 TOMOYO_QUIET=0
 
@@ -28,7 +27,12 @@ if [ ! -d /proc/self/ ]; then
 	mount -nt proc none /proc && PROC_UNMOUNT=1
 fi
 
-if [ ! -d /proc/ccs/ ]; then
+if [ -d /proc/tomoyo/ ]; then
+	PROC_POLICY_DIR=/proc/tomoyo/
+	DISK_POLICY_DIR=/etc/tomoyo/
+fi
+
+if [ ! -d $PROC_POLICY_DIR ]; then
 	[ $PROC_UNMOUNT == 1 ] && umount -n /proc
 	[ $$ == 1 ] && exec $REAL_INIT "$@"
 	echo "You can't run this program for this kernel."
@@ -39,17 +43,17 @@ for i in `cat /proc/cmdline`
   do
   case $i in
 	  (CCS=default)
-	  STATUS="default"
+	  PROFILE="default"
 	  ;;
 	  (CCS=disabled)
-	  STATUS="disabled"
+	  PROFILE="disabled"
 	  ;;
 	  (CCS=boottest)
-	  STATUS="boottest"
+	  PROFILE="boottest"
 	  ;;
 	  (CCS=*)
-	  STATUS=`echo $i | cut -b 5-`
-	  [ -r $POLICY_DIR/status-$STATUS.txt ] || STATUS=""
+	  PROFILE=`echo $i | cut -b 5-`
+	  [ -r $DISK_POLICY_DIR/profile-$PROFILE.conf ] || PROFILE=""
 	  ;;
 	  (TOMOYO_NOLOAD)
 	  TOMOYO_NOLOAD=1
@@ -60,47 +64,47 @@ for i in `cat /proc/cmdline`
   esac
 done
 
-if [ "x$STATUS" == "x" ]; then
+if [ "x$PROFILE" == "x" ]; then
 	TMOUT=10
 	while :
 	  do
-	  echo "TOMOYO Linux: Enter 'disabled' within $TMOUT seconds to disable TOMOYO Linux."
-	  STATUS=""
-	  read -p "TOMOYO Linux> " STATUS
-	  [ "x$STATUS" == "x" ] && STATUS="default"
-	  [ "x$STATUS" == "xdefault" ] && break
-	  [ "x$STATUS" == "xdisabled" ] && break
-	  [ "x$STATUS" == "xboottest" ] && break
-	  [ -r $POLICY_DIR/status-$STATUS.txt ] && break
-	  [ "x$STATUS" == "xTOMOYO_NOLOAD" ] && TOMOYO_NOLOAD=1
-	  [ "x$STATUS" == "xTOMOYO_QUIET" ] && TOMOYO_QUIET=1
+	  echo "TOMOYO Linux: Enter 'disable' within $TMOUT seconds to disable TOMOYO Linux."
+	  PROFILE=""
+	  read -p "TOMOYO Linux> " PROFILE
+	  [ "x$PROFILE" == "x" ] && PROFILE="default"
+	  [ "x$PROFILE" == "xdefault" ] && break
+	  [ "x$PROFILE" == "xdisable" ] && break
+	  [ "x$PROFILE" == "xboottest" ] && break
+	  [ -r $DISK_POLICY_DIR/profile-$PROFILE.conf ] && break
+	  [ "x$PROFILE" == "xTOMOYO_NOLOAD" ] && TOMOYO_NOLOAD=1
+	  [ "x$PROFILE" == "xTOMOYO_QUIET" ] && TOMOYO_QUIET=1
 	done
 fi
 
-[ -r $POLICY_DIR/manager.txt ] && cat $POLICY_DIR/manager.txt > /proc/ccs/manager
-[ -r $POLICY_DIR/system_policy.txt ] && cat $POLICY_DIR/system_policy.txt > /proc/ccs/system_policy
-[ -r $POLICY_DIR/exception_policy.txt ] && cat $POLICY_DIR/exception_policy.txt > /proc/ccs/exception_policy
-[ $TOMOYO_NOLOAD == 0 ] && [ -r $POLICY_DIR/domain_policy.txt ] && cat $POLICY_DIR/domain_policy.txt > /proc/ccs/domain_policy
+[ -r $DISK_POLICY_DIR/manager.conf ] && cat $DISK_POLICY_DIR/manager.conf > $PROC_POLICY_DIR/manager
+[ -r $DISK_POLICY_DIR/system_policy.conf ] && cat $DISK_POLICY_DIR/system_policy.conf > $PROC_POLICY_DIR/system_policy
+[ -r $DISK_POLICY_DIR/exception_policy.conf ] && cat $DISK_POLICY_DIR/exception_policy.conf > $PROC_POLICY_DIR/exception_policy
+[ $TOMOYO_NOLOAD == 0 ] && [ -r $DISK_POLICY_DIR/domain_policy.conf ] && cat $DISK_POLICY_DIR/domain_policy.conf > $PROC_POLICY_DIR/domain_policy
 
-if [ -r $POLICY_DIR/status-$STATUS.txt ]; then
-	cat $POLICY_DIR/status-$STATUS.txt > /proc/ccs/status
+if [ -r $DISK_POLICY_DIR/profile-$PROFILE.conf ]; then
+	cat $DISK_POLICY_DIR/profile-$PROFILE.conf > $PROC_POLICY_DIR/profile
 fi
-if [ "x$STATUS" == "xdefault" ]; then
-	[ -r $POLICY_DIR/status.txt ] && cat $POLICY_DIR/status.txt > /proc/ccs/status
+if [ "x$PROFILE" == "xdefault" ]; then
+	[ -r $DISK_POLICY_DIR/profile.conf ] && cat $DISK_POLICY_DIR/profile.conf > $PROC_POLICY_DIR/profile
 fi
-if [ "x$STATUS" == "xdisabled" ]; then
-	for i in `seq 0 255`; do echo $i-COMMENT= > /proc/ccs/status; done
-	grep -vF -- -COMMENT= /proc/ccs/status | sed -e 's/[0-9]*$/0/' > /proc/ccs/status
+if [ "x$PROFILE" == "xdisable" ]; then
+	for i in `seq 0 255`; do echo $i-COMMENT= > $PROC_POLICY_DIR/profile; done
+	grep -vF -- -COMMENT= $PROC_POLICY_DIR/profile | sed -e 's/[0-9]*$/0/' > $PROC_POLICY_DIR/profile
 fi
-if [ "x$STATUS" == "xboottest" ]; then
-	echo '0-MAC_FOR_CAPABILITY::=0' > /proc/ccs/status
+if [ "x$PROFILE" == "xboottest" ]; then
+	echo '0-MAC_FOR_CAPABILITY::=0' > $PROC_POLICY_DIR/profile
 fi
 if [ $TOMOYO_QUIET == 1 ]; then
-	grep -F TOMOYO_VERBOSE /proc/ccs/status | sed -e 's/[0-9]*$/0/' > /proc/ccs/status
+	grep -F TOMOYO_VERBOSE $PROC_POLICY_DIR/profile | sed -e 's/[0-9]*$/0/' > $PROC_POLICY_DIR/profile
 fi
 
-awk ' BEGIN { domain=0; acl=0; } { if ( $1 == "<kernel>" ) domain++; else if ( $1 != "" && $1 != "use_profile") acl++; } END { print domain " domains. " acl " ACL entries."; } ' /proc/ccs/domain_policy
-awk ' BEGIN { shared_mem=0; private_mem=0; } { if ( $1 == "Shared:" ) shared_mem = $NF / 1024; else if ( $1 == "Private:" ) private_mem = $NF / 1024; } END { print shared_mem " KB shared. " private_mem " KB private."; } ' /proc/ccs/meminfo
+awk ' BEGIN { domain=0; acl=0; } { if ( $1 == "<kernel>" ) domain++; else if ( $1 != "" && $1 != "use_profile") acl++; } END { print domain " domains. " acl " ACL entries."; } ' $PROC_POLICY_DIR/domain_policy
+awk ' BEGIN { shared_mem=0; private_mem=0; } { if ( $1 == "Shared:" ) shared_mem = $NF / 1024; else if ( $1 == "Private:" ) private_mem = $NF / 1024; } END { print shared_mem " KB shared. " private_mem " KB private."; } ' $PROC_POLICY_DIR/meminfo
 
 [ $PROC_UNMOUNT == 1 ] && umount -n /proc
 [ $$ == 1 ] && exec $REAL_INIT "$@"

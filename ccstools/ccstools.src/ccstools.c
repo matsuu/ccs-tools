@@ -436,15 +436,15 @@ extern int patternize_main(int argc, char *argv[]);
 const char *proc_policy_dir           = "/proc/ccs/",
 	*disk_policy_dir              = "/etc/ccs/",
 	*proc_policy_domain_policy    = "/proc/ccs/domain_policy",
-	*disk_policy_domain_policy    = "/etc/ccs/domain_policy.txt",
+	*disk_policy_domain_policy    = "/etc/ccs/domain_policy.conf",
 	*proc_policy_exception_policy = "/proc/ccs/exception_policy",
-	*disk_policy_exception_policy = "/etc/ccs/exception_policy.txt",
+	*disk_policy_exception_policy = "/etc/ccs/exception_policy.conf",
 	*proc_policy_system_policy    = "/proc/ccs/system_policy",
-	*disk_policy_system_policy    = "/etc/ccs/system_policy.txt",
+	*disk_policy_system_policy    = "/etc/ccs/system_policy.conf",
 	*proc_policy_profile          = "/proc/ccs/status",
-	*disk_policy_profile          = "/etc/ccs/status.txt",
+	*disk_policy_profile          = "/etc/ccs/profile.conf",
 	*proc_policy_manager          = "/proc/ccs/manager",
-	*disk_policy_manager          = "/etc/ccs/manager.txt",
+	*disk_policy_manager          = "/etc/ccs/manager.conf",
 	*proc_policy_query            = "/proc/ccs/query",
 	*proc_policy_grant_log        = "/proc/ccs/grant_log",
 	*proc_policy_reject_log       = "/proc/ccs/reject_log",
@@ -461,15 +461,15 @@ int main(int argc, char *argv[]) {
 		proc_policy_dir              = "/proc/tomoyo/";
 		disk_policy_dir              = "/etc/tomoyo/";
 		proc_policy_domain_policy    = "/proc/tomoyo/domain_policy";
-		disk_policy_domain_policy    = "/etc/tomoyo/domain_policy.txt";
+		disk_policy_domain_policy    = "/etc/tomoyo/domain_policy.conf";
 		proc_policy_exception_policy = "/proc/tomoyo/exception_policy";
-		disk_policy_exception_policy = "/etc/tomoyo/exception_policy.txt";
+		disk_policy_exception_policy = "/etc/tomoyo/exception_policy.conf";
 		proc_policy_system_policy    = "/proc/tomoyo/system_policy";
-		disk_policy_system_policy    = "/etc/tomoyo/system_policy.txt";
+		disk_policy_system_policy    = "/etc/tomoyo/system_policy.conf";
 		proc_policy_profile          = "/proc/tomoyo/status";
-		disk_policy_profile          = "/etc/tomoyo/status.txt";
+		disk_policy_profile          = "/etc/tomoyo/profile.conf";
 		proc_policy_manager          = "/proc/tomoyo/manager";
-		disk_policy_manager          = "/etc/tomoyo/manager.txt";
+		disk_policy_manager          = "/etc/tomoyo/manager.conf";
 		proc_policy_query            = "/proc/tomoyo/query";
 		proc_policy_grant_log        = "/proc/tomoyo/grant_log";
 		proc_policy_reject_log       = "/proc/tomoyo/reject_log";
@@ -496,7 +496,7 @@ int main(int argc, char *argv[]) {
 	 * because it is dangerous to allow updating policies via unchecked argv[1].
 	 * You should use either "symbolic links with 'alias' directive" or "hard links".
 	 */
-	printf("ccstools version 1.5.0-pre build 2007/08/12\n");
+	printf("ccstools version 1.5.0-pre build 2007/08/17\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }

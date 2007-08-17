@@ -416,13 +416,13 @@ int savepolicy_main(int argc, char *argv[]) {
 			char *old_policy = ReadFile(disk_policy_system_policy);
 			if (new_policy && (force_save || !old_policy || strcmp(new_policy, old_policy))) {
 				int fd;
-				snprintf(filename, sizeof(filename) - 1, "system_policy.%02d-%02d-%02d.%02d:%02d:%02d.txt", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+				snprintf(filename, sizeof(filename) - 1, "system_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 				if ((fd = open(filename, O_WRONLY | O_CREAT, 0600)) != EOF) {
 					ftruncate(fd, 0);
 					write(fd, new_policy, strlen(new_policy));
 					close(fd);
 					unlink(disk_policy_system_policy);
-					symlink(filename, "system_policy.txt");
+					symlink(filename, "system_policy.conf");
 				} else {
 					printf("Can't create %s\n", filename);
 				}
@@ -436,13 +436,13 @@ int savepolicy_main(int argc, char *argv[]) {
 			char *old_policy = ReadFile(disk_policy_exception_policy);
 			if (new_policy && (force_save || !old_policy || strcmp(new_policy, old_policy))) {
 				int fd;
-				snprintf(filename, sizeof(filename) - 1, "exception_policy.%02d-%02d-%02d.%02d:%02d:%02d.txt", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+				snprintf(filename, sizeof(filename) - 1, "exception_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 				if ((fd = open(filename, O_WRONLY | O_CREAT, 0600)) != EOF) {
 					ftruncate(fd, 0);
 					write(fd, new_policy, strlen(new_policy));
 					close(fd);
 					unlink(disk_policy_exception_policy);
-					symlink(filename, "exception_policy.txt");
+					symlink(filename, "exception_policy.conf");
 				} else {
 					printf("Can't create %s\n", filename);
 				}
@@ -465,13 +465,13 @@ int savepolicy_main(int argc, char *argv[]) {
 			/* Need to save domain policy? */
 			if (force_save || !IsSameDomainList()) {
 				int fd;
-				snprintf(filename, sizeof(filename) - 1, "domain_policy.%02d-%02d-%02d.%02d:%02d:%02d.txt", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+				snprintf(filename, sizeof(filename) - 1, "domain_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 				if ((fd = open(filename, O_WRONLY | O_CREAT, 0600)) != EOF) {
 					ftruncate(fd, 0);
 					WriteDomainPolicy(fd);
 					close(fd);
 					unlink(disk_policy_domain_policy);
-					symlink(filename, "domain_policy.txt");
+					symlink(filename, "domain_policy.conf");
 				} else {
 					printf("Can't create %s\n", filename);
 				}
@@ -832,7 +832,7 @@ static void ReadGenericPolicy(void) {
 	memset(generic_acl_list_selected, 0, generic_acl_list_count);
 }
 
-static int AddDomainInitializerEntry(const char *domainname, const char *program, const int is_not, const int is_oldstyle) {
+static int AddDomainInitializerEntry(const char *domainname, const char *program, const int is_not) {
 	struct domain_initializer_entry *ptr;
 	int is_last_name = 0;
 	if (!IsCorrectPath(program, 1, 0, -1)) return -EINVAL;
@@ -850,17 +850,16 @@ static int AddDomainInitializerEntry(const char *domainname, const char *program
 	if (domainname && (ptr->domainname = SaveName(domainname)) == NULL) OutOfMemory();
 	ptr->is_not = is_not;
 	ptr->is_last_name = is_last_name;
-	ptr->is_oldstyle = is_oldstyle;
-	return 0;
+    	return 0;
 }
 
-static int AddDomainInitializerPolicy(char *data, const int is_not, const int is_oldstyle) {
+static int AddDomainInitializerPolicy(char *data, const int is_not) {
 	char *cp = strstr(data, " from ");
     if (cp) {
         *cp = '\0';
-        return AddDomainInitializerEntry(cp + 6, data, is_not, is_oldstyle);
+        return AddDomainInitializerEntry(cp + 6, data, is_not);
     } else {
-        return AddDomainInitializerEntry(NULL, data, is_not, is_oldstyle);
+        return AddDomainInitializerEntry(NULL, data, is_not);
     }
 }
 
@@ -975,14 +974,10 @@ static void ReadDomainAndExceptionPolicy(void) {
 	if ((fp = open_read(EXCEPTION_POLICY_FILE)) != NULL) {
 		get();
 		while (freadline(fp)) {
-			if (strncmp(shared_buffer, KEYWORD_INITIALIZER, KEYWORD_INITIALIZER_LEN) == 0) {
-				AddDomainInitializerPolicy(shared_buffer + KEYWORD_INITIALIZER_LEN, 0, 1);
-			} else if (strncmp(shared_buffer, KEYWORD_NO_INITIALIZER, KEYWORD_NO_INITIALIZER_LEN) == 0) {
-				AddDomainInitializerPolicy(shared_buffer + KEYWORD_NO_INITIALIZER_LEN, 1, 1);
-			} else if (strncmp(shared_buffer, KEYWORD_INITIALIZE_DOMAIN, KEYWORD_INITIALIZE_DOMAIN_LEN) == 0) {
-				AddDomainInitializerPolicy(shared_buffer + KEYWORD_INITIALIZE_DOMAIN_LEN, 0, 0);
+			if (strncmp(shared_buffer, KEYWORD_INITIALIZE_DOMAIN, KEYWORD_INITIALIZE_DOMAIN_LEN) == 0) {
+				AddDomainInitializerPolicy(shared_buffer + KEYWORD_INITIALIZE_DOMAIN_LEN, 0);
 			} else if (strncmp(shared_buffer, KEYWORD_NO_INITIALIZE_DOMAIN, KEYWORD_NO_INITIALIZE_DOMAIN_LEN) == 0) {
-				AddDomainInitializerPolicy(shared_buffer + KEYWORD_NO_INITIALIZE_DOMAIN_LEN, 1, 0);
+				AddDomainInitializerPolicy(shared_buffer + KEYWORD_NO_INITIALIZE_DOMAIN_LEN, 1);
 			} else if (strncmp(shared_buffer, KEYWORD_KEEP_DOMAIN, KEYWORD_KEEP_DOMAIN_LEN) == 0) {
 				AddDomainKeeperPolicy(shared_buffer + KEYWORD_KEEP_DOMAIN_LEN, 0);
 			} else if (strncmp(shared_buffer, KEYWORD_NO_KEEP_DOMAIN, KEYWORD_NO_KEEP_DOMAIN_LEN) == 0) {
@@ -1195,8 +1190,8 @@ static void ShowList(void) {
 			if ((domain_initializer = domain_list[index].domain_initializer) != NULL) {
 				get();
 				memset(shared_buffer, 0, shared_buffer_len);
-				if (domain_initializer->domainname) snprintf(shared_buffer, shared_buffer_len - 1, " ( %s%s from %s )", domain_initializer->is_oldstyle ? KEYWORD_INITIALIZER : KEYWORD_INITIALIZE_DOMAIN, domain_initializer->program->name, domain_initializer->domainname->name);
-				else snprintf(shared_buffer, shared_buffer_len - 1, " ( %s%s )", domain_initializer->is_oldstyle ? KEYWORD_INITIALIZER : KEYWORD_INITIALIZE_DOMAIN, domain_initializer->program->name);
+				if (domain_initializer->domainname) snprintf(shared_buffer, shared_buffer_len - 1, " ( " KEYWORD_INITIALIZE_DOMAIN "%s from %s )", domain_initializer->program->name, domain_initializer->domainname->name);
+				else snprintf(shared_buffer, shared_buffer_len - 1, " ( " KEYWORD_INITIALIZE_DOMAIN "%s )", domain_initializer->program->name);
 				printw("%s", eat(shared_buffer)); tmp_col += strlen(shared_buffer);
 				put();
 			} else if ((domain_keeper = domain_list[index].domain_keeper) != NULL) {
@@ -2139,31 +2134,31 @@ int editpolicy_main(int argc, char *argv[]) {
 		struct tm *tm = localtime(&now);
 		char filename[1024], buffer[1024];
 		memset(filename, 0, sizeof(filename));
-		snprintf(filename, sizeof(filename) - 1, "system_policy.%02d-%02d-%02d.%02d:%02d:%02d.txt", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+		snprintf(filename, sizeof(filename) - 1, "system_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 		if ((fd = open(filename, O_WRONLY | O_CREAT, 0600)) != EOF) {
 			if ((fp = open_read(SYSTEM_POLICY_FILE)) != NULL) {
 				while ((len = fread(buffer, 1, sizeof(buffer), fp)) > 0) write(fd, buffer, len);
 				close(fd); fclose(fp);
 				unlink(disk_policy_system_policy);
-				symlink(filename, "system_policy.txt");
+				symlink(filename, "system_policy.conf");
 			}
 		}
-		snprintf(filename, sizeof(filename) - 1, "exception_policy.%02d-%02d-%02d.%02d:%02d:%02d.txt", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+		snprintf(filename, sizeof(filename) - 1, "exception_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 		if ((fd = open(filename, O_WRONLY | O_CREAT, 0600)) != EOF) {
 			if ((fp = open_read(EXCEPTION_POLICY_FILE)) != NULL) {
 				while ((len = fread(buffer, 1, sizeof(buffer), fp)) > 0) write(fd, buffer, len);
 				close(fd); fclose(fp);
 				unlink(disk_policy_exception_policy);
-				symlink(filename, "exception_policy.txt");
+				symlink(filename, "exception_policy.conf");
 			}
 		}
-		snprintf(filename, sizeof(filename) - 1, "domain_policy.%02d-%02d-%02d.%02d:%02d:%02d.txt", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+		snprintf(filename, sizeof(filename) - 1, "domain_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 		if ((fd = open(filename, O_WRONLY | O_CREAT, 0600)) != EOF) {
 			if ((fp = open_read(DOMAIN_POLICY_FILE)) != NULL) {
 				while ((len = fread(buffer, 1, sizeof(buffer), fp)) > 0) write(fd, buffer, len);
 				close(fd); fclose(fp);
 				unlink(disk_policy_domain_policy);
-				symlink(filename, "domain_policy.txt");
+				symlink(filename, "domain_policy.conf");
 			}
 		}
 	}

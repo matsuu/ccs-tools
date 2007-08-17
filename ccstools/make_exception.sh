@@ -6,8 +6,8 @@
 #
 # Version: 1.3.2   2007/02/14
 #
-# Run this script and save the output as /etc/ccs/exception_policy.txt .
-# You MUST review the content of /etc/ccs/exception_policy.txt
+# Run this script and save the output as /etc/ccs/exception_policy.conf .
+# You MUST review the content of /etc/ccs/exception_policy.conf
 # because there would be redundant or dangerous entries.
 #
 
@@ -20,7 +20,7 @@ export PATH=$PWD:/sbin:/bin:${PATH}
 for i in `cat /proc/sys/kernel/modprobe /proc/sys/kernel/hotplug`
 do
 	FILE=`realpath $i`
-	[ -n "$FILE" -a -f "$FILE" -a -x "$FILE" -a ! -L "$FILE" ] && echo 'initializer '$FILE
+	[ -n "$FILE" -a -f "$FILE" -a -x "$FILE" -a ! -L "$FILE" ] && echo 'initialize_domain '$FILE
 done
 
 #
@@ -55,9 +55,9 @@ echo 'file_pattern /dev/tty\$'
 #
 # Make patterns for policy directory.
 #
-echo 'file_pattern /etc/ccs/system_policy.\$-\$-\$.\$:\$:\$.txt'
-echo 'file_pattern /etc/ccs/exception_policy.\$-\$-\$.\$:\$:\$.txt'
-echo 'file_pattern /etc/ccs/domain_policy.\$-\$-\$.\$:\$:\$.txt'
+echo 'file_pattern /etc/ccs/system_policy.\$-\$-\$.\$:\$:\$.conf'
+echo 'file_pattern /etc/ccs/exception_policy.\$-\$-\$.\$:\$:\$.conf'
+echo 'file_pattern /etc/ccs/domain_policy.\$-\$-\$.\$:\$:\$.conf'
 
 #
 # Make patterns for man directory.
@@ -126,7 +126,7 @@ done | sort | uniq
 #
 for FILE in `for i in /etc/init.d/*; do realpath $i; done | sort | uniq`
 do
-	[ -n "$FILE" -a -f "$FILE" -a -x "$FILE" -a ! -L "$FILE" ] && echo "initializer "$FILE
+	[ -n "$FILE" -a -f "$FILE" -a -x "$FILE" -a ! -L "$FILE" ] && echo "initialize_domain "$FILE
 done
 
 #
@@ -141,7 +141,7 @@ done
 for FILE in /sbin/getty /sbin/init /sbin/mingetty /sbin/udevd /usr/sbin/anacron /usr/sbin/apache2 /usr/sbin/atd /usr/sbin/cron /usr/sbin/crond /usr/sbin/httpd /usr/sbin/inetd /usr/sbin/logrotate /usr/sbin/smbd /usr/sbin/squid /usr/sbin/sshd /usr/sbin/vsftpd /usr/sbin/xinetd
 do
   FILE=`realpath $FILE 2> /dev/null`
-  [ -n "$FILE" -a -f "$FILE" -a -x "$FILE" -a ! -L "$FILE" ] && echo 'initializer '$FILE
+  [ -n "$FILE" -a -f "$FILE" -a -x "$FILE" -a ! -L "$FILE" ] && echo 'initialize_domain '$FILE
 done | sort | uniq
 
 #
