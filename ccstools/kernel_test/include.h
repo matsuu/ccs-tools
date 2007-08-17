@@ -63,7 +63,7 @@ static const char *proc_policy_dir    = "/proc/ccs/",
 	*proc_policy_domain_policy    = "/proc/ccs/domain_policy",
 	*proc_policy_exception_policy = "/proc/ccs/exception_policy",
 	*proc_policy_system_policy    = "/proc/ccs/system_policy",
-	*proc_policy_profile          = "/proc/ccs/status",
+	*proc_policy_profile          = "/proc/ccs/profile",
 	*proc_policy_manager          = "/proc/ccs/manager",
 	*proc_policy_query            = "/proc/ccs/query",
 	*proc_policy_grant_log        = "/proc/ccs/grant_log",
@@ -78,7 +78,7 @@ static void PreInit(void) {
 		proc_policy_domain_policy    = "/proc/tomoyo/domain_policy";
 		proc_policy_exception_policy = "/proc/tomoyo/exception_policy";
 		proc_policy_system_policy    = "/proc/tomoyo/system_policy";
-		proc_policy_profile          = "/proc/tomoyo/status";
+		proc_policy_profile          = "/proc/tomoyo/profile";
 		proc_policy_manager          = "/proc/tomoyo/manager";
 		proc_policy_query            = "/proc/tomoyo/query";
 		proc_policy_grant_log        = "/proc/tomoyo/grant_log";
