@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0-pre   2007/08/12
+ * Version: 1.5.0-pre   2007/08/19
  *
  */
 #include "ccstools.h"
@@ -477,6 +477,7 @@ int main(int argc, char *argv[]) {
 		proc_policy_process_status   = "/proc/tomoyo/.process_status";
 	}
 	if (strrchr(argv0, '/')) argv0 = strrchr(argv0, '/') + 1;
+retry:
 	if (strcmp(argv0, "sortpolicy") == 0) return sortpolicy_main(argc, argv);
 	if (strcmp(argv0, "setprofile") == 0) return setprofile_main(argc, argv);
 	if (strcmp(argv0, "setlevel") == 0) return setlevel_main(argc, argv);
@@ -491,12 +492,16 @@ int main(int argc, char *argv[]) {
 	if (strcmp(argv0, "ccs-queryd") == 0) return ccsqueryd_main(argc, argv);
 	if (strcmp(argv0, "ccs-auditd") == 0) return ccsauditd_main(argc, argv);
 	if (strcmp(argv0, "patternize") == 0) return patternize_main(argc, argv);
+	if (strncmp(argv0, "ccs-", 4) == 0) {
+		argv0 += 4;
+		goto retry;
+	}
 	/*
 	 * Unlike busybox, I don't use argv[1] if argv[0] is the name of this program
 	 * because it is dangerous to allow updating policies via unchecked argv[1].
 	 * You should use either "symbolic links with 'alias' directive" or "hard links".
 	 */
-	printf("ccstools version 1.5.0-pre build 2007/08/17\n");
+	printf("ccstools version 1.5.0-pre build 2007/08/19\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }
