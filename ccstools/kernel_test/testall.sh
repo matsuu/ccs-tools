@@ -1,6 +1,6 @@
 #! /bin/sh
 
-export PATH=/root/ccstools/kernel_test/:${PATH}
+export PATH=/usr/lib/ccs/kernel_test/:${PATH}
 
 echo "Testing all. (All results are reported)"
 newns sakura_filesystem_test
