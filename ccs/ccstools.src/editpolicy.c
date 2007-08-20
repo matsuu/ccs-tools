@@ -1863,7 +1863,7 @@ static int GenericListLoop(void) {
 			break;
 		case 'o':
 		case 'O':
-			try_optimize(current);
+			if (current_screen == SCREEN_ACL_LIST) try_optimize(current);
 			break;
 		case '?':
 			{
