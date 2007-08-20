@@ -441,7 +441,7 @@ const char *proc_policy_dir           = "/proc/ccs/",
 	*disk_policy_exception_policy = "/etc/ccs/exception_policy.conf",
 	*proc_policy_system_policy    = "/proc/ccs/system_policy",
 	*disk_policy_system_policy    = "/etc/ccs/system_policy.conf",
-	*proc_policy_profile          = "/proc/ccs/status",
+	*proc_policy_profile          = "/proc/ccs/profile",
 	*disk_policy_profile          = "/etc/ccs/profile.conf",
 	*proc_policy_manager          = "/proc/ccs/manager",
 	*disk_policy_manager          = "/etc/ccs/manager.conf",
@@ -466,7 +466,7 @@ int main(int argc, char *argv[]) {
 		disk_policy_exception_policy = "/etc/tomoyo/exception_policy.conf";
 		proc_policy_system_policy    = "/proc/tomoyo/system_policy";
 		disk_policy_system_policy    = "/etc/tomoyo/system_policy.conf";
-		proc_policy_profile          = "/proc/tomoyo/status";
+		proc_policy_profile          = "/proc/tomoyo/profile";
 		disk_policy_profile          = "/etc/tomoyo/profile.conf";
 		proc_policy_manager          = "/proc/tomoyo/manager";
 		disk_policy_manager          = "/etc/tomoyo/manager.conf";
