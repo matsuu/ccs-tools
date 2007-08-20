@@ -966,6 +966,7 @@ static int parse_ip(const char *address, struct ip_address_entry *entry) {
 			entry->min[j * 2] = (u8) (min[j] >> 8); entry->min[j * 2 + 1] = (u8) min[j]; 
 			entry->min[j * 2] = (u8) (min[j] >> 8); entry->min[j * 2 + 1] = (u8) min[j]; 
 		}
+		entry->is_ipv6 = 1;
 		return 0;
 	}
 	return -EINVAL;
@@ -1546,7 +1547,6 @@ static void try_optimize(const int current) {
 	for (directive_index = 0; directive_index < 30; directive_index++) {
 		if (strncmp(cp, directive_list[directive_index], strlen(directive_list[directive_index])) == 0) break;
 	}
-	if (directive_index == 20) return; /* Not implemented yet. */
 	if (directive_index == 30) return;
 	cp = strdup(cp);
 	if (!cp) return;
@@ -1570,7 +1570,13 @@ static void try_optimize(const int current) {
 		if (pathcmp(&sarg3, &darg3)) continue;
 
 		/* Compare first word. */
-		if (directive_index < 21) {
+		if (directive_index == 20) {
+			/* Pathname component. */
+			if (pathcmp(&sarg1, &darg1)) {
+				/* allow_argv0 doesn't support path_group. */
+				if (darg1.name[0] == '@' || darg1.is_patterned || !PathMatchesToPattern(&darg1, &sarg1)) continue;
+			}
+		} else if (directive_index < 20) {
 			if (pathcmp(&sarg1, &darg1)) {
 				const int may_use_pattern = !darg1.is_patterned
 					&& (directive_index != 0) && (directive_index != 2) && (directive_index != 4) && (directive_index != 6);
@@ -1604,19 +1610,19 @@ static void try_optimize(const int current) {
 				if (!group) continue;
 				for (i = 0; i < group->member_name_len; i++) {
 					struct ip_address_entry *sentry = &group->member_name[i];
-					if (memcmp(sentry->min, dentry.min, 16) <= 0 && memcmp(dentry.max, sentry->max, 16) <= 0) break;
+					if (sentry->is_ipv6 == dentry.is_ipv6 && memcmp(sentry->min, dentry.min, 16) <= 0 && memcmp(dentry.max, sentry->max, 16) <= 0) break;
 				}
 				if (i == group->member_name_len) continue;
 			} else {
 				/* IP address component. */
 				struct ip_address_entry sentry;
 				if (parse_ip(sarg1.name, &sentry)) continue;
-				if (memcmp(dentry.min, sentry.min, 16) < 0 || memcmp(sentry.max, dentry.max, 16) < 0) continue;
+				if (sentry.is_ipv6 != dentry.is_ipv6 || memcmp(dentry.min, sentry.min, 16) < 0 || memcmp(sentry.max, dentry.max, 16) < 0) continue;
 			}
 		}
 
 		/* Compare rest words. */
-		if (directive_index == 18 || directive_index == 19) {
+		if (directive_index == 17 || directive_index == 18) {
 			if (pathcmp(&sarg2, &darg2)) {
 				const int may_use_pattern = !darg2.is_patterned;
 				if (darg2.name[0] == '@') continue;
@@ -1635,6 +1641,11 @@ static void try_optimize(const int current) {
 					/* Pathname component. */
 					if (!may_use_pattern || !PathMatchesToPattern(&darg2, &sarg2)) continue;
 				}
+			}
+		} else if (directive_index == 20) {
+			/* Basename component. */
+			if (pathcmp(&sarg2, &darg2)) {
+				if (darg2.is_patterned || !PathMatchesToPattern(&darg2, &sarg2)) continue;
 			}
 		} else if (directive_index == 21) {
 			/* Domainname component. */

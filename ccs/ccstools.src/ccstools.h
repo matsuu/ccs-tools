@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0-pre   2007/08/12
+ * Version: 1.5.0-pre   2007/08/20
  *
  */
 
@@ -149,6 +149,7 @@ struct path_group_entry {
 struct ip_address_entry {
 	u8 min[16];
 	u8 max[16];
+	u8 is_ipv6;
 };
 
 struct address_group_entry {
