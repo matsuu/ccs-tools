@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0-pre   2007/08/12
+ * Version: 1.5.0-pre   2007/08/20
  *
  */
 #include "ccstools.h"
@@ -109,8 +109,10 @@ static char *ReadFile(const char *filename) {
 	return read_buffer;
 }
 
-static struct group_entry *group_list = NULL;
-static int group_list_len = 0;
+static struct path_group_entry *path_group_list = NULL;
+static int path_group_list_len = 0;
+static struct address_group_entry *address_group_list = NULL;
+static int address_group_list_len = 0;
 
 static struct domain_info *domain_list = NULL, *shadow_domain_list = NULL;
 static int domain_list_count = 0, shadow_domain_list_count = 0;
@@ -892,16 +894,16 @@ static int AddDomainKeeperPolicy(char *data, const int is_not) {
     }
 }
 
-static int AddGroupEntry(const char *group_name, const char *member_name, const int is_delete) {
+static int AddPathGroupEntry(const char *group_name, const char *member_name, const int is_delete) {
 	const struct path_info *saved_group_name, *saved_member_name;
 	int i, j;
-	struct group_entry *group = NULL;
+	struct path_group_entry *group = NULL;
 	if (!IsCorrectPath(group_name, 0, 0, 0) ||
 		!IsCorrectPath(member_name, 0, 0, 0)) return -EINVAL;
 	if ((saved_group_name = SaveName(group_name)) == NULL ||
 		(saved_member_name = SaveName(member_name)) == NULL) return -ENOMEM;
-	for (i = 0; i < group_list_len; i++) {
-		group = &group_list[i];
+	for (i = 0; i < path_group_list_len; i++) {
+		group = &path_group_list[i];
 		if (saved_group_name != group->group_name) continue;
 		for (j = 0; j < group->member_name_len; j++) {
 			if (group->member_name[j] == saved_member_name) {
@@ -916,10 +918,10 @@ static int AddGroupEntry(const char *group_name, const char *member_name, const 
 		break;
 	}
 	if (is_delete) return -ENOENT;
-	if (i == group_list_len) {
-		if ((group_list = (struct group_entry *) realloc(group_list, (group_list_len + 1) * sizeof(struct group_entry))) == NULL) OutOfMemory();
-		group = &group_list[group_list_len++];
-		memset(group, 0, sizeof(struct group_entry));
+	if (i == path_group_list_len) {
+		if ((path_group_list = (struct path_group_entry *) realloc(path_group_list, (path_group_list_len + 1) * sizeof(struct path_group_entry))) == NULL) OutOfMemory();
+		group = &path_group_list[path_group_list_len++];
+		memset(group, 0, sizeof(struct path_group_entry));
 		group->group_name = saved_group_name;
 	}
 	if ((group->member_name = (const struct path_info **) realloc(group->member_name, (group->member_name_len + 1) * sizeof(const struct path_info *))) == NULL) OutOfMemory();
@@ -927,17 +929,94 @@ static int AddGroupEntry(const char *group_name, const char *member_name, const 
 	return 0;
 }
 
-static int AddGroupPolicy(char *data, const int is_delete) {
+static int AddPathGroupPolicy(char *data, const int is_delete) {
 	char *cp = strchr(data, ' ');
 	if (!cp) return -EINVAL;
 	*cp++ = '\0';
-	return AddGroupEntry(data, cp, is_delete);
+	return AddPathGroupEntry(data, cp, is_delete);
 }
 
-static struct group_entry *FindGroup(const char *group_name) {
+static struct path_group_entry *FindPathGroup(const char *group_name) {
 	int i;
-	for (i = 0; i < group_list_len; i++) {
-		if (strcmp(group_name, group_list[i].group_name->name) == 0) return &group_list[i];
+	for (i = 0; i < path_group_list_len; i++) {
+		if (strcmp(group_name, path_group_list[i].group_name->name) == 0) return &path_group_list[i];
+	}
+	return NULL;
+}
+
+static int parse_ip(const char *address, struct ip_address_entry *entry) {
+	unsigned int min[8], max[8];
+	int i, j;
+	memset(entry, 0, sizeof(*entry));
+	i = sscanf(address, "%u.%u.%u.%u-%u.%u.%u.%u", &min[0], &min[1], &min[2], &min[3], &max[0], &max[1], &max[2], &max[3]);
+	if (i == 4) for (j = 0; j < 4; j++) max[j] = min[j]; 
+	if (i == 4 || i == 8) {
+		for (j = 0; j < 4; j++) {
+			entry->min[j] = (u8) min[j];
+			entry->max[j] = (u8) max[j];
+		}
+		return 0;
+	}
+	i = sscanf(address, "%X:%X:%X:%X:%X:%X:%X:%X-%X:%X:%X:%X:%X:%X:%X:%X",
+		   &min[0], &min[1], &min[2], &min[3], &min[4], &min[5], &min[6], &min[7],
+		   &max[0], &max[1], &max[2], &max[3], &max[4], &max[5], &max[6], &max[7]);
+	if (i == 8) for (j = 0; j < 8; j++) max[j] = min[j]; 
+	if (i == 8 || i == 16) {
+		for (j = 0; j < 8; j++) {
+			entry->min[j * 2] = (u8) (min[j] >> 8); entry->min[j * 2 + 1] = (u8) min[j]; 
+			entry->min[j * 2] = (u8) (min[j] >> 8); entry->min[j * 2 + 1] = (u8) min[j]; 
+		}
+		return 0;
+	}
+	return -EINVAL;
+}
+
+static int AddAddressGroupEntry(const char *group_name, const char *member_name, const int is_delete) {
+	const struct path_info *saved_group_name;
+	int i, j;
+	struct ip_address_entry entry;
+	struct address_group_entry *group = NULL;
+	if (parse_ip(member_name, &entry)) return -EINVAL;
+	if (!IsCorrectPath(group_name, 0, 0, 0)) return -EINVAL;
+	if ((saved_group_name = SaveName(group_name)) == NULL) return -ENOMEM;
+	for (i = 0; i < address_group_list_len; i++) {
+		group = &address_group_list[i];
+		if (saved_group_name != group->group_name) continue;
+		for (j = 0; j < group->member_name_len; j++) {
+			if (memcmp(&group->member_name[j], &entry, sizeof(entry)) == 0) {
+				if (is_delete) {
+					while (j < group->member_name_len - 1) group->member_name[j] = group->member_name[j + 1];
+					group->member_name_len--;
+				} else {
+					return 0;
+				}
+			}
+		}
+		break;
+	}
+	if (is_delete) return -ENOENT;
+	if (i == address_group_list_len) {
+		if ((address_group_list = (struct address_group_entry *) realloc(address_group_list, (address_group_list_len + 1) * sizeof(struct address_group_entry))) == NULL) OutOfMemory();
+		group = &address_group_list[address_group_list_len++];
+		memset(group, 0, sizeof(struct address_group_entry));
+		group->group_name = saved_group_name;
+	}
+	if ((group->member_name = (struct ip_address_entry *) realloc(group->member_name, (group->member_name_len + 1) * sizeof(const struct ip_address_entry))) == NULL) OutOfMemory();
+	group->member_name[group->member_name_len++] = entry;
+	return 0;
+}
+
+static int AddAddressGroupPolicy(char *data, const int is_delete) {
+	char *cp = strchr(data, ' ');
+	if (!cp) return -EINVAL;
+	*cp++ = '\0';
+	return AddAddressGroupEntry(data, cp, is_delete);
+}
+
+static struct address_group_entry *FindAddressGroup(const char *group_name) {
+	int i;
+	for (i = 0; i < address_group_list_len; i++) {
+		if (strcmp(group_name, address_group_list[i].group_name->name) == 0) return &address_group_list[i];
 	}
 	return NULL;
 }
@@ -967,7 +1046,9 @@ static void ReadDomainAndExceptionPolicy(void) {
 	ClearDomainPolicy();
 	domain_keeper_list_len = 0;
 	domain_initializer_list_len = 0;
-	group_list_len = 0;
+	while (path_group_list_len) free(path_group_list[--path_group_list_len].member_name);
+	//while (address_group_list_len) free(address_group_list[--address_group_list_len].member_name);
+	address_group_list_len = 0;
 	FindOrAssignNewDomain(ROOT_NAME, 0, 0);
 
 	// Load domain_initializer list, domain_keeper list.
@@ -983,7 +1064,9 @@ static void ReadDomainAndExceptionPolicy(void) {
 			} else if (strncmp(shared_buffer, KEYWORD_NO_KEEP_DOMAIN, KEYWORD_NO_KEEP_DOMAIN_LEN) == 0) {
 				AddDomainKeeperPolicy(shared_buffer + KEYWORD_NO_KEEP_DOMAIN_LEN, 1);
 			} else if (strncmp(shared_buffer, KEYWORD_PATH_GROUP, KEYWORD_PATH_GROUP_LEN) == 0) {
-				AddGroupPolicy(shared_buffer + KEYWORD_PATH_GROUP_LEN, 0);
+				AddPathGroupPolicy(shared_buffer + KEYWORD_PATH_GROUP_LEN, 0);
+			} else if (strncmp(shared_buffer, KEYWORD_ADDRESS_GROUP, KEYWORD_ADDRESS_GROUP_LEN) == 0) {
+				AddAddressGroupPolicy(shared_buffer + KEYWORD_ADDRESS_GROUP_LEN, 0);
 			}
 		}
 		put();
@@ -1077,7 +1160,7 @@ static void ReadDomainAndExceptionPolicy(void) {
 			for (i = 0; i < max_count; i++) {
 				const struct path_info *cp = string_ptr[i];
 				if (cp->name[0] == '@') {
-					struct group_entry *group = FindGroup(cp->name + 1);
+					struct path_group_entry *group = FindPathGroup(cp->name + 1);
 					if (group) {
 						for (j = 0; j < group->member_name_len; j++) AssignDomainInitializerSource(domainname, group->member_name[j]->name);
 					}
@@ -1463,6 +1546,7 @@ static void try_optimize(const int current) {
 	for (directive_index = 0; directive_index < 30; directive_index++) {
 		if (strncmp(cp, directive_list[directive_index], strlen(directive_list[directive_index])) == 0) break;
 	}
+	if (directive_index == 20) return; /* Not implemented yet. */
 	if (directive_index == 30) return;
 	cp = strdup(cp);
 	if (!cp) return;
@@ -1488,12 +1572,13 @@ static void try_optimize(const int current) {
 		/* Compare first word. */
 		if (directive_index < 21) {
 			if (pathcmp(&sarg1, &darg1)) {
-				const int may_use_pattern = !darg1.is_patterned;
+				const int may_use_pattern = !darg1.is_patterned
+					&& (directive_index != 0) && (directive_index != 2) && (directive_index != 4) && (directive_index != 6);
 				if (darg1.name[0] == '@') continue;
 				if (sarg1.name[0] == '@') {
 					/* path_group component. */
 					int i;
-					struct group_entry *group = FindGroup(sarg1.name + 1);
+					struct path_group_entry *group = FindPathGroup(sarg1.name + 1);
 					if (!group) continue;
 					for (i = 0; i < group->member_name_len; i++) {
 						const struct path_info *member_name = group->member_name[i];
@@ -1510,10 +1595,23 @@ static void try_optimize(const int current) {
 			/* Signal number component. */
 			if (strcmp(sarg1.name, darg1.name)) continue;
 		} else {
+			struct ip_address_entry dentry;
+			if (parse_ip(darg1.name, &dentry)) continue;
 			if (sarg1.name[0] == '@') {
 				/* IP address group component. */
+				int i;
+				struct address_group_entry *group = FindAddressGroup(sarg1.name + 1);
+				if (!group) continue;
+				for (i = 0; i < group->member_name_len; i++) {
+					struct ip_address_entry *sentry = &group->member_name[i];
+					if (memcmp(sentry->min, dentry.min, 16) <= 0 && memcmp(dentry.max, sentry->max, 16) <= 0) break;
+				}
+				if (i == group->member_name_len) continue;
 			} else {
 				/* IP address component. */
+				struct ip_address_entry sentry;
+				if (parse_ip(sarg1.name, &sentry)) continue;
+				if (memcmp(dentry.min, sentry.min, 16) < 0 || memcmp(sentry.max, dentry.max, 16) < 0) continue;
 			}
 		}
 
@@ -1525,7 +1623,7 @@ static void try_optimize(const int current) {
 				if (sarg2.name[0] == '@') {
 					/* path_group component. */
 					int i;
-					struct group_entry *group = FindGroup(sarg2.name + 1);
+					struct path_group_entry *group = FindPathGroup(sarg2.name + 1);
 					if (!group) continue;
 					for (i = 0; i < group->member_name_len; i++) {
 						const struct path_info *member_name = group->member_name[i];

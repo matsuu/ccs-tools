@@ -140,9 +140,20 @@ struct path_info {
 	u16 depth;       /* = PathDepth(name)                    */
 };
 
-struct group_entry {
+struct path_group_entry {
 	const struct path_info *group_name;
 	const struct path_info **member_name;
+	int member_name_len;
+};
+
+struct ip_address_entry {
+	u8 min[16];
+	u8 max[16];
+};
+
+struct address_group_entry {
+	const struct path_info *group_name;
+	struct ip_address_entry *member_name;
 	int member_name_len;
 };
 
