@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0-pre   2007/08/20
+ * Version: 1.5.0-pre   2007/08/22
  *
  */
 #include "ccstools.h"
@@ -496,6 +496,9 @@ int savepolicy_main(int argc, char *argv[]) {
 /***** loadpolicy start *****/
 
 int loadpolicy_main(int argc, char *argv[]) {
+	int read_from_stdin = 0;
+	int load_profile = 0;
+	int load_manager = 0;
 	int load_system_policy = 0;
 	int load_exception_policy = 0;
 	int load_domain_policy = 0;
@@ -509,24 +512,34 @@ int loadpolicy_main(int argc, char *argv[]) {
 	} else {
 		int i;
 		for (i = 1; i < argc; i++) {
-			char *p = argv[i];
-			char *s = strchr(p, 's');
-			char *e = strchr(p, 'e');
-			char *d = strchr(p, 'd');
-			char *a = strchr(p, 'a');
-			char *f = strchr(p, 'f');
+			char *ptr = argv[i];
+			char *s = strchr(ptr, 's');
+			char *e = strchr(ptr, 'e');
+			char *d = strchr(ptr, 'd');
+			char *a = strchr(ptr, 'a');
+			char *f = strchr(ptr, 'f');
+			char *p = strchr(ptr, 'p');
+			char *m = strchr(ptr, 'm');
+			char *i = strchr(ptr, '-');
 			if (s || a) load_system_policy = 1;
 			if (e || a) load_exception_policy = 1;
 			if (d || a) load_domain_policy = 1;
+			if (p) load_profile = 1;
+			if (m) load_manager = 1;
 			if (f) refresh_policy = 1;
-			if (strcspn(p, "sedaf")) {
+			if (i) read_from_stdin = 1;
+			if (strcspn(ptr, "sedafpm-") ||
+			    (read_from_stdin && load_system_policy + load_exception_policy + load_domain_policy + load_profile + load_manager != 1)) {
 			usage: ;
-				printf("%s [s][e][d][a][f]\n"
-					   "s : Load system_policy.\n"
-					   "e : Load exception_policy.\n"
-					   "d : Load domain_policy.\n"
-					   "a : Load all policies.\n"
-					   "f : Delete on-memory policy before loading on-disk policy.\n\n", argv[0]);
+				printf("%s [s][e][d][a][f][p][m][-]\n"
+				       "s : Load system_policy.\n"
+				       "e : Load exception_policy.\n"
+				       "d : Load domain_policy.\n"
+				       "a : Load system_policy,exception_policy,domain_policy.\n"
+				       "p : Load profile.\n"
+				       "m : Load manager.\n"
+				       "- : Load policy from stdin. (Only one of 'sedpm' is possible when using '-'.)\n"
+				       "f : Delete on-memory policy before loading on-disk policy. (Valid for 'sed'.)\n\n", argv[0]);
 				return 0;
 			}
 		}
@@ -535,10 +548,56 @@ int loadpolicy_main(int argc, char *argv[]) {
 		printf("Directory %s doesn't exist.\n", disk_policy_dir);
 		return 1;
 	}
+
+	if (load_profile) {
+		FILE *file_fp, *proc_fp;
+		const char *policy_src = read_from_stdin ? "/proc/self/fd/0" : disk_policy_profile;
+		if ((file_fp = fopen(policy_src, "r")) == NULL) {
+			fprintf(stderr, "Can't open %s\n", policy_src);
+			goto out_system;
+		}
+		if ((proc_fp = fopen(proc_policy_profile, "w")) == NULL) {
+			fprintf(stderr, "Can't open %s\n", proc_policy_profile);
+			fclose(file_fp);
+			goto out_profile;
+		}
+		get();
+		while (freadline(file_fp)) {
+			if (shared_buffer[0]) fprintf(proc_fp, "%s\n", shared_buffer);
+		}
+		put();
+		fclose(proc_fp);
+		fclose(file_fp);
+	}
+ out_profile: ;
+
+	if (load_manager) {
+		FILE *file_fp, *proc_fp;
+		const char *policy_src = read_from_stdin ? "/proc/self/fd/0" : disk_policy_manager;
+		if ((file_fp = fopen(policy_src, "r")) == NULL) {
+			fprintf(stderr, "Can't open %s\n", policy_src);
+			goto out_system;
+		}
+		if ((proc_fp = fopen(proc_policy_manager, "w")) == NULL) {
+			fprintf(stderr, "Can't open %s\n", proc_policy_manager);
+			fclose(file_fp);
+			goto out_manager;
+		}
+		get();
+		while (freadline(file_fp)) {
+			if (shared_buffer[0]) fprintf(proc_fp, "%s\n", shared_buffer);
+		}
+		put();
+		fclose(proc_fp);
+		fclose(file_fp);
+	}
+ out_manager: ;
+
 	if (load_system_policy) {
 		FILE *file_fp, *proc_fp;
-		if ((file_fp = fopen(disk_policy_system_policy, "r")) == NULL) {
-			fprintf(stderr, "Can't open %s\n", disk_policy_system_policy);
+		const char *policy_src = read_from_stdin ? "/proc/self/fd/0" : disk_policy_system_policy;
+		if ((file_fp = fopen(policy_src, "r")) == NULL) {
+			fprintf(stderr, "Can't open %s\n", policy_src);
 			goto out_system;
 		}
 		if ((proc_fp = fopen(proc_policy_system_policy, "w")) == NULL) {
@@ -574,8 +633,9 @@ int loadpolicy_main(int argc, char *argv[]) {
 	
 	if (load_exception_policy) {
 		FILE *file_fp, *proc_fp;
-		if ((file_fp = fopen(disk_policy_exception_policy, "r")) == NULL) {
-			fprintf(stderr, "Can't open %s\n", disk_policy_exception_policy);
+		const char *policy_src = read_from_stdin ? "/proc/self/fd/0" : disk_policy_exception_policy;
+		if ((file_fp = fopen(policy_src, "r")) == NULL) {
+			fprintf(stderr, "Can't open %s\n", policy_src);
 			goto out_exception;
 		}
 		if ((proc_fp = fopen(proc_policy_exception_policy, "w")) == NULL) {
@@ -611,6 +671,7 @@ int loadpolicy_main(int argc, char *argv[]) {
 
 	if (load_domain_policy) {
 		int new_index;
+		const char *policy_src = read_from_stdin ? "/proc/self/fd/0" : disk_policy_domain_policy;
 		FILE *proc_fp = fopen(proc_policy_domain_policy, "w");
 		struct path_info reserved;
 		reserved.name = "";
@@ -619,12 +680,12 @@ int loadpolicy_main(int argc, char *argv[]) {
 			fprintf(stderr, "Can't open %s\n", proc_policy_domain_policy);
 			goto out_domain;
 		}
-		ReadDomainPolicy(disk_policy_domain_policy);
+		ReadDomainPolicy(policy_src);
 		SwapDomainList();
 		ReadDomainPolicy(proc_policy_domain_policy);
 		SwapDomainList();
 		if (domain_list_count == 0) {
-			fprintf(stderr, "Can't open %s\n", disk_policy_domain_policy);
+			fprintf(stderr, "Can't open %s\n", policy_src);
 			fclose(proc_fp);
 			goto out_domain;
 		}
