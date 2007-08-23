@@ -61,8 +61,8 @@ int main(int argc, char *argv[]) {
 		else printf("BUG: %s\n", strerror(errno));
 
 		// Test device_name with pattern
-		ShowPrompt("mount('/dev/ram', '" TEST_DIR "', 'ext2') for '/dev/\\*'", 1);
-		if (mount("/dev/ram", TEST_DIR, "ext2", MS_RDONLY, NULL) == EOF && errno == EPERM) printf("OK: Permission denied.\n");
+		ShowPrompt("mount('/dev/ram0', '" TEST_DIR "', 'ext2') for '/dev/\\*'", 1);
+		if (mount("/dev/ram0", TEST_DIR, "ext2", MS_RDONLY, NULL) == EOF && errno == EPERM) printf("OK: Permission denied.\n");
 		else printf("BUG: %s\n", strerror(errno));
 		
 		// Test dir_name with pattern
@@ -79,8 +79,8 @@ int main(int argc, char *argv[]) {
 
 		// Test device_name with pattern
 		WritePolicy("allow_mount /dev/\\* " TEST_DIR " ext2 1\n");
-		ShowPrompt("mount('/dev/ram', '" TEST_DIR "', 'ext2') for '/dev/\\*'", 0);
-		if (mount("/dev/ram", TEST_DIR, "ext2", MS_RDONLY, NULL) == 0) printf("OK\n");
+		ShowPrompt("mount('/dev/ram0', '" TEST_DIR "', 'ext2') for '/dev/\\*'", 0);
+		if (mount("/dev/ram0", TEST_DIR, "ext2", MS_RDONLY, NULL) == 0) printf("OK\n");
 		else printf("FAILED: %s\n", strerror(errno));
 		WritePolicy("delete allow_mount /dev/\\* " TEST_DIR " ext2 1\n");
 			
