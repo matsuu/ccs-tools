@@ -1,9 +1,16 @@
 tomoyo: ccs-auditd ccs-queryd ccstree checkpolicy editpolicy editpolicy_offline findtemp ld-watch loadpolicy pathmatch patternize savepolicy setlevel setprofile sortpolicy realpath
-	chmod 755 ccs-init tomoyo-init domainmatch
+	chmod 755 ccs-init tomoyo-init domainmatch init_policy.sh tomoyo_init_policy.sh
 
 syaoran: makesyaoranconf
 
 cerberus: candy chaplet checktoken falsh gettoken groovy honey mailauth proxy timeauth
+
+install:
+	mkdir -p /usr/lib/ccs
+	chmod 700 /usr/lib/ccs
+	cp -af ccs-auditd ccs-queryd ccstree checkpolicy editpolicy editpolicy_offline findtemp ld-watch loadpolicy pathmatch patternize savepolicy setlevel setprofile sortpolicy realpath domainmatch init_policy.sh tomoyo_init_policy.sh /usr/lib/ccs
+	chown -R root:root /usr/lib/ccs
+	cp -af ccs-init tomoyo-init /sbin
 
 #
 # If you want to suppress "warning: pointer targets in passing argument ... differ in signedness" warning messages,
