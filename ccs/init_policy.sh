@@ -439,12 +439,12 @@ chown root:root /etc/ccs/
 
 if [ ! -r /etc/ccs/manager.conf ]; then
 	echo Creating manager policy.
-	echo $PWD/loadpolicy  > /etc/ccs/manager.conf
-	echo $PWD/editpolicy >> /etc/ccs/manager.conf
-	echo $PWD/setlevel   >> /etc/ccs/manager.conf
-	echo $PWD/setprofile >> /etc/ccs/manager.conf
-	echo $PWD/ld-watch   >> /etc/ccs/manager.conf
-	echo $PWD/ccs-queryd >> /etc/ccs/manager.conf
+	echo /usr/lib/ccs/loadpolicy  > /etc/ccs/manager.conf
+	echo /usr/lib/ccs/editpolicy >> /etc/ccs/manager.conf
+	echo /usr/lib/ccs/setlevel   >> /etc/ccs/manager.conf
+	echo /usr/lib/ccs/setprofile >> /etc/ccs/manager.conf
+	echo /usr/lib/ccs/ld-watch   >> /etc/ccs/manager.conf
+	echo /usr/lib/ccs/ccs-queryd >> /etc/ccs/manager.conf
 fi
 
 if [ ! -r /etc/ccs/profile.conf ]; then

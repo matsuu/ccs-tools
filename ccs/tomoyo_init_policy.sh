@@ -438,12 +438,12 @@ chown root:root /etc/tomoyo/
 
 if [ ! -r /etc/tomoyo/manager.conf ]; then
 	echo Creating manager policy.
-	echo $PWD/loadpolicy  > /etc/tomoyo/manager.conf
-	echo $PWD/editpolicy >> /etc/tomoyo/manager.conf
-	echo $PWD/setlevel   >> /etc/tomoyo/manager.conf
-	echo $PWD/setprofile >> /etc/tomoyo/manager.conf
-	echo $PWD/ld-watch   >> /etc/tomoyo/manager.conf
-	echo $PWD/ccs-queryd >> /etc/tomoyo/manager.conf
+	echo /usr/lib/ccs/loadpolicy  > /etc/tomoyo/manager.conf
+	echo /usr/lib/ccs/editpolicy >> /etc/tomoyo/manager.conf
+	echo /usr/lib/ccs/setlevel   >> /etc/tomoyo/manager.conf
+	echo /usr/lib/ccs/setprofile >> /etc/tomoyo/manager.conf
+	echo /usr/lib/ccs/ld-watch   >> /etc/tomoyo/manager.conf
+	echo /usr/lib/ccs/ccs-queryd >> /etc/tomoyo/manager.conf
 fi
 
 if [ ! -r /etc/tomoyo/profile.conf ]; then
