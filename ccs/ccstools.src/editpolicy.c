@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0-pre   2007/08/22
+ * Version: 1.5.0-pre   2007/09/07
  *
  */
 #include "ccstools.h"
@@ -14,6 +14,10 @@
 #ifdef COLOR_ON
 #define OFF 0
 #define ON !OFF
+
+#define ENV_KEYWORD	"EDITPOLICY_COLORS"
+#define	ENV_DELIM	":"
+
 enum color_pair {	NORMAL,
 			DOMAIN_HEAD, DOMAIN_CURSOR,
 			SYSTEM_HEAD, SYSTEM_CURSOR,
@@ -21,21 +25,69 @@ enum color_pair {	NORMAL,
 			ACL_HEAD, ACL_CURSOR,
 			DISP_ERR }; 
 
-static void ColorInit(void){
-	start_color();
-	init_pair(DOMAIN_HEAD, COLOR_BLACK, COLOR_GREEN);
-	init_pair(DOMAIN_CURSOR, COLOR_BLACK, COLOR_GREEN);
-	
-	init_pair(SYSTEM_HEAD, COLOR_WHITE, COLOR_BLUE);
-	init_pair(SYSTEM_CURSOR, COLOR_WHITE, COLOR_BLUE);
+static struct color_env_t {
+	enum color_pair	tag;
+	short		fore;
+	short		back;
+	char		*name;
+} color_env[] = {
+	{DOMAIN_HEAD,	COLOR_BLACK, COLOR_GREEN,	"DOMAIN_HEAD="},
+	{DOMAIN_CURSOR,	COLOR_BLACK, COLOR_GREEN,	"DOMAIN_CURSOR="},
+	{SYSTEM_HEAD,	COLOR_WHITE, COLOR_BLUE,	"SYSTEM_HEAD="},
+	{SYSTEM_CURSOR,	COLOR_WHITE, COLOR_BLUE,	"SYSTEM_CURSOR="},
+	{EXCEPTION_HEAD,	COLOR_BLACK, COLOR_CYAN,	"EXCEPTION_HEAD="},
+	{EXCEPTION_CURSOR,	COLOR_BLACK, COLOR_CYAN,	"EXCEPTION_CURSOR="},
+	{ACL_HEAD,		COLOR_BLACK, COLOR_YELLOW,		"ACL_HEAD="},
+	{ACL_CURSOR,	COLOR_BLACK, COLOR_YELLOW,		"ACL_CURSOR="},
+	{NORMAL,	COLOR_WHITE, COLOR_BLACK,	NULL}
+};
 
-	init_pair(EXCEPTION_HEAD, COLOR_BLACK, COLOR_CYAN);
-	init_pair(EXCEPTION_CURSOR, COLOR_BLACK, COLOR_CYAN);
+static void	getColorEnv(char *env)
+{
+	int i, len;
+	char *p;
+	short fore, back;
+
+	for (i = 0; color_env[i].name != NULL; i++) {
+		p = color_env[i].name;
+		len = strlen(p);
+		if (strncmp(p, env, len)) continue;
+		env += len;
+		if (strlen(env) != 2) break;
+		fore = (*env++) - '0';		// foreground color
+		back = (*env) - '0';		// background color
+		if (fore < 0 || fore > 7 ||
+		    back < 0 || back > 7) break;
+		color_env[i].fore = fore;
+		color_env[i].back = back;
+		break;
+	}
+}
+
+static void ColorInit(void){
+	char *env, *p;
+	int i;
+	struct color_env_t *colorp;
 	
-	init_pair(ACL_HEAD, COLOR_BLACK, COLOR_YELLOW);
-	init_pair(ACL_CURSOR, COLOR_BLACK, COLOR_YELLOW);
+	env = getenv(ENV_KEYWORD);
+	if (env) {
+		p = strtok(env, ENV_DELIM);
+		if (p) {
+			getColorEnv(p);
+			while ((p = strtok(NULL, ENV_DELIM)) != NULL) {
+				getColorEnv(p);
+			}
+		}
+	}
+
+	start_color();
 	
-	init_pair(DISP_ERR, COLOR_RED, COLOR_BLACK);
+	for (i = 0; color_env[i].name != NULL; i++) {
+		colorp = &color_env[i];
+		init_pair(colorp->tag, colorp->fore, colorp->back);
+	}
+	
+	init_pair(DISP_ERR, COLOR_RED, COLOR_BLACK);	// error massage
 }
 
 static void ColorSave(int flg) {
