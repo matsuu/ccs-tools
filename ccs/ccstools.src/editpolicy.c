@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0-pre   2007/09/07
+ * Version: 1.5.0-pre   2007/09/13
  *
  */
 #include "ccstools.h"
@@ -2340,7 +2340,10 @@ int editpolicy_main(int argc, char *argv[]) {
 		if (!offline_mode) {
 			if (current_screen == SCREEN_DOMAIN_LIST && access(DOMAIN_POLICY_FILE, F_OK)) current_screen = SCREEN_SYSTEM_LIST;
 			else if (current_screen == SCREEN_SYSTEM_LIST && access(SYSTEM_POLICY_FILE, F_OK)) current_screen = SCREEN_EXCEPTION_LIST;
-			else if (current_screen == SCREEN_EXCEPTION_LIST && access(EXCEPTION_POLICY_FILE, F_OK)) current_screen = SCREEN_DOMAIN_LIST;
+			else if (current_screen == SCREEN_EXCEPTION_LIST && access(EXCEPTION_POLICY_FILE, F_OK)) {
+				current_screen = SCREEN_DOMAIN_LIST;
+				if (access(DOMAIN_POLICY_FILE, F_OK)) current_screen = SCREEN_SYSTEM_LIST;
+			}
 		}
 		ResizeWindow();
 		current_screen = GenericListLoop();
