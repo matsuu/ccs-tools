@@ -1,16 +1,23 @@
+INSTALLDIR = /
+
+all: tomoyo syaoran cerberus
+
 tomoyo: ccs-auditd ccs-queryd ccstree checkpolicy editpolicy editpolicy_offline findtemp ld-watch loadpolicy pathmatch patternize savepolicy setlevel setprofile sortpolicy realpath
-	chmod 755 ccs-init tomoyo-init domainmatch init_policy.sh tomoyo_init_policy.sh
 
 syaoran: makesyaoranconf
 
 cerberus: candy chaplet checktoken falsh gettoken groovy honey mailauth proxy timeauth
 
 install:
-	mkdir -p /usr/lib/ccs
-	chmod 700 /usr/lib/ccs
-	cp -af ccs-auditd ccs-queryd ccstree checkpolicy editpolicy editpolicy_offline findtemp ld-watch loadpolicy pathmatch patternize savepolicy setlevel setprofile sortpolicy realpath domainmatch init_policy.sh tomoyo_init_policy.sh /usr/lib/ccs
-	chown -R root:root /usr/lib/ccs
-	cp -af ccs-init tomoyo-init /sbin
+	mkdir -p $(INSTALLDIR)/usr/lib/ccs/misc $(INSTALLDIR)/sbin
+	chmod 700 $(INSTALLDIR)/usr/lib/ccs
+	chmod 755 domainmatch init_policy.sh tomoyo_init_policy.sh
+	cp -af --remove-destination ccs-auditd ccs-queryd ccstree checkpolicy editpolicy editpolicy_offline findtemp ld-watch loadpolicy pathmatch patternize savepolicy setlevel setprofile sortpolicy realpath domainmatch init_policy.sh tomoyo_init_policy.sh $(INSTALLDIR)/usr/lib/ccs/
+	cp -af --remove-destination makesyaoranconf candy chaplet checktoken falsh gettoken groovy honey mailauth proxy timeauth $(INSTALLDIR)/usr/lib/ccs/misc/
+	chown -R root:root ccs-init tomoyo-init $(INSTALLDIR)/usr/lib/ccs/
+	chmod 4755 $(INSTALLDIR)/usr/lib/ccs/misc/proxy
+	chmod 700 ccs-init tomoyo-init
+	cp -af --remove-destination ccs-init tomoyo-init $(INSTALLDIR)/sbin/
 
 #
 # If you want to suppress "warning: pointer targets in passing argument ... differ in signedness" warning messages,
@@ -21,8 +28,6 @@ install:
 CFLAGS=-Wall -O3
 
 CC=gcc
-
-all: tomoyo syaoran cerberus
 
 #
 # Header files dependency.
@@ -100,7 +105,6 @@ realpath: realpath.c
 
 makesyaoranconf: makesyaoranconf.c
 	$(CC) $(CFLAGS) -o makesyaoranconf makesyaoranconf.c
-	chmod 700 makesyaoranconf
 
 #
 # Tools for CERBERUS.
@@ -113,31 +117,24 @@ makesyaoranconf: makesyaoranconf.c
 
 candy: candy.c
 	$(CC) $(CFLAGS) -o candy candy.c
-	chmod 755 candy
 
 chaplet: chaplet.c
 	$(CC) $(CFLAGS) -o chaplet chaplet.c
-	chmod 755 chaplet
 
 checktoken: checktoken.c
 	$(CC) $(CFLAGS) -o checktoken checktoken.c
-	chmod 755 checktoken
 
 falsh: falsh.c /usr/include/curses.h /usr/include/readline/readline.h
 	$(CC) $(CFLAGS) -o falsh falsh.c -lncurses -lreadline
-	chmod 755 falsh
 
 gettoken: gettoken.c
 	$(CC) $(CFLAGS) -o gettoken gettoken.c
-	chmod 755 gettoken
 
 groovy: groovy.c
 	$(CC) $(CFLAGS) -o groovy groovy.c
-	chmod 755 groovy
  
 honey: honey.c
 	$(CC) $(CFLAGS) -o honey honey.c
-	chmod 755 honey
 
 # Programs developed after Workshop on Informatics 2005.
 
@@ -146,8 +143,6 @@ mailauth: mailauth.c /usr/include/openssl/md5.h
 
 proxy: proxy.c
 	$(CC) $(CFLAGS) -o proxy proxy.c
-	chown root:root proxy
-	chmod 4755 proxy
 
 timeauth: timeauth.c
 	$(CC) $(CFLAGS) -o timeauth timeauth.c
