@@ -4,20 +4,22 @@
 #
 # Copyright (C) 2005-2007  NTT DATA CORPORATION
 #
-# Version: 1.5.0-pre 2007/08/17
+# Version: 2.1.0-rc3 2007/09/18
 #
 # This program is executed automatically by kernel
 # when execution of /sbin/init is requested by initrd.
 #
 
-PROC_POLICY_DIR=/proc/ccs/
-DISK_POLICY_DIR=/etc/ccs/
+PROC_POLICY_DIR=/proc/tomoyo/
+DISK_POLICY_DIR=/etc/tomoyo/
 PROFILE=""
 TOMOYO_NOLOAD=0
 TOMOYO_QUIET=0
 
 REAL_INIT=/sbin/init
 PROC_UNMOUNT=0
+SYS_UNMOUNT=0
+SECURITY_UNMOUNT=0
 
 exec 0< /dev/console
 exec 1> /dev/console
@@ -27,12 +29,21 @@ if [ ! -d /proc/self/ ]; then
 	mount -nt proc none /proc && PROC_UNMOUNT=1
 fi
 
-if [ -d /proc/tomoyo/ ]; then
-	PROC_POLICY_DIR=/proc/tomoyo/
-	DISK_POLICY_DIR=/etc/tomoyo/
+if [ ! -d /sys/kernel/ ]; then
+	grep -q sysfs /proc/filesystems && mount -nt sysfs none /sys && SYS_UNMOUNT=1
+fi
+
+if [ ! -d /sys/kernel/security/tomoyo/ ]; then
+	grep -q securityfs /proc/filesystems && mount -nt securityfs none /sys/kernel/security && SECURITY_UNMOUNT=1
+fi
+
+if [ -d /sys/kernel/security/tomoyo/ ]; then
+	PROC_POLICY_DIR=/sys/kernel/security/tomoyo/
 fi
 
 if [ ! -d $PROC_POLICY_DIR ]; then
+	[ $SECURITY_UNMOUNT == 1 ] && umount -n /sys/kernel/security
+	[ $SYS_UNMOUNT == 1 ] && umount -n /sys
 	[ $PROC_UNMOUNT == 1 ] && umount -n /proc
 	[ $$ == 1 ] && exec $REAL_INIT "$@"
 	echo "You can't run this program for this kernel."
@@ -46,7 +57,7 @@ for i in `cat /proc/cmdline`
 	  PROFILE="default"
 	  ;;
 	  (CCS=disabled)
-	  PROFILE="disabled"
+	  PROFILE="disable"
 	  ;;
 	  (CCS=boottest)
 	  PROFILE="boottest"
@@ -106,6 +117,8 @@ fi
 awk ' BEGIN { domain=0; acl=0; } { if ( $1 == "<kernel>" ) domain++; else if ( $1 != "" && $1 != "use_profile") acl++; } END { print domain " domains. " acl " ACL entries."; } ' $PROC_POLICY_DIR/domain_policy
 awk ' BEGIN { shared_mem=0; private_mem=0; } { if ( $1 == "Shared:" ) shared_mem = $NF / 1024; else if ( $1 == "Private:" ) private_mem = $NF / 1024; } END { print shared_mem " KB shared. " private_mem " KB private."; } ' $PROC_POLICY_DIR/meminfo
 
+# [ $SECURITY_UNMOUNT == 1 ] && umount -n /sys/kernel/security
+# [ $SYS_UNMOUNT == 1 ] && umount -n /sys
 [ $PROC_UNMOUNT == 1 ] && umount -n /proc
 [ $$ == 1 ] && exec $REAL_INIT "$@"
 exit 1

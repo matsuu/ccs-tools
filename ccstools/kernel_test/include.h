@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0-pre   2007/08/13
+ * Version: 1.5.0-rc   2007/09/20
  *
  */
 #include <errno.h>
@@ -73,7 +73,20 @@ static const char *proc_policy_dir    = "/proc/ccs/",
 	*proc_policy_self_domain      = "/proc/ccs/self_domain";
 
 static void PreInit(void) {
-	if (access("/proc/tomoyo/", F_OK) == 0) {
+        if (access("/sys/kernel/security/tomoyo/", F_OK) == 0) {
+                proc_policy_dir              = "/sys/kernel/security/tomoyo/";
+                proc_policy_domain_policy    = "/sys/kernel/security/tomoyo/domain_policy";
+                proc_policy_exception_policy = "/sys/kernel/security/tomoyo/exception_policy";
+                proc_policy_system_policy    = "/sys/kernel/security/tomoyo/system_policy";
+                proc_policy_profile          = "/sys/kernel/security/tomoyo/profile";
+                proc_policy_manager          = "/sys/kernel/security/tomoyo/manager";
+                proc_policy_query            = "/sys/kernel/security/tomoyo/query";
+                proc_policy_grant_log        = "/sys/kernel/security/tomoyo/grant_log";
+                proc_policy_reject_log       = "/sys/kernel/security/tomoyo/reject_log";
+                proc_policy_domain_status    = "/sys/kernel/security/tomoyo/.domain_status";
+                proc_policy_process_status   = "/sys/kernel/security/tomoyo/.process_status";
+                proc_policy_self_domain      = "/sys/kernel/security/tomoyo/self_domain";
+        } else if (access("/proc/tomoyo/", F_OK) == 0) {
 		proc_policy_dir              = "/proc/tomoyo/";
 		proc_policy_domain_policy    = "/proc/tomoyo/domain_policy";
 		proc_policy_exception_policy = "/proc/tomoyo/exception_policy";

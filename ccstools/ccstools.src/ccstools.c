@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0-pre   2007/09/13
+ * Version: 1.5.0-rc   2007/09/20
  *
  */
 #include "ccstools.h"
@@ -457,7 +457,25 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Function not specified.\n");
 		return 1;
 	}
-	if (access("/proc/tomoyo/", F_OK) == 0) {
+        if (access("/sys/kernel/security/tomoyo/", F_OK) == 0) {
+                proc_policy_dir              = "/sys/kernel/security/tomoyo/";
+                disk_policy_dir              = "/etc/tomoyo/";
+                proc_policy_domain_policy    = "/sys/kernel/security/tomoyo/domain_policy";
+                disk_policy_domain_policy    = "/etc/tomoyo/domain_policy.conf";
+                proc_policy_exception_policy = "/sys/kernel/security/tomoyo/exception_policy";
+                disk_policy_exception_policy = "/etc/tomoyo/exception_policy.conf";
+                proc_policy_system_policy    = "/sys/kernel/security/tomoyo/system_policy";
+                disk_policy_system_policy    = "/etc/tomoyo/system_policy.conf";
+                proc_policy_profile          = "/sys/kernel/security/tomoyo/profile";
+                disk_policy_profile          = "/etc/tomoyo/profile.conf";
+                proc_policy_manager          = "/sys/kernel/security/tomoyo/manager";
+                disk_policy_manager          = "/etc/tomoyo/manager.conf";
+                proc_policy_query            = "/sys/kernel/security/tomoyo/query";
+                proc_policy_grant_log        = "/sys/kernel/security/tomoyo/grant_log";
+                proc_policy_reject_log       = "/sys/kernel/security/tomoyo/reject_log";
+                proc_policy_domain_status    = "/sys/kernel/security/tomoyo/.domain_status";
+                proc_policy_process_status   = "/sys/kernel/security/tomoyo/.process_status";
+        } else if (access("/proc/tomoyo/", F_OK) == 0) {
 		proc_policy_dir              = "/proc/tomoyo/";
 		disk_policy_dir              = "/etc/tomoyo/";
 		proc_policy_domain_policy    = "/proc/tomoyo/domain_policy";
@@ -501,7 +519,7 @@ retry:
 	 * because it is dangerous to allow updating policies via unchecked argv[1].
 	 * You should use either "symbolic links with 'alias' directive" or "hard links".
 	 */
-	printf("ccstools version 1.5.0-pre build 2007/09/13\n");
+	printf("ccstools version 1.5.0-rc build 2007/09/13\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }

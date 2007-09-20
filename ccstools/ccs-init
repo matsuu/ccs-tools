@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2007  NTT DATA CORPORATION
 #
-# Version: 1.5.0-pre 2007/08/17
+# Version: 1.5.0-rc 2007/09/20
 #
 # This program is executed automatically by kernel
 # when execution of /sbin/init is requested by initrd.
@@ -27,11 +27,6 @@ if [ ! -d /proc/self/ ]; then
 	mount -nt proc none /proc && PROC_UNMOUNT=1
 fi
 
-if [ -d /proc/tomoyo/ ]; then
-	PROC_POLICY_DIR=/proc/tomoyo/
-	DISK_POLICY_DIR=/etc/tomoyo/
-fi
-
 if [ ! -d $PROC_POLICY_DIR ]; then
 	[ $PROC_UNMOUNT == 1 ] && umount -n /proc
 	[ $$ == 1 ] && exec $REAL_INIT "$@"
@@ -46,7 +41,7 @@ for i in `cat /proc/cmdline`
 	  PROFILE="default"
 	  ;;
 	  (CCS=disabled)
-	  PROFILE="disabled"
+	  PROFILE="disable"
 	  ;;
 	  (CCS=boottest)
 	  PROFILE="boottest"

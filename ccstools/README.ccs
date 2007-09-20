@@ -230,3 +230,25 @@ Version 1.4.2 2007/07/13   Bug fix release.
 
   .init:
       Prompt message has changed.
+
+Version 1.5.0 2007/09/??   Usability enhancement release.
+
+  The following bug was fixed.
+
+    editpolicy:
+      Memory for "path_group" was not freed correctly.
+
+  The following program for testing TOMOYO Linux's kernel was updated.
+
+    "tomoyo_network_test"
+
+  The following features are added.
+
+    editpolicy:
+      Printing with colors is supported.
+      Contributed by Yoshihiro Kusuno <yocto _at_ users.sourceforge.jp>.
+
+    loadpolicy:
+      Reading policy from stdin is supported.
+
+  The /.init is renamed to /sbin/ccs-init .
