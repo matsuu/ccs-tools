@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0-rc   2007/09/20
+ * Version: 1.5.0   2007/09/20
  *
  */
 #include "include.h"
