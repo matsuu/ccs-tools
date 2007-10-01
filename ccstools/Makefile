@@ -36,10 +36,6 @@ CC=gcc
 	@echo "/usr/include/curses.h is missing."
 	@echo "Run 'yum install ncurses-devel' or 'apt-get install libncurses5-dev'"
 
-/usr/include/openssl/md5.h:
-	@echo "/usr/include/openssl/md5.h is missing."
-	@echo "Run 'yum install openssl-devel' or 'apt-get install libssl-dev'"
-
 /usr/include/readline/readline.h:
 	@echo "/usr/include/readline/readline.h is missing."
 	@echo "Run 'yum install readline-devel' or 'apt-get install libreadline5-dev'"
@@ -138,8 +134,8 @@ honey: honey.c
 
 # Programs developed after Workshop on Informatics 2005.
 
-mailauth: mailauth.c /usr/include/openssl/md5.h
-	$(CC) $(CFLAGS) -o mailauth mailauth.c -lssl
+mailauth: mailauth.c
+	$(CC) $(CFLAGS) -o mailauth mailauth.c
 
 proxy: proxy.c
 	$(CC) $(CFLAGS) -o proxy proxy.c

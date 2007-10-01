@@ -4,9 +4,9 @@
  * An example program for CERBERUS.
  * ( http://sourceforge.jp/projects/tomoyo/document/winf2005-en.pdf )
  *
- * Copyright (C) 2005-2006  NTT DATA CORPORATION
+ * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.3   2006/11/11
+ * Version: 1.5.1-pre   2007/10/01
  */
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -21,7 +21,6 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <time.h>
-#include <openssl/md5.h>
 
 static void UnEscapeLine(unsigned char *buffer) {
 	unsigned char *cp = buffer;
@@ -67,9 +66,11 @@ static void NormalizeLine(unsigned char *buffer) {
 #define SINGLE_FAILURE_MESSAGE   "SINGLE_FAILURE_MESSAGE "
 #define COMPLETE_FAILURE_MESSAGE "COMPLETE_FAILURE_MESSAGE "
 
+#define PASSWORD_SIZE 16
+
 int main(int argc, char *argv[]) {
 	static char buffer[8192];
-	static char password[8192];
+	static char password[PASSWORD_SIZE];
 	unsigned int max_trials = 3;
 	unsigned int sleep_on_failure = 3;
 	char *password_prompt = "Enter\\040password";
@@ -77,6 +78,7 @@ int main(int argc, char *argv[]) {
 	char *single_failure_message = "Incorrect\\040password.";
 	char *complete_failure_message = "Authentication\\040failed.";
 	char *mail_command = NULL;
+	unsetenv("SHELLOPTS"); /* Make sure popen() executes MAIL_COMMAND */
 	if (argc != 2 || strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
 		char *self = canonicalize_file_name(argv[0]);
 		fprintf(stderr, "This is an interpreter for one-time-password-using-mail authentication script. To perform one-time-password-using-mail authentication, create a program like the following example.\n\n");
@@ -154,13 +156,18 @@ int main(int argc, char *argv[]) {
 	UnEscapeLine(complete_failure_message);
 	
 	{ /* Create password. */
-		unsigned char *p;
-		int i;
-		srand(time(NULL) + getpid());
-		for (i = 0; i < sizeof(password); i++) password[i] = (char) rand();
-		p = MD5(password, sizeof(password), NULL);
-		for (i = 0; i < 16; i++) password[i] = (p[i] >> 2) + 33;
-		password[16] = '\0';
+		int i = 0;
+		FILE *fp = fopen("/dev/urandom", "r");
+		if (!fp) {
+			fprintf(stderr, "Can't open /dev/urandom .\n");
+			return 1;
+		}
+		memset(password, 0, sizeof(password));
+		while (i < sizeof(password)) {
+			const unsigned int c = fgetc(fp);
+			if (c < 10) password[i++] = c + '0';
+		}
+		fclose(fp);
 	}
 	{ /* Send password. */
 		FILE *fp = popen(mail_command, "w");
