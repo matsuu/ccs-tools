@@ -4,10 +4,10 @@
 #
 # Copyright (C) 2005-2007  NTT DATA CORPORATION
 #
-# Version: 1.5.1-pre 2007/10/01
+# Version: 1.5.1-pre 2007/10/12
 #
 # This program is executed automatically by kernel
-# when execution of /sbin/init is requested by initrd.
+# when execution of /sbin/init is requested.
 #
 
 PROC_POLICY_DIR=/proc/ccs/
@@ -15,8 +15,6 @@ DISK_POLICY_DIR=/etc/ccs/
 PROFILE=""
 TOMOYO_NOLOAD=0
 TOMOYO_QUIET=0
-
-REAL_INIT=/sbin/init
 PROC_UNMOUNT=0
 
 exec 0< /dev/console
@@ -29,18 +27,21 @@ fi
 
 if [ ! -d $PROC_POLICY_DIR ]; then
 	[ $PROC_UNMOUNT == 1 ] && umount -n /proc
-	[ $$ == 1 ] && exec $REAL_INIT "$@"
-	echo "You can't run this program for this kernel."
 	exit 1
 fi
 
 cd $DISK_POLICY_DIR
 if [ $? != 0 ]; then
-    echo "Can't chdir to " $DISK_POLICY_DIR
-    while :; do read; done
+	echo "TOMOYO: Policy directory " $DISK_POLICY_DIR " does not exist."
+	for i in `seq 0 255`; do echo $i-COMMENT= ; done > $PROC_POLICY_DIR/profile
+	# Note: You have to open $PROC_POLICY_DIR/meminfo after loading all policy
+	# because kernel waits until $PROC_POLICY_DIR/meminfo is closed.
+	cat < $PROC_POLICY_DIR/meminfo > /dev/null
+	[ $PROC_UNMOUNT == 1 ] && umount -n /proc
+	exit 1
 fi
 
-for i in `cat /proc/cmdline`
+for i in `cat /proc/cmdline` "$@"
   do
   case $i in
 	  (CCS=ask)
@@ -51,9 +52,6 @@ for i in `cat /proc/cmdline`
 	  ;;
 	  (CCS=disabled)
 	  PROFILE="disable"
-	  ;;
-	  (CCS=boottest)
-	  PROFILE="boottest"
 	  ;;
 	  (CCS=*)
 	  PROFILE=`echo $i | cut -b 5-`
@@ -72,16 +70,15 @@ if [ "x$PROFILE" == "xask" ]; then
     	while :
 	  do
 	  echo "TOMOYO Linux: Select a profile from the following lists."
-	  echo "default"
+	  [ -r profile.conf ] && echo "default"
 	  echo profile-*.conf | awk ' { gsub("profile-", ""); gsub(".conf", ""); if ( $0 != "*") print $0; } '
 	  echo "disable"
 	  PROFILE=""
 	  read -p "> " PROFILE
 	  [ "x$PROFILE" == "x" ] && PROFILE="default"
-	  [ "x$PROFILE" == "xdefault" ] && break
-	  [ "x$PROFILE" == "xdisable" ] && break
-	  [ "x$PROFILE" == "xboottest" ] && break
+	  [ -r profile.conf ] && [ "x$PROFILE" == "xdefault" ] && break
 	  [ -r profile-$PROFILE.conf ] && break
+	  [ "x$PROFILE" == "xdisable" ] && break
 	  [ "x$PROFILE" == "xTOMOYO_NOLOAD" ] && TOMOYO_NOLOAD=1
 	  [ "x$PROFILE" == "xTOMOYO_QUIET" ] && TOMOYO_QUIET=1
 	done
@@ -99,11 +96,8 @@ if [ "x$PROFILE" == "xdefault" ]; then
 	[ -r profile.conf ] && cat profile.conf > $PROC_POLICY_DIR/profile
 fi
 if [ "x$PROFILE" == "xdisable" ]; then
-	for i in `seq 0 255`; do echo $i-COMMENT= > $PROC_POLICY_DIR/profile; done
+	for i in `seq 0 255`; do echo $i-COMMENT= ; done > $PROC_POLICY_DIR/profile
 	grep -vF -- -COMMENT= $PROC_POLICY_DIR/profile | sed -e 's/[0-9]*$/0/' > $PROC_POLICY_DIR/profile
-fi
-if [ "x$PROFILE" == "xboottest" ]; then
-	echo '0-MAC_FOR_CAPABILITY::=0' > $PROC_POLICY_DIR/profile
 fi
 if [ $TOMOYO_QUIET == 1 ]; then
 	grep -F TOMOYO_VERBOSE $PROC_POLICY_DIR/profile | sed -e 's/[0-9]*$/0/' > $PROC_POLICY_DIR/profile
@@ -112,8 +106,5 @@ fi
 [ -r $PROC_POLICY_DIR/domain_policy ] && awk ' BEGIN { domain=0; acl=0; } { if ( $1 == "<kernel>" ) domain++; else if ( $1 != "" && $1 != "use_profile") acl++; } END { print domain " domains. " acl " ACL entries."; } ' $PROC_POLICY_DIR/domain_policy
 awk ' BEGIN { shared_mem=0; private_mem=0; } { if ( $1 == "Shared:" ) shared_mem = $NF / 1024; else if ( $1 == "Private:" ) private_mem = $NF / 1024; } END { print shared_mem " KB shared. " private_mem " KB private."; } ' $PROC_POLICY_DIR/meminfo
 
-cd /
-
 [ $PROC_UNMOUNT == 1 ] && umount -n /proc
-[ $$ == 1 ] && exec $REAL_INIT "$@"
-exit 1
+exit 0
