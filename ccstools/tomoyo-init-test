@@ -4,16 +4,19 @@
 #
 # Copyright (C) 2005-2007  NTT DATA CORPORATION
 #
-# Version: 1.5.1-pre 2007/10/15
+# Version: 2.1.0-rc4 2007/10/15
 #
 # This program is executed automatically by kernel
 # when execution of /sbin/init is requested.
 #
 
+POLICY_DIR=/proc/tomoyo/
 PROFILE="default"
 TOMOYO_NOLOAD=0
 TOMOYO_QUIET=0
 PROC_UNMOUNT=0
+SYS_UNMOUNT=0
+SECURITY_UNMOUNT=0
 CHDIR_OK=0
 
 # Mount /proc if not mounted.
@@ -21,8 +24,25 @@ if [ ! -d /proc/self/ ]; then
     mount -nt proc none /proc && PROC_UNMOUNT=1
 fi
 
-# Unmount /proc and exit if policy interface doesn't exist.
-if [ ! -d /proc/ccs/ ]; then
+# Mount /sys if not mounted.
+if [ ! -d /sys/kernel/ ]; then
+    grep -q sysfs /proc/filesystems && mount -nt sysfs none /sys && SYS_UNMOUNT=1
+fi
+
+# Mount /sys/kernel/security if not mounted.
+if [ ! -d /sys/kernel/security/tomoyo/ ]; then
+    grep -q securityfs /proc/filesystems && mount -nt securityfs none /sys/kernel/security && SECURITY_UNMOUNT=1
+fi
+
+# Use /sys/kernel/security/tomoyo/ as policy interface if it exists.
+if [ -d /sys/kernel/security/tomoyo/ ]; then
+    POLICY_DIR=/sys/kernel/security/tomoyo/
+fi
+
+# Unmount and exit if policy interface doesn't exist.
+if [ ! -d $POLICY_DIR ]; then
+    [ $SECURITY_UNMOUNT -eq 1 ] && umount -n /sys/kernel/security
+    [ $SYS_UNMOUNT -eq 1 ] && umount -n /sys
     [ $PROC_UNMOUNT -eq 1 ] && umount -n /proc
     exit 1
 fi
@@ -65,7 +85,7 @@ for i in `cat /proc/cmdline` "$@"
 done
 
 # Does policy directory exist?
-if [ cd /etc/ccs/ 2> /dev/null ]; then
+if [ cd /etc/tomoyo/ 2> /dev/null ]; then
     CHDIR_OK=1
 else
     echo "TOMOYO Linux: Policy directory doesn't exist."
@@ -112,35 +132,33 @@ fi
 
 # Load policy.
 if [ $CHDIR_OK -eq 1 ]; then
-    [ -r manager.conf ] && cat manager.conf > /proc/ccs/manager
-    [ -r system_policy.conf -a -w /proc/ccs/system_policy ] && cat system_policy.conf > /proc/ccs/system_policy
-    [ -r exception_policy.conf -a -w /proc/ccs/exception_policy ] && cat exception_policy.conf > /proc/ccs/exception_policy
-    [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.conf -a -w /proc/ccs/domain_policy ] && cat domain_policy.conf > /proc/ccs/domain_policy
+    [ -r manager.conf ] && cat manager.conf > $POLICY_DIR/manager
+    [ -r system_policy.conf -a -w $POLICY_DIR/system_policy ] && cat system_policy.conf > $POLICY_DIR/system_policy
+    [ -r exception_policy.conf -a -w $POLICY_DIR/exception_policy ] && cat exception_policy.conf > $POLICY_DIR/exception_policy
+    [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.conf -a -w $POLICY_DIR/domain_policy ] && cat domain_policy.conf > $POLICY_DIR/domain_policy
     if [ "x$PROFILE" = "xdefault" ]; then
-	[ -r profile.conf ] && cat profile.conf > /proc/ccs/profile
+	[ -r profile.conf ] && cat profile.conf > $POLICY_DIR/profile
     else
-	[ -r profile-$PROFILE.conf ] && cat profile-$PROFILE.conf > /proc/ccs/profile
+	[ -r profile-$PROFILE.conf ] && cat profile-$PROFILE.conf > $POLICY_DIR/profile
     fi
 fi
 
 # Use disabled mode?
 if [ "x$PROFILE" = "xdisable" ]; then
-    for i in `seq 0 255`; do echo $i-COMMENT= ; done > /proc/ccs/profile
-    grep -vF -- -COMMENT= /proc/ccs/profile | sed -e 's/[0-9]*$/0/' > /proc/ccs/profile
+    for i in `seq 0 255`; do echo $i-COMMENT= ; done > $POLICY_DIR/profile
+    grep -vF -- -COMMENT= $POLICY_DIR/profile | sed -e 's/[0-9]*$/0/' > $POLICY_DIR/profile
 fi
 
 # Disable verbose mode?
 if [ $TOMOYO_QUIET -eq 1 ]; then
-    grep -F TOMOYO_VERBOSE /proc/ccs/profile | sed -e 's/[0-9]*$/0/' > /proc/ccs/profile
+    grep -F TOMOYO_VERBOSE $POLICY_DIR/profile | sed -e 's/[0-9]*$/0/' > $POLICY_DIR/profile
 fi
 
-[ -r /proc/ccs/domain_policy ] && awk ' BEGIN { domain=0; acl=0; } { if ( $1 == "<kernel>" ) domain++; else if ( $1 != "" && $1 != "use_profile") acl++; } END { print domain " domains. " acl " ACL entries."; } ' /proc/ccs/domain_policy
+[ -r $POLICY_DIR/domain_policy ] && awk ' BEGIN { domain=0; acl=0; } { if ( $1 == "<kernel>" ) domain++; else if ( $1 != "" && $1 != "use_profile") acl++; } END { print domain " domains. " acl " ACL entries."; } ' $POLICY_DIR/domain_policy
 
-#
-# Don't remove the following line.
-# The kernel waits until /proc/ccs/meminfo is opened and closed.
-#
-awk ' BEGIN { shared_mem=0; private_mem=0; } { if ( $1 == "Shared:" ) shared_mem = $NF / 1024; else if ( $1 == "Private:" ) private_mem = $NF / 1024; } END { print shared_mem " KB shared. " private_mem " KB private."; } ' /proc/ccs/meminfo
+awk ' BEGIN { shared_mem=0; private_mem=0; } { if ( $1 == "Shared:" ) shared_mem = $NF / 1024; else if ( $1 == "Private:" ) private_mem = $NF / 1024; } END { print shared_mem " KB shared. " private_mem " KB private."; } ' $POLICY_DIR/meminfo
 
+# [ $SECURITY_UNMOUNT -eq 1 ] && umount -n /sys/kernel/security
+# [ $SYS_UNMOUNT -eq 1 ] && umount -n /sys
 [ $PROC_UNMOUNT -eq 1 ] && umount -n /proc
 exit 0
