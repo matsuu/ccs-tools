@@ -65,14 +65,25 @@ for i in `cat /proc/cmdline` "$@"
 done
 
 # Does policy directory exist?
-cd /etc/ccs/ 2> /dev/null && CHDIR_OK=1 || PROFILE="ask"
+if [ cd /etc/ccs/ 2> /dev/null ]; then
+	CHDIR_OK=1
+else
+	echo "TOMOYO Linux: Policy directory doesn't exist."
+	PROFILE="ask"
+fi
 
 # Does selected profile exist?
 if [ $CHDIR_OK -eq 1 ]; then
     if [ "x$PROFILE" = "xdefault" ]; then
-	[ -r profile.conf ] || PROFILE="ask"
+		if [ ! -r profile.conf ]; then
+			echo "TOMOYO Linux: Default profile doesn't exist."
+			PROFILE="ask"
+		fi
     elif [ "x$PROFILE" != "xask" -a "x$PROFILE" != "xdisable" ]; then
-	[ -r profile-$PROFILE.conf ] || PROFILE="ask"
+		if [ ! -r profile-$PROFILE.conf ]; then
+			echo "TOMOYO Linux: Specified profile doesn't exist."
+			PROFILE="ask"
+		fi
     fi
 fi
 
