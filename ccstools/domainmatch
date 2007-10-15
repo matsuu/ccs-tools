@@ -1,10 +1,10 @@
-#! /bin/bash
+#! /bin/sh
 #
 # fgrep for domain /proc/{ccs,tomoyo}/domain_policy .
 #
 # Copyright (C) 2005-2007  NTT DATA CORPORATION
 #
-# Version: 1.5.0   2007/09/20
+# Version: 1.5.1-pre   2007/10/15
 #
 # Usage: domainmatch string_to_find
 #
@@ -15,6 +15,6 @@ POLICY_FILE="/proc/ccs/domain_policy"
 [ -r /proc/tomoyo/domain_policy ] && POLICY_FILE="/proc/tomoyo/domain_policy"
 [ -r /sys/kernel/security/tomoyo/domain_policy ] && POLICY_FILE="/sys/kernel/security/tomoyo/domain_policy"
 
-awk -v STR="$1" -- ' BEGIN { flag = 0; } { if ( $1 == "<kernel>" ) { domain = $0; flag = 0; } else if (index($0, STR) > 0) { if (flag == 0) print domain; flag = 1; print $0; } } ' $POLICY_FILE 
+awk -v STR="$1" -- ' BEGIN { flag = 0; } { if ( $1 == "<kernel>" ) { domain = $0; flag = 0; } else if (index($0, STR) > 0) { if (flag == 0) { print ""; print domain; } flag = 1; print $0; } } ' $POLICY_FILE 
 
 #awk -v STR="$1" -- ' { if ( $1 == "<kernel>" ) domain = $0; else if (index($0, STR) > 0) { print domain; print $0; } } ' $POLICY_FILE

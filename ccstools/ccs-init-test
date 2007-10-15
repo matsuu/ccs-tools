@@ -90,8 +90,8 @@ if [ "x$PROFILE" = "xask" ]; then
       PROFILE=""
       read -p "> " PROFILE
       if [ $CHDIR_OK -eq 1 ]; then
-	  [ -r profile.conf ] && [ "x$PROFILE" = "xdefault" ] && break
-	  [ -r profile-$PROFILE.conf ] && break
+	  [ -r profile.conf -a "x$PROFILE" = "xdefault" ] && break
+	  [ "x$PROFILE" != "xdefault" -a "x$PROFILE" != "xdisable" -a -r profile-$PROFILE.conf ] && break
       fi
       [ "x$PROFILE" = "xdisable" ] && break
       [ "x$PROFILE" = "xTOMOYO_NOLOAD" ] && TOMOYO_NOLOAD=1
@@ -102,9 +102,9 @@ fi
 # Load policy.
 if [ $CHDIR_OK -eq 1 ]; then
     [ -r manager.conf ] && cat manager.conf > /proc/ccs/manager
-    [ -r system_policy.conf ] && [ -w /proc/ccs/system_policy ] && cat system_policy.conf > /proc/ccs/system_policy
-    [ -r exception_policy.conf ] && [ -w /proc/ccs/exception_policy ] && cat exception_policy.conf > /proc/ccs/exception_policy
-    [ $TOMOYO_NOLOAD -eq 0 ] && [ -r domain_policy.conf ] && [ -w /proc/ccs/domain_policy ] && cat domain_policy.conf > /proc/ccs/domain_policy
+    [ -r system_policy.conf -a -w /proc/ccs/system_policy ] && cat system_policy.conf > /proc/ccs/system_policy
+    [ -r exception_policy.conf -a -w /proc/ccs/exception_policy ] && cat exception_policy.conf > /proc/ccs/exception_policy
+    [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.conf -a -w /proc/ccs/domain_policy ] && cat domain_policy.conf > /proc/ccs/domain_policy
     if [ "x$PROFILE" = "xdefault" ]; then
 	[ -r profile.conf ] && cat profile.conf > /proc/ccs/profile
     else

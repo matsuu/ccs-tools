@@ -1,10 +1,10 @@
-#! /bin/bash
+#! /bin/sh
 #
 # Initial policy generator.
 #
 # Copyright (C) 2005-2007  NTT DATA CORPORATION
 #
-# Version: 1.5.0   2007/09/20
+# Version: 1.5.1-pre   2007/10/15
 #
 
 cd ${0%/*}
@@ -48,7 +48,7 @@ make_exception() {
 		do
 			for j in `find $i | awk -F / ' { print NF-1 }'`
 			do
-				echo -n "file_pattern "$i; for ((k = 2; k < $j; k = $k + 1)); do echo -n '/\*'; done; echo
+				echo -n "file_pattern "$i; for k in `seq 3 $j`; do echo -n '/\*'; done; echo
 			done
 		done | grep -F '\' | sort | uniq
 	fi
@@ -72,12 +72,12 @@ make_exception() {
 	#
 	for i in `find /usr/share/man/ -type f | awk -F / ' { print NF }' | sort | uniq`
 	do
-		echo -n "file_pattern /usr/share/man"; for ((j = 4; j < $i; j = $j + 1)); do echo -n '/\*'; done; echo
+		echo -n "file_pattern /usr/share/man"; for j in `seq 5 $i`; do echo -n '/\*'; done; echo
 	done
       
 	for i in `find /usr/X11R6/man/ -type f | awk -F / ' { print NF }' | sort | uniq`
 	do
-		echo -n "file_pattern /usr/X11R6/man"; for ((j = 4; j < $i; j = $j + 1)); do echo -n '/\*'; done; echo
+		echo -n "file_pattern /usr/X11R6/man"; for j in `seq 5 $i`; do echo -n '/\*'; done; echo
 	done
 	
 	#
@@ -397,7 +397,7 @@ make_exception() {
 	#
 	for i in `find /var/log/ -type f | awk -F / ' { print NF }' | sort | uniq`
 	do
-		echo -n "deny_rewrite /var/log"; for ((j = 3; j < $i; j = $j + 1)); do echo -n '/\*'; done; echo
+		echo -n "deny_rewrite /var/log"; for j in `seq 4 $i`; do echo -n '/\*'; done; echo
 	done
 }
 
