@@ -85,7 +85,7 @@ for i in `cat /proc/cmdline` "$@"
 done
 
 # Does policy directory exist?
-if [ cd /etc/tomoyo/ 2> /dev/null ]; then
+if cd /etc/tomoyo/ 2> /dev/null; then
     CHDIR_OK=1
 else
     echo "TOMOYO Linux: Policy directory doesn't exist."
