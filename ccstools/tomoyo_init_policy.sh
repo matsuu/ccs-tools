@@ -429,6 +429,12 @@ do
 	shift
 done
 
+# Verify realpath works.
+if ! realpath -n / > /dev/null; then
+    echo "Can't execute program. Please make sure you installed correct package."
+    exit 1
+fi
+
 if [ ! -d /etc/tomoyo/ ]; then
 	echo Creating policy directory.
 	mkdir -p /etc/tomoyo

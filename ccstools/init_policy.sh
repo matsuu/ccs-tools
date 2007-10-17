@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2007  NTT DATA CORPORATION
 #
-# Version: 1.5.1-pre   2007/10/15
+# Version: 1.5.1-pre   2007/10/17
 #
 
 cd ${0%/*}
@@ -21,6 +21,12 @@ do
 	esac
 	shift
 done
+
+# Verify realpath works.
+if ! realpath -n / > /dev/null; then
+    echo "Can't execute program. Please make sure you installed correct package."
+    exit 1
+fi
 
 make_exception() {
 	#
