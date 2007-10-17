@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0   2007/09/20
+ * Version: 1.5.1-pre   2007/10/17
  *
  */
 #include "ccstools.h"
@@ -603,8 +603,8 @@ int loadpolicy_main(int argc, char *argv[]) {
 
 	if (load_profile) {
 		FILE *file_fp, *proc_fp;
-		const char *policy_src = read_from_stdin ? "/proc/self/fd/0" : disk_policy_profile;
-		if ((file_fp = fopen(policy_src, "r")) == NULL) {
+		const char *policy_src = disk_policy_profile;
+		if ((file_fp = read_from_stdin ? stdin : fopen(policy_src, "r")) == NULL) {
 			fprintf(stderr, "Can't open %s\n", policy_src);
 			goto out_system;
 		}
@@ -625,8 +625,8 @@ int loadpolicy_main(int argc, char *argv[]) {
 
 	if (load_manager) {
 		FILE *file_fp, *proc_fp;
-		const char *policy_src = read_from_stdin ? "/proc/self/fd/0" : disk_policy_manager;
-		if ((file_fp = fopen(policy_src, "r")) == NULL) {
+		const char *policy_src = disk_policy_manager;
+		if ((file_fp = read_from_stdin ? stdin : fopen(policy_src, "r")) == NULL) {
 			fprintf(stderr, "Can't open %s\n", policy_src);
 			goto out_system;
 		}
@@ -647,8 +647,8 @@ int loadpolicy_main(int argc, char *argv[]) {
 
 	if (load_system_policy) {
 		FILE *file_fp, *proc_fp;
-		const char *policy_src = read_from_stdin ? "/proc/self/fd/0" : disk_policy_system_policy;
-		if ((file_fp = fopen(policy_src, "r")) == NULL) {
+		const char *policy_src = disk_policy_system_policy;
+		if ((file_fp = read_from_stdin ? stdin : fopen(policy_src, "r")) == NULL) {
 			fprintf(stderr, "Can't open %s\n", policy_src);
 			goto out_system;
 		}
@@ -685,8 +685,8 @@ int loadpolicy_main(int argc, char *argv[]) {
 	
 	if (load_exception_policy) {
 		FILE *file_fp, *proc_fp;
-		const char *policy_src = read_from_stdin ? "/proc/self/fd/0" : disk_policy_exception_policy;
-		if ((file_fp = fopen(policy_src, "r")) == NULL) {
+		const char *policy_src = disk_policy_exception_policy;
+		if ((file_fp = read_from_stdin ? stdin : fopen(policy_src, "r")) == NULL) {
 			fprintf(stderr, "Can't open %s\n", policy_src);
 			goto out_exception;
 		}
@@ -723,7 +723,7 @@ int loadpolicy_main(int argc, char *argv[]) {
 
 	if (load_domain_policy) {
 		int new_index;
-		const char *policy_src = read_from_stdin ? "/proc/self/fd/0" : disk_policy_domain_policy;
+		const char *policy_src = read_from_stdin ? NULL : disk_policy_domain_policy;
 		FILE *proc_fp = fopen(proc_policy_domain_policy, "w");
 		struct path_info reserved;
 		reserved.name = "";
