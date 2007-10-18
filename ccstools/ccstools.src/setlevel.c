@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0   2007/09/20
+ * Version: 1.5.1-pre   2007/10/18
  *
  */
 #include "ccstools.h"
@@ -25,13 +25,33 @@ int setlevel_main(int argc, char *argv[]) {
 		fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
 		return 1;
 	}
-	if (argc > 1) {
-		for (i = 1; i < argc; i++) {
-			write(fd, argv[i], strlen(argv[i])); write(fd, "\n", 1);
+	if (argc == 1) {
+		printf("<<< Access Control Status >>>\n");
+		while (read(fd, &c, 1) == 1) putchar(c);
+	} else {
+		FILE *fp = fdopen(fd, "r+");
+		if (!fp) {
+			fprintf(stderr, "Can't open %s\n", policy_file);
+			close(fd);
+			return 1;
 		}
+		for (i = 1; i < argc; i++) {
+			char *cp = strchr(argv[i], '=');
+			fprintf(fp, "%s\n", argv[i]);
+			if (cp) *(cp + 1) = '\0';
+		}
+		fflush(fp);
+		get();
+		while (freadline(fp)) {
+			for (i = 1; i < argc; i++) {
+				if (strncmp(shared_buffer, argv[i], strlen(argv[i]))) continue;
+				printf("%s\n", shared_buffer);
+				break;
+			}
+		}
+		put();
+		fclose(fp);
 	}
-	printf("<<< Access Control Status >>>\n");
-	while (read(fd, &c, 1) == 1) putchar(c);
 	close(fd);
 	return 0;
 }

@@ -72,6 +72,8 @@ make_exception() {
 	do
 		[ -d $i/ -a ! -L $i ] && echo 'file_pattern '$i'/\*'
 	done
+	[ -d /var/spool/postfix/ ] && echo 'file_pattern /var/spool/postfix/deferred/\x/'
+	[ -d /var/spool/postfix/ ] && echo 'file_pattern /var/spool/postfix/deferred/\x/\X'
 
 	#
 	# Make patterns for man(1).
@@ -329,7 +331,7 @@ make_exception() {
 	fi
 
 	#
-	# Make patterns for acacron(8).
+	# Make patterns for anacron(8).
 	#
 	ANACRON_PATH=`which anacron`
 	if [ -n "$ANACRON_PATH" ]; then
@@ -377,6 +379,9 @@ make_exception() {
 		echo 'file_pattern /dev/shm/sysconfig/tmp/if-eth0.\$.tmp'
 		echo 'file_pattern /var/run/nscd/db\?\?\?\?\?\?'
 	fi
+
+	echo 'file_pattern /tmp/ib\?\?\?\?\?\?'
+	echo 'file_pattern /tmp/PerlIO_\?\?\?\?\?\?'
 
 	#
 	# Make /var/log/ directory not rewritable by default.
