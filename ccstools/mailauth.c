@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.1-pre   2007/10/01
+ * Version: 1.5.1   2007/10/19
  */
 #define _GNU_SOURCE
 #include <stdio.h>

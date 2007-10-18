@@ -1,7 +1,7 @@
 About this package:
 
 This package contains userland programs
-for TOMOYO Linux version 1.5.0 .
+for TOMOYO Linux version 1.5.1 .
 
 http://tomoyo.sourceforge.jp/
 
@@ -252,3 +252,5 @@ Version 1.5.0 2007/09/20   Usability enhancement release.
       Reading policy from stdin is supported.
 
   The /.init is renamed to /sbin/ccs-init .
+
+Version 1.5.1 2007/10/19      Minor update release.
