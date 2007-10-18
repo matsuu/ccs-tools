@@ -138,7 +138,7 @@ if [ $CHDIR_OK -eq 1 ]; then
     [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.conf -a -w $POLICY_DIR/domain_policy ] && cat domain_policy.conf > $POLICY_DIR/domain_policy
     if [ "x$PROFILE" = "xdefault" ]; then
 	[ -r profile.conf ] && cat profile.conf > $POLICY_DIR/profile
-    else
+    elif [ "x$PROFILE" = "xdisable" ]; then
 	[ -r profile-$PROFILE.conf ] && cat profile-$PROFILE.conf > $POLICY_DIR/profile
     fi
 fi
