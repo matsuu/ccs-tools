@@ -23,9 +23,9 @@ install:
 # If you want to suppress "warning: pointer targets in passing argument ... differ in signedness" warning messages,
 # you can add "-Wno-pointer-sign" options to CFLAGS.
 #
-#CFLAGS=-Wall -Wno-pointer-sign -O3
+#CFLAGS=-Wall -Wno-pointer-sign -O2
 #
-CFLAGS=-Wall -O3
+CFLAGS=-Wall -O2
 
 CC=gcc
 
