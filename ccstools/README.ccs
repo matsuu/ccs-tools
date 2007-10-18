@@ -254,3 +254,29 @@ Version 1.5.0 2007/09/20   Usability enhancement release.
   The /.init is renamed to /sbin/ccs-init .
 
 Version 1.5.1 2007/10/19      Minor update release.
+
+  The following programs were updated.
+
+    ccs-init:
+      Removed /bin/bash dependency.
+      Don't show prompt for selecting a profile
+      unless something went wrong or explicitly asked.
+
+    init_policy.sh:
+      Removed /bin/bash dependency.
+      Some "file_pattern"s are added.
+      Error check is added upon startup.
+
+    loadpolicy:
+      Don't try to open /proc/self/fd/0 when reading from standard input.
+
+    setlevel:
+      Don't show profiles that are not asked to modify.
+
+    domainmatch:
+      Removed /bin/bash dependency.
+      Insert a blank line before printing domainname.
+
+    mailauth:
+      Removed openssl-devel dependency.
+      Use decimal numbers instead of random ASCII character.
