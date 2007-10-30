@@ -1,0 +1,49 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+setlevel 1.5.1
+
+Copyright (C) 2005-2007 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: setlevel profile_index-profile_name=profile_value ...
+
+This program updates TOMOYO Linux's profile.
+
+You can see list of profiles currently defined via /proc/ccs/profile .
+
+Examples:
+
+# setlevel 2-TOMOYO_VERBOSE=1
+ Turn on verbose mode for profile 2.
+
+# setlevel 3-ALLOW_ENFORCE_GRACE=1
+ Turn on delayed enforcing mode for profile 3.
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "Update TOMOYO Linux's profile" $0 | gzip -9 > /usr/share/man/man8/setlevel.8.gz
+[SEE ALSO]
+
+ loadpolicy (8)
+
+[NOTES]
+
+ You need to register either path to this program ( /usr/lib/ccs/setlevel ) or a domain for this program in /proc/ccs/manager before invoking this program.
+
+ You may create a symbolic link to this program named ccs-setlevel if you wish.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0

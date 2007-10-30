@@ -1,0 +1,55 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+savepolicy 1.5.1
+
+Copyright (C) 2005-2007 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: savepolicy [s][e][d][a][f]
+
+This program saves TOMOYO Linux's policy from kernel into files.
+
+ s     Save system_policy. ( /etc/ccs/system_policy.conf )
+
+ e     Save exception_policy. ( /etc/ccs/exception_policy.conf )
+
+ d     Save domain_policy. ( /etc/ccs/domain_policy.conf )
+
+ a     Save system_policy, exception_policy and domain_policy. This is default.
+
+ f     Forcefully save even if the on-memory policy and the on-disk policy are identical.
+
+Examples:
+
+# savepolicy
+ Save system_policy, exception_policy and domain_policy.
+
+# savepolicy e
+ Save exception_policy.
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "Save TOMOYO Linux's policy" $0 | gzip -9 > /usr/share/man/man8/savepolicy.8.gz
+[SEE ALSO]
+
+ loadpolicy (8)
+
+[NOTES]
+
+ You may create a symbolic link to this program named ccs-savepolicy if you wish.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0

@@ -1,0 +1,41 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+ccs-auditd 1.5.1
+
+Copyright (C) 2005-2007 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: ccs-auditd location_to_save_grant_log location_to_save_reject_log
+
+This program reads access request logs from kernel and writes to specified location.
+
+By running this program upon startup, you can save access logs which violated domain_policy (reject_log) and access logs which didn't violate domain_policy (grant_log) in domain_policy file's format.
+
+You may specify /dev/null as location to save logs. But in that case, you should set MAX_GRANT_LOG=0 and/or MAX_REJECT_LOG=0 in profile configuration ( /etc/ccs/profile.conf or /proc/ccs/profile ).
+
+Examples:
+
+# ccs-auditd /dev/null /var/log/tomoyo/reject_log.txt
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "TOMOYO Linux's auditing daemon" $0 | gzip -9 > /usr/share/man/man8/ccs-auditd.8.gz
+[NOTES]
+
+ Start this program from appropriate stage such as /etc/rc.local .
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0

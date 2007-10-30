@@ -1,0 +1,46 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+findtemp 1.5.1
+
+Copyright (C) 2005-2007 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: findtemp < list_of_pathnames
+
+This program reads list of pathnames from standard input and checks the existence of pathnames, and dumps the nonexistent pathnames.
+
+The nonexistent pathnames are likely used as temporal pathnames. So find the naming rules from similar nonexistent pathnames and append the pattern to /etc/ccs/exception_policy.conf and /proc/ccs/exception_policy .
+
+You can pass the content of /etc/ccs/domain_policy.conf or /proc/ccs/domain_policy using redirection or pipes to the standard input of this program.
+
+Examples:
+
+# findtemp < /proc/ccs/domain_policy
+ Search for nonexistent pathnames from domain_policy.
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "Detect TOMOYO Linux's temporal pathnames" $0 | gzip -9 > /usr/share/man/man8/findtemp.8.gz
+[SEE ALSO]
+
+ patternize (8)
+
+[NOTES]
+
+ You may create a symbolic link to this program named ccs-findtemp if you wish.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0

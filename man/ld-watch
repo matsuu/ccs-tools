@@ -1,0 +1,45 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+ld-watch 1.5.1
+
+Copyright (C) 2005-2007 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: ld-watch
+
+Appends shared libraries to exception policy automatically using "allow_read" directive when the location of shared libraries in /etc/ld.so.cache has changed.
+
+By running this program while updating packages, you can avoid errors "unable to start applications because shared libraries are unreadable" when the pathnames of shared libraries accessed by general programs has changed.
+
+Examples:
+
+# ld-watch
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "Update TOMOYO Linux's library's pathnames automatically" $0 | gzip -9 > /usr/share/man/man8/ld-watch.8.gz
+[SEE ALSO]
+
+ ccs-queryd (8)
+
+[NOTES]
+
+ You need to register either path to this program ( /usr/lib/ccs/ld-watch ) or a domain for this program in /proc/ccs/manager before invoking this program.
+
+ You may create a symbolic link to this program named ccs-ld-watch if you wish.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0

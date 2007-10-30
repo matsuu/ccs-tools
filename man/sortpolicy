@@ -1,0 +1,45 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+sortpolicy 1.5.1
+
+Copyright (C) 2005-2007 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: sortpolicy < domain_policy
+
+This program reads domain policy from standard input and sort by domainnames and writes to standard output.
+Same with sort(1) except that sorting is donebased on per a domainname basis.
+
+You can pass the content of /etc/ccs/domain_policy.conf or /proc/ccs/domain_policy using redirection or pipes to the standard input of this program.
+
+Examples:
+
+# sortpolicy < /proc/ccs/domain_policy
+ Sort domain policy.
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "Sort TOMOYO Linux's domain policy" $0 | gzip -9 > /usr/share/man/man8/sortpolicy.8.gz
+[SEE ALSO]
+
+ sort (1)
+
+[NOTES]
+
+ You may create a symbolic link to this program named ccs-sortpolicy if you wish.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0

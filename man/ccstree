@@ -1,0 +1,43 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+ccstree 1.5.1
+
+Copyright (C) 2005-2007 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: ccstree [-a]
+
+This program shows profile index and domainname of currently running process like "pstree" command.
+
+ -a    Show all processes including kernel threads.
+
+Examples:
+
+# ccstree
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "View TOMOYO Linux's process information" $0 | gzip -9 > /usr/share/man/man8/ccstree.8.gz
+[SEE ALSO]
+
+ setprofile (8)
+
+[NOTES]
+
+ You may create a symbolic link to this program named ccs-ccstree if you wish.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0

@@ -1,0 +1,49 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+ccs-queryd 1.5.1
+
+Copyright (C) 2005-2007 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: ccs-queryd
+
+This program detects policy violation in enforcing mode and displays the access request. You can tell the system whether the access request should be granted (or granted and policy should be appended to grant the access request) or rejected after you validate the access request.
+
+By running this program while updating packages, you can avoid errors due to insufficient permissions.
+
+Never grant access requests unconditionally. The cause of policy violation is not always updating packages, but may by malicious requests by attackers. If you grant access requests caused by malicious requests by attackers, the system gets intruded.
+
+To enable "delayed enforcing mode", you need to either set "ALLOW_ENFORCE_GRACE=1" in /proc/ccs/profile using "setlevel" command or assign a profile whose ALLOW_ENFORCE_GRACE is set to 1 to domains using "setprofile" or "editpolicy" commands.
+
+Examples:
+
+# ccs-queryd
+
+Usage is available at http://tomoyo.sourceforge.jp/en/1.5.x/update.html
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "Handle TOMOYO Linux's delayed enforcing mode" $0 | gzip -9 > /usr/share/man/man8/ccs-queryd.8.gz
+[SEE ALSO]
+
+ ld-watch (8)
+
+[NOTES]
+
+ You need to register either path to this program ( /usr/lib/ccs/ccs-queryd ) or a domain for this program in /proc/ccs/manager before invoking this program.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0

@@ -1,0 +1,55 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+setprofile 1.5.1
+
+Copyright (C) 2005-2007 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: setprofile [-r] profile_index domainname [domainname ...]
+
+This program assigns TOMOYO Linux's profile to domains.
+
+  -r   Apply specified profile to all domains whose domainname starts with domainname given at command line.
+
+  profile_index   Profile index to assign. Profile index is an integer between 0 and 255.
+
+You can see list of profiles currently assigned via /proc/ccs/.domain_status .
+
+Examples:
+
+# setprofile -r 0 '<kernel>'
+ Assign profile 0 to all domains.
+
+# setprofile 1 '<kernel> /usr/sbin/sshd' '<kernel> /usr/sbin/httpd'
+ Assign profile 0 to sshd and httpd domains.
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "Assign TOMOYO Linux's profile to domains" $0 | gzip -9 > /usr/share/man/man8/setprofile.8.gz
+[SEE ALSO]
+
+ ccstree (8)
+
+[NOTES]
+
+ You need to register either path to this program ( /usr/lib/ccs/setprofile ) or a domain for this program in /proc/ccs/manager before invoking this program.
+
+ You may create a symbolic link to this program named ccs-setprofile if you wish.
+
+ Be sure to quote or escape appropriately when specifying domainnames.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0

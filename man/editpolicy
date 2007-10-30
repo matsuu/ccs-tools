@@ -1,0 +1,56 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+editpolicy 1.5.1
+
+Copyright (C) 2005-2007 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: editpolicy [{s|e|d}]
+
+This program edits TOMOYO Linux's policy currently loaded in the kernel.
+
+ s     Set initial screen to system_policy editor.
+
+ e     Set initial screen to exception_policy editor.
+
+ d     Set initial screen to domain_policy editor. This is default.
+
+Examples:
+
+# editpolicy
+ Start policy editor with domain_policy editor screen.
+
+Usage with images are available at http://tomoyo.sourceforge.jp/en/1.5.x/tool-editpolicy.html
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "Edit TOMOYO Linux's policy" $0 | gzip -9 > /usr/share/man/man8/editpolicy.8.gz
+[SEE ALSO]
+
+ loadpolicy (8)
+
+[NOTES]
+
+ You need to register either path to this program ( /usr/lib/ccs/editpolicy ) or a domain for this program in /proc/ccs/manager before invoking this program.
+
+ You may create a symbolic link to this program named ccs-editpolicy if you wish.
+
+ If you invoke this program as "editpolicy_offline" or "ccs-editpolicy_offline", you can edit policy files in /etc/ccs/ directory.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+ Line coloring feature is made by Yoshihiro Kusuno <yocto _at_ users.sourceforge.jp>.
+
+EOF
+fi
+exit 0

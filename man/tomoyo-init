@@ -1,0 +1,57 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+tomoyo-init 1.5.1
+
+Copyright (C) 2005-2007 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: tomoyo-init
+
+This program is automatically called to load policy from files into kernel when /sbin/init starts.
+
+This program copies the following files.
+
+   /etc/tomoyo/system_policy.conf => /sys/kernel/security/tomoyo/system_policy
+
+   /etc/tomoyo/exception_policy.conf => /sys/kernel/security/tomoyo/exception_policy
+
+   /etc/tomoyo/domain_policy.conf => /sys/kernel/security/tomoyo/domain_policy
+
+   /etc/tomoyo/profile.conf => /sys/kernel/security/tomoyo/profile
+
+   /etc/tomoyo/manager.conf => /sys/kernel/security/tomoyo/manager
+
+Examples:
+
+None.
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "Load TOMOYO Linux's policy automatically" $0 | gzip -9 > /usr/share/man/man8/tomoyo-init.8.gz
+[SEE ALSO]
+
+ loadpolicy (8)
+
+[NOTES]
+
+ If something went wrong, a prompt is shown so that the administrator can take action before the kernel gets panic.
+
+ You don't need to invoke this program manually.
+
+ To load policy after /sbin/init starts, use /usr/lib/ccs/loadpolicy instead.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0

@@ -1,0 +1,47 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+checkpolicy 1.5.1
+
+Copyright (C) 2005-2007 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: checkpolicy {s|e|d} < policy_to_check
+
+This program validates TOMOYO Linux's policy.
+
+ s     Interpret input as system_policy. ( /etc/ccs/system_policy.conf )
+
+ e     Interpret input as exception_policy. ( /etc/ccs/exception_policy.conf )
+
+ d     Interpret input as domain_policy. ( /etc/ccs/domain_policy.conf )
+
+Examples:
+
+# checkpolicy e < /etc/ccs/exception_policy.conf
+ Check for errors in exception policy.
+
+# checkpolicy d < /etc/ccs/domain_policy.conf
+ Check for errors in domain policy.
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "TOMOYO Linux's policy validator" $0 | gzip -9 > /usr/share/man/man8/checkpolicy.8.gz
+[NOTES]
+ 
+ You may create a symbolic link to this program named ccs-checkpolicy if you wish.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0

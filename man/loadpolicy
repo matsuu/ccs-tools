@@ -1,0 +1,73 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+loadpolicy 1.5.1
+
+Copyright (C) 2005-2007 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: loadpolicy [-][s][e][d][a][f][p][m]
+
+This program loads TOMOYO Linux's policy from files or standard input into kernel.
+
+ -     Read policy from stdin. Specify only one of "sedpm" option when you use this option.
+
+ s     Load system_policy. ( /etc/ccs/system_policy.conf )
+
+ e     Load exception_policy. ( /etc/ccs/exception_policy.conf )
+
+ d     Load domain_policy. ( /etc/ccs/domain_policy.conf )
+
+ a     Load system_policy, exception_policy and domain_policy.
+
+ p     Load profile. ( /etc/ccs/profile.conf )
+
+ m     Load manager. ( /etc/ccs/manager.conf )
+
+ f     Erase on-memory policy before loading on-disk policy. If not specified, on-disk policy is appended to on-memory policy.
+       This option is valid for "seda" options.
+
+Examples:
+
+# echo "allow_read /proc/meminfo" | loadpolicy -e
+ Add "allow_read /proc/meminfo" to exception policy.
+
+# echo "delete allow_read /proc/meminfo" | loadpolicy -e
+ Remove "allow_read /proc/meminfo" from exception policy.
+
+# ( echo "<kernel>"; echo "1 /sbin/init" ) | loadpolicy -d
+ Add "1 /sbin/init" to "<kernel>" domain.
+
+# loadpolicy df
+ Replace currently loaded domain policy with /etc/ccs/domain_policy.conf .
+
+# loadpolicy d
+ Append /etc/ccs/domain_policy.conf into currently loaded domain policy.
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "Load TOMOYO Linux's policy manually" $0 | gzip -9 > /usr/share/man/man8/loadpolicy.8.gz
+[SEE ALSO]
+
+ ccs-init (8)
+
+[NOTES]
+
+ You need to register either path to this program ( /usr/lib/ccs/loadpolicy ) or a domain for this program in /proc/ccs/manager before invoking this program.
+
+ You may create a symbolic link to this program named ccs-loadpolicy if you wish.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0
