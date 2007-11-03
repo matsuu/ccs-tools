@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/sh
 
 cd ${0%/*}
 export PATH=$PWD:${PATH}
