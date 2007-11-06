@@ -24,9 +24,11 @@ static void ShowPrompt(const char *str, const int is_enforce) {
 #define MS_MOVE         8192
 #endif
 
+static const char *pivot_root_dir = "/proc/"; 
+
 static int child(void *arg) {
 	errno = 0;
-	pivot_root("/proc", proc_policy_dir);
+	pivot_root(pivot_root_dir, proc_policy_dir);
 	return errno;
 }
 
@@ -38,6 +40,7 @@ static void WritePolicy(const char *cp) {
 
 int main(int argc, char *argv[]) {
 	Init();
+	if (strncmp(proc_policy_dir, "/proc/", 6)) pivot_root_dir = "/sys/kernel/security/";
 	if ((system_fd = open(proc_policy_system_policy, O_RDWR)) == EOF) {
 		fprintf(stderr, "Can't open %s .\n", proc_policy_system_policy);
 		return 1;
@@ -242,9 +245,9 @@ int main(int argc, char *argv[]) {
 		char *stack = malloc(8192);
 		WriteStatus("RESTRICT_PIVOT_ROOT=3\n");
 
-		snprintf(stack, 8191, "allow_pivot_root /proc/ %s\n", proc_policy_dir);
+		snprintf(stack, 8191, "allow_pivot_root %s %s\n", pivot_root_dir, proc_policy_dir);
 		WritePolicy(stack);
-		snprintf(stack, 8191, "pivot_root('/proc/', '%s')", proc_policy_dir);
+		snprintf(stack, 8191, "pivot_root('%s', '%s')", pivot_root_dir, proc_policy_dir);
 		ShowPrompt(stack, 0);
 		{
 			const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS, NULL);
@@ -254,9 +257,9 @@ int main(int argc, char *argv[]) {
 		if (errno == 0) printf("OK\n");
 		else printf("FAILED: %s\n", strerror(errno));
 
-		snprintf(stack, 8191, "delete allow_pivot_root /proc/ %s\n", proc_policy_dir);
+		snprintf(stack, 8191, "delete allow_pivot_root %s %s\n", pivot_root_dir, proc_policy_dir);
 		WritePolicy(stack);
-		snprintf(stack, 8191, "pivot_root('/proc/', '%s')", proc_policy_dir);
+		snprintf(stack, 8191, "pivot_root('%s', '%s')", pivot_root_dir, proc_policy_dir);
 		ShowPrompt(stack, 1);
 		{
 			const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS, NULL);
@@ -267,7 +270,7 @@ int main(int argc, char *argv[]) {
 		else printf("BUG: %s\n", strerror(errno));
 		
 		WriteStatus("RESTRICT_PIVOT_ROOT=2\n");
-		snprintf(stack, 8191, "pivot_root('/proc/', '%s')", proc_policy_dir);
+		snprintf(stack, 8191, "pivot_root('%s', '%s')", pivot_root_dir, proc_policy_dir);
 		ShowPrompt(stack, 0);
 		{
 			const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS, NULL);

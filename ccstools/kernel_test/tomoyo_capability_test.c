@@ -53,6 +53,9 @@ static void UnsetCapability(const char *capability) {
 
 static void StageCapabilityTest(void) {
 	int fd;
+	char tmp1[128], tmp2[128];
+	memset(tmp1, 0, sizeof(tmp1));
+	memset(tmp2, 0, sizeof(tmp2));
 	SetCapability("inet_tcp_create");
 	ShowPrompt("inet_tcp_create");
 	fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -128,32 +131,49 @@ static void StageCapabilityTest(void) {
 
 	SetCapability("create_fifo");
 	ShowPrompt("create_fifo");
-	ShowResult(mknod("/", S_IFIFO, 0));
+	strcpy(tmp1, "/tmp/XXXXXX");
+	close(mkstemp(tmp1));
+	unlink(tmp1);
+	ShowResult(mknod(tmp1, S_IFIFO, 0));
+	unlink(tmp1);
 	UnsetCapability("create_fifo");
 
 	SetCapability("create_block_dev");
 	ShowPrompt("create_block_dev");
-	ShowResult(mknod("/", S_IFBLK, MKDEV(1, 0)));
+	strcpy(tmp1, "/tmp/XXXXXX");
+	close(mkstemp(tmp1));
+	unlink(tmp1);
+	ShowResult(mknod(tmp1, S_IFBLK, MKDEV(1, 0)));
+	unlink(tmp1);
 	UnsetCapability("create_block_dev");
 
 	SetCapability("create_char_dev");
 	ShowPrompt("create_char_dev");
-	ShowResult(mknod("/", S_IFCHR, MKDEV(1, 3)));
+	strcpy(tmp1, "/tmp/XXXXXX");
+	close(mkstemp(tmp1));
+	unlink(tmp1);
+	ShowResult(mknod(tmp1, S_IFCHR, MKDEV(1, 3)));
+	unlink(tmp1);
 	UnsetCapability("create_char_dev");
 
 	SetCapability("create_unix_socket");
 	ShowPrompt("create_unix_socket(mknod)");
-	ShowResult(mknod("/", S_IFSOCK, 0));
-
+	strcpy(tmp1, "/tmp/XXXXXX");
+	close(mkstemp(tmp1));
+	unlink(tmp1);
+	ShowResult(mknod(tmp1, S_IFSOCK, 0));
+	unlink(tmp1);
 	{
 		struct sockaddr_un addr;
 		int fd;
 		memset(&addr, 0, sizeof(addr));
 		addr.sun_family = AF_UNIX;
-		strncpy(addr.sun_path, "/", sizeof(addr.sun_path) - 1);
+		strcpy(tmp1, "/tmp/XXXXXX");
+		strncpy(addr.sun_path, tmp1, sizeof(addr.sun_path) - 1);
 		fd = socket(AF_UNIX, SOCK_STREAM, 0);
 		ShowPrompt("create_unix_socket(bind)");
 		ShowResult(bind(fd, (struct sockaddr *) &addr, sizeof(addr)));
+		unlink(tmp1);
 		if (fd != EOF) close(fd);
 	}
 	UnsetCapability("create_unix_socket");
@@ -285,23 +305,41 @@ static void StageCapabilityTest(void) {
 	
 	SetCapability("SYS_LINK");
 	ShowPrompt("SYS_LINK");
-	ShowResult(link("/", "/"));
+	strcpy(tmp1, "/tmp/link_source_XXXXXX");
+	close(mkstemp(tmp1));
+	strcpy(tmp2, "/tmp/link_target_XXXXXX");
+	ShowResult(link(tmp1, tmp2));
+	unlink(tmp2);
+	unlink(tmp1);
 	UnsetCapability("SYS_LINK");
 	
 	SetCapability("SYS_SYMLINK");
 	ShowPrompt("SYS_SYMLINK");
-	ShowResult(symlink("/", "/"));
+	strcpy(tmp1, "/tmp/symlink_target_XXXXXX");
+	close(mkstemp(tmp1));
+	strcpy(tmp2, "/tmp/symlink_source_XXXXXX");
+	ShowResult(symlink(tmp1, tmp2));
+	unlink(tmp2);
+	unlink(tmp1);
 	UnsetCapability("SYS_SYMLINK");
 	
 	SetCapability("SYS_RENAME");
 	ShowPrompt("SYS_RENAME");
-	ShowResult(rename("/", "/"));
+	strcpy(tmp1, "/tmp/rename_old_XXXXXX");
+	close(mkstemp(tmp1));
+	strcpy(tmp2, "/tmp/rename_new_XXXXXX");
+	ShowResult(rename(tmp1, tmp2));
+	unlink(tmp2);
+	unlink(tmp1);
 	UnsetCapability("SYS_RENAME");
-		
+
 	SetCapability("SYS_UNLINK");
 	ShowPrompt("SYS_UNLINK");
-	ShowResult(unlink("/"));
+	strcpy(tmp1, "/tmp/unlinkXXXXXX");
+	close(mkstemp(tmp1));
+	ShowResult(unlink(tmp1));
 	UnsetCapability("SYS_UNLINK");
+	unlink(tmp1);
 	
 	SetCapability("SYS_CHMOD");
 	ShowPrompt("SYS_CHMOD");
