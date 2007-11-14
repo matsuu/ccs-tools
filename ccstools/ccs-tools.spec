@@ -5,7 +5,6 @@ Version: 1.5.1
 Release: 1
 License: GPL
 Group: System Environment/Kernel
-ExclusiveArch: i386
 ExclusiveOS: Linux
 Autoreqprov: no
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
