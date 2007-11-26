@@ -54,6 +54,6 @@ falsh: falsh.c /usr/include/curses.h /usr/include/readline/readline.h
 	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f $(MAIN_FILES) $(MISC_FILES) falsh
+	rm -f $(MAIN_FILES) $(MISC_FILES)
 
 .PHONY: clean install
