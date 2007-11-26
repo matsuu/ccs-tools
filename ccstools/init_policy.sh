@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2007  NTT DATA CORPORATION
 #
-# Version: 1.5.1   2007/10/19
+# Version: 1.5.2-pre   2007/11/26
 #
 
 cd ${0%/*}
@@ -627,4 +627,13 @@ if [ ! -r /etc/ccs/exception_policy.conf ]; then
 	echo Creating exception policy. This will take several minutes.
 	make_exception > /etc/ccs/exception_policy.conf
 	make_alias >> /etc/ccs/exception_policy.conf
+fi
+if [ ! -r /etc/ccs/system_policy.conf ]; then
+	echo Creating system policy.
+	touch /etc/ccs/system_policy.conf
+fi
+if [ ! -r /etc/ccs/domain_policy.conf ]; then
+	echo Creating domain policy.
+	echo '<kernel>' > /etc/ccs/domain_policy.conf
+	echo 'use_profile 0' >> /etc/ccs/domain_policy.conf
 fi
