@@ -646,12 +646,12 @@ if [ ! -r /etc/tomoyo/exception_policy.conf ]; then
 	make_exception > /etc/tomoyo/exception_policy.conf
 	make_alias >> /etc/tomoyo/exception_policy.conf
 fi
-if [ ! -r /etc/ccs/system_policy.conf ]; then
+if [ ! -r /etc/tomoyo/system_policy.conf ]; then
 	echo Creating system policy.
-	touch /etc/ccs/system_policy.conf
+	touch /etc/tomoyo/system_policy.conf
 fi
-if [ ! -r /etc/ccs/domain_policy.conf ]; then
+if [ ! -r /etc/tomoyo/domain_policy.conf ]; then
 	echo Creating domain policy.
-	echo '<kernel>' > /etc/ccs/domain_policy.conf
-	echo 'use_profile 0' >> /etc/ccs/domain_policy.conf
+	echo '<kernel>' > /etc/tomoyo/domain_policy.conf
+	echo 'use_profile 0' >> /etc/tomoyo/domain_policy.conf
 fi
