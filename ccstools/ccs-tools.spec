@@ -36,6 +36,7 @@ rm -rf $RPM_BUILD_ROOT
 /sbin/ccs-init
 /sbin/tomoyo-init
 /usr/lib/ccs/
+/usr/sbin/
 %attr(4755,root,root) /usr/lib/ccs/misc/proxy
 
 %changelog

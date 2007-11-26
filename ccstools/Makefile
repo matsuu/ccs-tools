@@ -13,12 +13,12 @@ main: $(MAIN_FILES)
 misc: $(MISC_FILES)
 
 install:
-	mkdir -p $(INSTALLDIR)/usr/lib/ccs/misc $(INSTALLDIR)/sbin
+	mkdir -p $(INSTALLDIR)/usr/lib/ccs/misc $(INSTALLDIR)/sbin $(INSTALLDIR)/usr/sbin
 	chmod 700 $(INSTALLDIR)/usr/lib/ccs
 	chmod 755 domainmatch init_policy.sh tomoyo_init_policy.sh
 	cp -af --remove-destination ccstools $(INSTALLDIR)/usr/lib/ccs/
 	for i in $(ALIAS_LIST); do ln -f $(INSTALLDIR)/usr/lib/ccs/ccstools $(INSTALLDIR)/usr/lib/ccs/$$i; done
-	for i in $(ALIAS_LIST); do ln -sf $(INSTALLDIR)/usr/lib/ccs/$$i $(INSTALLDIR)/usr/sbin/ccs-`echo $$i | sed 's:^ccs-::'`; done
+	for i in $(ALIAS_LIST); do ln -sf /usr/lib/ccs/$$i $(INSTALLDIR)/usr/sbin/ccs-`echo $$i | sed 's:^ccs-::'`; done
 	cp -af --remove-destination realpath domainmatch init_policy.sh tomoyo_init_policy.sh $(INSTALLDIR)/usr/lib/ccs/
 	cp -af --remove-destination $(MISC_FILES) $(INSTALLDIR)/usr/lib/ccs/misc/
 	chown -R root:root ccs-init tomoyo-init $(INSTALLDIR)/usr/lib/ccs/
