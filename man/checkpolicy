@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-checkpolicy 1.5.1
+ccs-checkpolicy 1.5.1
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: checkpolicy {s|e|d} < policy_to_check
+Usage: ccs-checkpolicy {s|e|d} < policy_to_check
 
 This program validates TOMOYO Linux's policy.
 
@@ -25,18 +25,18 @@ This program validates TOMOYO Linux's policy.
 
 Examples:
 
-# checkpolicy e < /etc/ccs/exception_policy.conf
+# ccs-checkpolicy e < /etc/ccs/exception_policy.conf
  Check for errors in exception policy.
 
-# checkpolicy d < /etc/ccs/domain_policy.conf
+# ccs-checkpolicy d < /etc/ccs/domain_policy.conf
  Check for errors in domain policy.
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "TOMOYO Linux's policy validator" $0 | gzip -9 > /usr/share/man/man8/checkpolicy.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "TOMOYO Linux's policy validator" $0 | gzip -9 > /usr/share/man/man8/ccs-checkpolicy.8.gz
 [NOTES]
  
- You may create a symbolic link to this program named ccs-checkpolicy if you wish.
+ This is a symbolic link to /usr/lib/ccs/checkpolicy .
 
 [AUTHORS]
 

@@ -34,7 +34,7 @@ else
 cat << EOF | help2man -i - -N -s 8 -n "Handle TOMOYO Linux's delayed enforcing mode" $0 | gzip -9 > /usr/share/man/man8/ccs-queryd.8.gz
 [SEE ALSO]
 
- ld-watch (8)
+ ccs-ld-watch (8)
 
 [NOTES]
 

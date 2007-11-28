@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-sortpolicy 1.5.1
+ccs-sortpolicy 1.5.1
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: sortpolicy < domain_policy
+Usage: ccs-sortpolicy < domain_policy
 
 This program reads domain policy from standard input and sort by domainnames and writes to standard output.
 Same with sort(1) except that sorting is donebased on per a domainname basis.
@@ -22,19 +22,19 @@ You can pass the content of /etc/ccs/domain_policy.conf or /proc/ccs/domain_poli
 
 Examples:
 
-# sortpolicy < /proc/ccs/domain_policy
+# ccs-sortpolicy < /proc/ccs/domain_policy
  Sort domain policy.
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Sort TOMOYO Linux's domain policy" $0 | gzip -9 > /usr/share/man/man8/sortpolicy.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Sort TOMOYO Linux's domain policy" $0 | gzip -9 > /usr/share/man/man8/ccs-sortpolicy.8.gz
 [SEE ALSO]
 
  sort (1)
 
 [NOTES]
 
- You may create a symbolic link to this program named ccs-sortpolicy if you wish.
+ This is a symbolic link to /usr/lib/ccs/sortpolicy .
 
 [AUTHORS]
 

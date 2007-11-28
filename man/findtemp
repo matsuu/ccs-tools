@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-findtemp 1.5.1
+ccs-findtemp 1.5.1
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: findtemp < list_of_pathnames
+Usage: ccs-findtemp < list_of_pathnames
 
 This program reads list of pathnames from standard input and checks the existence of pathnames, and dumps the nonexistent pathnames.
 
@@ -23,19 +23,19 @@ You can pass the content of /etc/ccs/domain_policy.conf or /proc/ccs/domain_poli
 
 Examples:
 
-# findtemp < /proc/ccs/domain_policy
+# ccs-findtemp < /proc/ccs/domain_policy
  Search for nonexistent pathnames from domain_policy.
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Detect TOMOYO Linux's temporal pathnames" $0 | gzip -9 > /usr/share/man/man8/findtemp.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Detect TOMOYO Linux's temporal pathnames" $0 | gzip -9 > /usr/share/man/man8/ccs-findtemp.8.gz
 [SEE ALSO]
 
- patternize (8)
+ ccs-patternize (8)
 
 [NOTES]
 
- You may create a symbolic link to this program named ccs-findtemp if you wish.
+ This is a symbolic link to /usr/lib/ccs/findtemp .
 
 [AUTHORS]
 

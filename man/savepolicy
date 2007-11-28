@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-savepolicy 1.5.1
+ccs-savepolicy 1.5.1
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: savepolicy [s][e][d][a][f]
+Usage: ccs-savepolicy [s][e][d][a][f]
 
 This program saves TOMOYO Linux's policy from kernel into files.
 
@@ -29,22 +29,22 @@ This program saves TOMOYO Linux's policy from kernel into files.
 
 Examples:
 
-# savepolicy
+# ccs-savepolicy
  Save system_policy, exception_policy and domain_policy.
 
-# savepolicy e
+# ccs-savepolicy e
  Save exception_policy.
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Save TOMOYO Linux's policy" $0 | gzip -9 > /usr/share/man/man8/savepolicy.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Save TOMOYO Linux's policy" $0 | gzip -9 > /usr/share/man/man8/ccs-savepolicy.8.gz
 [SEE ALSO]
 
- loadpolicy (8)
+ ccs-loadpolicy (8)
 
 [NOTES]
 
- You may create a symbolic link to this program named ccs-savepolicy if you wish.
+ This is a symbolic link to /usr/lib/ccs/savepolicy .
 
 [AUTHORS]
 

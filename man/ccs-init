@@ -38,7 +38,7 @@ else
 cat << EOF | help2man -i - -N -s 8 -n "Load TOMOYO Linux's policy automatically" $0 | gzip -9 > /usr/share/man/man8/ccs-init.8.gz
 [SEE ALSO]
 
- loadpolicy (8)
+ ccs-loadpolicy (8)
 
 [NOTES]
 

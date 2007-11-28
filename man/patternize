@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-patternize 1.5.1
+ccs-patternize 1.5.1
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: patternize pattern [pattern ...] < list_of_pathnames > new_list_of_pathnames
+Usage: ccs-patternize pattern [pattern ...] < list_of_pathnames > new_list_of_pathnames
 
 This program reads domain policy from standard input and replaces pathnames with patterns if the pathname matches to patterns given at commandline and writes to standard output.
 
@@ -21,19 +21,19 @@ Pathnames that contains execute permission and domainnames won't be patterned.
 
 Examples:
 
-# patternize '/tmp/php\?\?\?\?\?\?' < /etc/ccs/domain_policy.conf > /etc/ccs/domain_policy2.conf
+# ccs-patternize '/tmp/php\?\?\?\?\?\?' < /etc/ccs/domain_policy.conf > /etc/ccs/domain_policy2.conf
  Replace pathnames that matches to /tmp/php\?\?\?\?\?\? pattern.
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Convert TOMOYO Linux's pathnames into patterns" $0 | gzip -9 > /usr/share/man/man8/patternize.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Convert TOMOYO Linux's pathnames into patterns" $0 | gzip -9 > /usr/share/man/man8/ccs-patternize.8.gz
 [SEE ALSO]
 
- findtemp (8)
+ ccs-findtemp (8)
 
 [NOTES]
 
- You may create a symbolic link to this program named ccs-patternize if you wish.
+ This is a symbolic link to /usr/lib/ccs/patternize .
 
 [AUTHORS]
 

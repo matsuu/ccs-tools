@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-domainmatch 1.5.1
+ccs-domainmatch 1.5.1
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -13,25 +13,25 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: domainmatch pathname
+Usage: ccs-domainmatch pathname
 
 This program scans domain policy for given pathname.
 
 Examples:
 
-# domainmatch /etc/fstab
+# ccs-domainmatch /etc/fstab
  Search for domains that accesses /etc/fstab .
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Scan TOMOYO Linux's domain policy" $0 | gzip -9 > /usr/share/man/man8/domainmatch.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Scan TOMOYO Linux's domain policy" $0 | gzip -9 > /usr/share/man/man8/ccs-domainmatch.8.gz
 [SEE ALSO]
 
- findtemp (8)
+ ccs-findtemp (8)
 
 [NOTES]
 
- You may create a symbolic link to this program named ccs-domainmatch if you wish.
+ This is a symbolic link to /usr/lib/ccs/domainmatch .
 
 [AUTHORS]
 

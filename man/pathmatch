@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-pathmatch 1.5.1
+ccs-pathmatch 1.5.1
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: pathmatch list_of_pathname_patterns
+Usage: ccs-pathmatch list_of_pathname_patterns
 
 This program scans the filesystem for given pathname patterns.
 
@@ -21,19 +21,19 @@ You can use this program to determine how deep patterns are needed for defining 
 
 Examples:
 
-# pathmatch '/etc/\*' '/tmp/\*'
+# ccs-pathmatch '/etc/\*' '/tmp/\*'
  Search for pathnames matching '/etc/\*' or '/tmp/\*' pattern.
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Do TOMOYO Linux's pathname pattern matching on the filesystem" $0 | gzip -9 > /usr/share/man/man8/pathmatch.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Do TOMOYO Linux's pathname pattern matching on the filesystem" $0 | gzip -9 > /usr/share/man/man8/ccs-pathmatch.8.gz
 [SEE ALSO]
 
- patternize (8)
+ ccs-patternize (8)
 
 [NOTES]
 
- You may create a symbolic link to this program named ccs-pathmatch if you wish.
+ This is a symbolic link to /usr/lib/ccs/pathmatch .
 
 [AUTHORS]
 

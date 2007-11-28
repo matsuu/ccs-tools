@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ld-watch 1.5.1
+ccs-ld-watch 1.5.1
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: ld-watch
+Usage: ccs-ld-watch
 
 Appends shared libraries to exception policy automatically using "allow_read" directive when the location of shared libraries in /etc/ld.so.cache has changed.
 
@@ -21,20 +21,20 @@ By running this program while updating packages, you can avoid errors "unable to
 
 Examples:
 
-# ld-watch
+# ccs-ld-watch
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Update TOMOYO Linux's library's pathnames automatically" $0 | gzip -9 > /usr/share/man/man8/ld-watch.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Update TOMOYO Linux's library's pathnames automatically" $0 | gzip -9 > /usr/share/man/man8/ccs-ld-watch.8.gz
 [SEE ALSO]
 
  ccs-queryd (8)
 
 [NOTES]
 
- You need to register either path to this program ( /usr/lib/ccs/ld-watch ) or a domain for this program in /proc/ccs/manager before invoking this program.
+ This is a symbolic link to /usr/lib/ccs/ld-watch .
 
- You may create a symbolic link to this program named ccs-ld-watch if you wish.
+ You need to register either path to this program ( /usr/lib/ccs/ld-watch ) or a domain for this program in /proc/ccs/manager before invoking this program.
 
 [AUTHORS]
 

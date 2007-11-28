@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-editpolicy 1.5.1
+ccs-editpolicy 1.5.1
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: editpolicy [{s|e|d}]
+Usage: ccs-editpolicy [{s|e|d}]
 
 This program edits TOMOYO Linux's policy currently loaded in the kernel.
 
@@ -25,23 +25,23 @@ This program edits TOMOYO Linux's policy currently loaded in the kernel.
 
 Examples:
 
-# editpolicy
+# ccs-editpolicy
  Start policy editor with domain_policy editor screen.
 
 Usage with images are available at http://tomoyo.sourceforge.jp/en/1.5.x/tool-editpolicy.html
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Edit TOMOYO Linux's policy" $0 | gzip -9 > /usr/share/man/man8/editpolicy.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Edit TOMOYO Linux's policy" $0 | gzip -9 > /usr/share/man/man8/ccs-editpolicy.8.gz
 [SEE ALSO]
 
- loadpolicy (8)
+ ccs-loadpolicy (8)
 
 [NOTES]
 
- You need to register either path to this program ( /usr/lib/ccs/editpolicy ) or a domain for this program in /proc/ccs/manager before invoking this program.
+ This is a symbolic link to /usr/lib/ccs/editpolicy .
 
- You may create a symbolic link to this program named ccs-editpolicy if you wish.
+ You need to register either path to this program ( /usr/lib/ccs/editpolicy ) or a domain for this program in /proc/ccs/manager before invoking this program.
 
  If you invoke this program as "editpolicy_offline" or "ccs-editpolicy_offline", you can edit policy files in /etc/ccs/ directory.
 

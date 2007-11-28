@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-loadpolicy 1.5.1
+ccs-loadpolicy 1.5.1
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: loadpolicy [-][s][e][d][a][f][p][m]
+Usage: ccs-loadpolicy [-][s][e][d][a][f][p][m]
 
 This program loads TOMOYO Linux's policy from files or standard input into kernel.
 
@@ -36,33 +36,33 @@ This program loads TOMOYO Linux's policy from files or standard input into kerne
 
 Examples:
 
-# echo "allow_read /proc/meminfo" | loadpolicy -e
+# echo "allow_read /proc/meminfo" | ccs-loadpolicy -e
  Add "allow_read /proc/meminfo" to exception policy.
 
-# echo "delete allow_read /proc/meminfo" | loadpolicy -e
+# echo "delete allow_read /proc/meminfo" | ccs-loadpolicy -e
  Remove "allow_read /proc/meminfo" from exception policy.
 
-# ( echo "<kernel>"; echo "1 /sbin/init" ) | loadpolicy -d
+# ( echo "<kernel>"; echo "1 /sbin/init" ) | ccs-loadpolicy -d
  Add "1 /sbin/init" to "<kernel>" domain.
 
-# loadpolicy df
+# ccs-loadpolicy df
  Replace currently loaded domain policy with /etc/ccs/domain_policy.conf .
 
-# loadpolicy d
+# ccs-loadpolicy d
  Append /etc/ccs/domain_policy.conf into currently loaded domain policy.
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Load TOMOYO Linux's policy manually" $0 | gzip -9 > /usr/share/man/man8/loadpolicy.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Load TOMOYO Linux's policy manually" $0 | gzip -9 > /usr/share/man/man8/ccs-loadpolicy.8.gz
 [SEE ALSO]
 
  ccs-init (8)
 
 [NOTES]
 
- You need to register either path to this program ( /usr/lib/ccs/loadpolicy ) or a domain for this program in /proc/ccs/manager before invoking this program.
+ This is a symbolic link to /usr/lib/ccs/loadpolicy .
 
- You may create a symbolic link to this program named ccs-loadpolicy if you wish.
+ You need to register either path to this program ( /usr/lib/ccs/loadpolicy ) or a domain for this program in /proc/ccs/manager before invoking this program.
 
 [AUTHORS]
 

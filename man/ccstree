@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccstree 1.5.1
+ccs-ccstree 1.5.1
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: ccstree [-a]
+Usage: ccs-ccstree [-a]
 
 This program shows profile index and domainname of currently running process like "pstree" command.
 
@@ -21,18 +21,18 @@ This program shows profile index and domainname of currently running process lik
 
 Examples:
 
-# ccstree
+# ccs-ccstree
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "View TOMOYO Linux's process information" $0 | gzip -9 > /usr/share/man/man8/ccstree.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "View TOMOYO Linux's process information" $0 | gzip -9 > /usr/share/man/man8/ccs-ccstree.8.gz
 [SEE ALSO]
 
- setprofile (8)
+ ccs-setprofile (8)
 
 [NOTES]
 
- You may create a symbolic link to this program named ccs-ccstree if you wish.
+ This is a symbolic link to /usr/lib/ccs/ccstree .
 
 [AUTHORS]
 
