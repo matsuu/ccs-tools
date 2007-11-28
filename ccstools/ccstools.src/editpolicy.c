@@ -1361,9 +1361,9 @@ static void ShowList(void) {
 		get();
 		memset(shared_buffer, 0, shared_buffer_len);
 		snprintf(shared_buffer, shared_buffer_len - 1, "%s", eat(current_domain));
-		colorChange(colorHead(), ON);  // add color
+		attrChange(A_REVERSE, ON);  // add color --- 2007/11/27 changed
 		mvprintw(2, 0, "%s", shared_buffer);
-		colorChange(colorHead(), OFF);  // add color
+		attrChange(A_REVERSE, OFF); // add color --- 2007/11/27 changed
 		put();
 	}
 	for (i = 0; i < body_lines; i++) {
