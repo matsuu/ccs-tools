@@ -2269,7 +2269,7 @@ int editpolicy_main(int argc, char *argv[]) {
 		char *cp = strrchr(argv[0], '/');
 		if (!cp) cp = argv[0];
 		else cp++;
-		if (strcmp(cp, "editpolicy_offline") == 0) offline_mode = 1;
+		if (strstr(cp, "editpolicy_offline")) offline_mode = 1;
 	}
 	if (offline_mode) {
 		int fd[2];
