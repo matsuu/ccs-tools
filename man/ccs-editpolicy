@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-editpolicy 1.5.1
+ccs-editpolicy 1.5.2
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -32,7 +32,7 @@ Usage with images are available at http://tomoyo.sourceforge.jp/en/1.5.x/tool-ed
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Edit TOMOYO Linux's policy" $0 | gzip -9 > /usr/share/man/man8/ccs-editpolicy.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Edit TOMOYO Linux's policy" $0 | gzip -9 > man8/ccs-editpolicy.8.gz
 [SEE ALSO]
 
  ccs-loadpolicy (8)

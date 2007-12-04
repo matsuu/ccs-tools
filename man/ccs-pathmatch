@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-pathmatch 1.5.1
+ccs-pathmatch 1.5.2
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -26,7 +26,7 @@ Examples:
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Do TOMOYO Linux's pathname pattern matching on the filesystem" $0 | gzip -9 > /usr/share/man/man8/ccs-pathmatch.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Do TOMOYO Linux's pathname pattern matching on the filesystem" $0 | gzip -9 > man8/ccs-pathmatch.8.gz
 [SEE ALSO]
 
  ccs-patternize (8)

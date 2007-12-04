@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-init 1.5.1
+ccs-init 1.5.2
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -35,7 +35,7 @@ None.
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Load TOMOYO Linux's policy automatically" $0 | gzip -9 > /usr/share/man/man8/ccs-init.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Load TOMOYO Linux's policy automatically" $0 | gzip -9 > man8/ccs-init.8.gz
 [SEE ALSO]
 
  ccs-loadpolicy (8)
@@ -46,7 +46,7 @@ cat << EOF | help2man -i - -N -s 8 -n "Load TOMOYO Linux's policy automatically"
 
  You don't need to invoke this program manually.
 
- To load policy after /sbin/init starts, use /usr/lib/ccs/loadpolicy instead.
+ To load policy after /sbin/init starts, use ccs-loadpolicy instead.
 
 [AUTHORS]
 

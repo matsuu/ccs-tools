@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-checkpolicy 1.5.1
+ccs-checkpolicy 1.5.2
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -33,7 +33,7 @@ Examples:
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "TOMOYO Linux's policy validator" $0 | gzip -9 > /usr/share/man/man8/ccs-checkpolicy.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "TOMOYO Linux's policy validator" $0 | gzip -9 > man8/ccs-checkpolicy.8.gz
 [NOTES]
  
  This is a symbolic link to /usr/lib/ccs/checkpolicy .

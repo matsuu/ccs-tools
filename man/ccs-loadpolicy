@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-loadpolicy 1.5.1
+ccs-loadpolicy 1.5.2
 
 Copyright (C) 2005-2007 NTT DATA CORPORATION.
 
@@ -53,7 +53,7 @@ Examples:
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Load TOMOYO Linux's policy manually" $0 | gzip -9 > /usr/share/man/man8/ccs-loadpolicy.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Load TOMOYO Linux's policy manually" $0 | gzip -9 > man8/ccs-loadpolicy.8.gz
 [SEE ALSO]
 
  ccs-init (8)
