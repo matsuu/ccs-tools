@@ -286,4 +286,7 @@ Version 1.5.2 2007/12/05      Minor update release.
   The following program was updated.
 
     editpolicy:
-      Use same color for domain transition and domain acl.
+      Use different color for domainname's line and selected line.
+
+    editpolicy_offline:
+      Allow invoking as ccs-editpolicy_offline .
