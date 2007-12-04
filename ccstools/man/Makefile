@@ -1,0 +1,3 @@
+all:
+	mkdir -p man1 man8
+	for i in *; do [ -f $$i -a -x $$i ] && ./$$i; done
