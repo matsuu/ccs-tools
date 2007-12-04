@@ -25,9 +25,8 @@ install:
 	chmod 4755 $(INSTALLDIR)/usr/lib/ccs/misc/proxy
 	chmod 700 ccs-init tomoyo-init
 	cp -af --remove-destination ccs-init tomoyo-init $(INSTALLDIR)/sbin/
-	mkdir -p $(INSTALLDIR)/usr/share/man/man8/ $(INSTALLDIR)/usr/share/man/man1/
+	mkdir -p $(INSTALLDIR)/usr/share/man/man8/
 	cp -af --remove-destination man/man8/* $(INSTALLDIR)/usr/share/man/man8/
-	cp -af --remove-destination man/man1/* $(INSTALLDIR)/usr/share/man/man1/
 
 #
 # If you want to suppress "warning: pointer targets in passing argument ... differ in signedness" warning messages,
