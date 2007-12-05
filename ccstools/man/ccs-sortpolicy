@@ -16,7 +16,7 @@ cat << EOF
 Usage: ccs-sortpolicy < domain_policy
 
 This program reads domain policy from standard input and sort by domainnames and writes to standard output.
-Same with sort(1) except that sorting is donebased on per a domainname basis.
+Same with sort(1) except that sorting is done domain by domain.
 
 You can pass the content of /etc/ccs/domain_policy.conf or /proc/ccs/domain_policy using redirection or pipes to the standard input of this program.
 
