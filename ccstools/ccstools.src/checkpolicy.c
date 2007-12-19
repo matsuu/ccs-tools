@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.4.1   2007/06/05
+ * Version: 1.5.3-pre   2007/12/19
  *
  */
 #include "ccstools.h"
@@ -166,6 +166,14 @@ static void CheckArgv0Policy(char *data) {
 	}
 }
 
+static void CheckEnvPolicy(char *data) {
+	char *cp;
+	if ((cp = FindConditionPart(data)) != NULL && !CheckCondition(cp)) return;
+	if (!IsCorrectPath(data, 0, 0, 0)) {
+		printf("%u: ERROR: '%s' is a bad variable name.\n", line, data); errors++;
+	}
+}
+
 static void CheckNetworkPolicy(char *data) {
 	int sock_type, operation, is_ipv6;
 	u16 min_address[8], max_address[8];
@@ -316,7 +324,7 @@ static void CheckMountPolicy(char *data) {
 	if (!IsCorrectPath(dev, 0, 0, 0)) {
 		printf("%u: ERROR: '%s' is a bad device name.\n", line, dir); errors++;
 	}
-	if (!IsCorrectPath(dir, 1, 0, 1)) {
+	if (!IsCorrectPath(dir, 0, 0, 0)) {
 		printf("%u: ERROR: '%s' is a bad mount point.\n", line, dir); errors++;
 	}
 	return;
@@ -512,6 +520,8 @@ int checkpolicy_main(int argc, char *argv[]) {
 				CheckSignalPolicy(shared_buffer + KEYWORD_ALLOW_SIGNAL_LEN);
 			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_ARGV0, KEYWORD_ALLOW_ARGV0_LEN) == 0) {
 				CheckArgv0Policy(shared_buffer + KEYWORD_ALLOW_ARGV0_LEN);
+			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_ENV, KEYWORD_ALLOW_ENV_LEN) == 0) {
+				CheckEnvPolicy(shared_buffer + KEYWORD_ALLOW_ENV_LEN);
 			} else {
 				CheckFilePolicy(shared_buffer);
 			}
@@ -574,6 +584,11 @@ int checkpolicy_main(int argc, char *argv[]) {
 				RemoveHeader(shared_buffer, KEYWORD_DENY_REWRITE_LEN);
 				if (!IsCorrectPath(shared_buffer, 0, 0, 0)) {
 					printf("%u: ERROR: '%s' is a bad pattern.\n", line, shared_buffer); errors++;
+				}
+			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_ENV, KEYWORD_ALLOW_ENV_LEN) == 0) {
+				RemoveHeader(shared_buffer, KEYWORD_ALLOW_ENV_LEN);
+				if (!IsCorrectPath(shared_buffer, 0, 0, 0)) {
+					printf("%u: ERROR: '%s' is a bad variable name.\n", line, shared_buffer); errors++;
 				}
 			} else {
 				printf("%u: ERROR: Unknown command '%s'.\n", line, shared_buffer); errors++;

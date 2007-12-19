@@ -5,9 +5,10 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0   2007/09/20
+ * Version: 1.5.3-pre   2007/12/19
  *
  */
+#define _GNU_SOURCE
 #include "include.h"
 
 static void ShowPrompt(const char *str, const int is_enforce) {
@@ -56,6 +57,14 @@ int main(int argc, char *argv[]) {
 	
 	// Test mount().
 	{
+		static char buf[4096];
+		char *dev_ram_path = canonicalize_file_name("/dev/ram0");
+		if (!dev_ram_path) dev_ram_path = canonicalize_file_name("/dev/ram");
+		if (!dev_ram_path) {
+			dev_ram_path = "/dev/ram0";
+			mknod(dev_ram_path, S_IFBLK, MKDEV(1,0));
+		}
+		memset(buf, 0, sizeof(buf));
 		WriteStatus("RESTRICT_MOUNT=3\n");
 
 		// Test standard case
@@ -64,8 +73,9 @@ int main(int argc, char *argv[]) {
 		else printf("BUG: %s\n", strerror(errno));
 
 		// Test device_name with pattern
-		ShowPrompt("mount('/dev/ram0', '" TEST_DIR "', 'ext2') for '/dev/\\*'", 1);
-		if (mount("/dev/ram0", TEST_DIR, "ext2", MS_RDONLY, NULL) == EOF && errno == EPERM) printf("OK: Permission denied.\n");
+		snprintf(buf, sizeof(buf) - 1, "mount('%s', '" TEST_DIR "', 'ext2') for '%s\\*'", dev_ram_path, dev_ram_path);
+		ShowPrompt(buf, 1);
+		if (mount(dev_ram_path, TEST_DIR, "ext2", MS_RDONLY, NULL) == EOF && errno == EPERM) printf("OK: Permission denied.\n");
 		else printf("BUG: %s\n", strerror(errno));
 		
 		// Test dir_name with pattern
@@ -81,11 +91,14 @@ int main(int argc, char *argv[]) {
 		WritePolicy("delete allow_mount none " TEST_DIR " tmpfs 0\n");
 
 		// Test device_name with pattern
-		WritePolicy("allow_mount /dev/\\* " TEST_DIR " ext2 1\n");
-		ShowPrompt("mount('/dev/ram0', '" TEST_DIR "', 'ext2') for '/dev/\\*'", 0);
-		if (mount("/dev/ram0", TEST_DIR, "ext2", MS_RDONLY, NULL) == 0) printf("OK\n");
+		snprintf(buf, sizeof(buf) - 1, "allow_mount %s\\* " TEST_DIR " ext2 1\n", dev_ram_path);
+		WritePolicy(buf);
+		snprintf(buf, sizeof(buf) - 1, "mount('%s', '" TEST_DIR "', 'ext2') for '%s\\*'", dev_ram_path, dev_ram_path);
+		ShowPrompt(buf, 0);
+		if (mount(dev_ram_path, TEST_DIR, "ext2", MS_RDONLY, NULL) == 0) printf("OK\n");
 		else printf("FAILED: %s\n", strerror(errno));
-		WritePolicy("delete allow_mount /dev/\\* " TEST_DIR " ext2 1\n");
+		snprintf(buf, sizeof(buf) - 1, "delete allow_mount %s\\* " TEST_DIR " ext2 1\n", dev_ram_path);
+		WritePolicy(buf);
 			
 		// Test dir_name with pattern
 		WritePolicy("allow_mount none " TEST_DIR_PATTERN " tmpfs 0\n");

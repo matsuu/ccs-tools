@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2007  NTT DATA CORPORATION
  *
- * Version: 1.5.0   2007/09/20
+ * Version: 1.5.3-pre   2007/12/19
  *
  */
 
@@ -72,6 +72,8 @@
 #define KEYWORD_ALIAS_LEN                (sizeof(KEYWORD_ALIAS) - 1)
 #define KEYWORD_ALLOW_ARGV0              "allow_argv0 "
 #define KEYWORD_ALLOW_ARGV0_LEN          (sizeof(KEYWORD_ALLOW_ARGV0) - 1)
+#define KEYWORD_ALLOW_ENV                "allow_env "
+#define KEYWORD_ALLOW_ENV_LEN            (sizeof(KEYWORD_ALLOW_ENV) - 1)
 #define KEYWORD_ALLOW_CAPABILITY         "allow_capability "
 #define KEYWORD_ALLOW_CAPABILITY_LEN     (sizeof(KEYWORD_ALLOW_CAPABILITY) - 1)
 #define KEYWORD_ALLOW_CHROOT             "allow_chroot "
