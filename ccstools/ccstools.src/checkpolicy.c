@@ -215,9 +215,9 @@ static void CheckNetworkPolicy(char *data) {
 							   &min_address[0], &min_address[1], &min_address[2], &min_address[3],
  							   &max_address[0], &max_address[1], &max_address[2], &max_address[3])) == 4 || count == 8) {
 		u32 ip = htonl((((u8) min_address[0]) << 24) + (((u8) min_address[1]) << 16) + (((u8) min_address[2]) << 8) + (u8) min_address[3]);
-		* (u32 *) min_address = ip;
+		* (u32 *) (void *) min_address = ip;
 		if (count == 8) ip = htonl((((u8) max_address[0]) << 24) + (((u8) max_address[1]) << 16) + (((u8) max_address[2]) << 8) + (u8) max_address[3]);
-		* (u32 *) max_address = ip;
+		* (u32 *) (void *) max_address = ip;
 		is_ipv6 = 0;
 	} else if (*cp2 != '@') { // Don't reject address_group.
 		goto out;
@@ -236,22 +236,23 @@ static void CheckFilePolicy(char *data) {
 		const char * const keyword;
 		const int paths;
 	} acl_type_array[] = {
-		{ "execute",  1 },
-		{ "read",     1 },
-		{ "write",    1 },
-		{ "create",   1 },
-		{ "unlink",   1 },
-		{ "mkdir",    1 },
-		{ "rmdir",    1 },
-		{ "mkfifo",   1 },
-		{ "mksock",   1 },
-		{ "mkblock",  1 },
-		{ "mkchar",   1 },
-		{ "truncate", 1 },
-		{ "symlink",  1 },
-		{ "link",     2 },
-		{ "rename",   2 },
-		{ "rewrite",  1 },
+		{ "read/write", 1},
+		{ "execute",    1 },
+		{ "read",       1 },
+		{ "write",      1 },
+		{ "create",     1 },
+		{ "unlink",     1 },
+		{ "mkdir",      1 },
+		{ "rmdir",      1 },
+		{ "mkfifo",     1 },
+		{ "mksock",     1 },
+		{ "mkblock",    1 },
+		{ "mkchar",     1 },
+		{ "truncate",   1 },
+		{ "symlink",    1 },
+		{ "link",       2 },
+		{ "rename",     2 },
+		{ "rewrite",    1 },
 		{ NULL, 0 }
 	};
 	char *filename = strchr(data, ' ');
@@ -265,9 +266,7 @@ static void CheckFilePolicy(char *data) {
 	if ((cp = FindConditionPart(filename)) != NULL && !CheckCondition(cp)) return;
 	if (sscanf(data, "%u", &perm) == 1 && perm > 0 && perm <= 7) {
 		if (filename[0] != '@' && strendswith(filename, "/")) { // Don't reject path_group.
-			if ((perm & 2) == 0) {
-				printf("%u: WARNING: Directory '%s' without write permission will be ignored.\n", line, filename); warnings++;
-			}
+			printf("%u: WARNING: Only 'mkdir' and 'rmdir' are valid for directory '%s'.\n", line, filename); warnings++;
 		}
 		if (!IsCorrectPath(filename, 0, 0, 0)) goto out;
 		return;
