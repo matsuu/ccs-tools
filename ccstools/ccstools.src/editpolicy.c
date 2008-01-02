@@ -3,9 +3,9 @@
  *
  * TOMOYO Linux's utilities.
  *
- * Copyright (C) 2005-2007  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.5.3-pre   2007/12/19
+ * Version: 1.5.3-pre   2008/01/02
  *
  */
 #include "ccstools.h"
@@ -1196,7 +1196,7 @@ static void ReadDomainAndExceptionPolicy(void) {
 			unsigned int profile;
 			if (IsDomainDef(shared_buffer)) {
 				index = FindOrAssignNewDomain(shared_buffer, 0, 0);
-			} else if (index >= 0 && (atoi(shared_buffer) & 1) == 1 && (cp = strchr(shared_buffer, ' ')) != NULL) {
+			} else if (index >= 0 && ((atoi(shared_buffer) & 1) == 1 || strncmp(shared_buffer, "allow_execute ", 14) == 0) && (cp = strchr(shared_buffer, ' ')) != NULL) {
 				cp++;
 				if ((cp2 = strchr(cp, ' ')) != NULL) *cp2 = '\0';
 				if (*cp == '@' || IsCorrectPath(cp, 1, 0, -1)) AddStringEntry(cp, index);

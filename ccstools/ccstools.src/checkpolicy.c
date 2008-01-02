@@ -3,9 +3,9 @@
  *
  * TOMOYO Linux's utilities.
  *
- * Copyright (C) 2005-2007  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.5.3-pre   2007/12/19
+ * Version: 1.5.3-pre   2008/01/02
  *
  */
 #include "ccstools.h"
@@ -236,6 +236,9 @@ static void CheckFilePolicy(char *data) {
 		const char * const keyword;
 		const int paths;
 	} acl_type_array[] = {
+		{ "execute",  1 },
+		{ "read",     1 },
+		{ "write",    1 },
 		{ "create",   1 },
 		{ "unlink",   1 },
 		{ "mkdir",    1 },
