@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.5.3-pre   2008/01/02
+ * Version: 1.5.3-pre   2008/01/03
  *
  */
 #include "ccstools.h"
@@ -1628,7 +1628,7 @@ static void try_optimize(const int current) {
 	int directive_index, directive_len, index;
 	struct path_info sarg1, sarg2, sarg3;
 	struct path_info darg1, darg2, darg3;
-#define max_optimize_directive_index 31
+#define max_optimize_directive_index 35
 	static const char *directive_list[max_optimize_directive_index] = {
 		[0]  = "1 ",
 		[1]  = "2 ",
@@ -1637,30 +1637,34 @@ static void try_optimize(const int current) {
 		[4]  = "5 ",
 		[5]  = "6 ",
 		[6]  = "7 ",
-		[7]  = "allow_create ",
-		[8]  = "allow_unlink ",
-		[9]  = "allow_mkdir ",
-		[10] = "allow_rmdir ",
-		[11] = "allow_mkfifo ",
-		[12] = "allow_mksock ",
-		[13] = "allow_mkblock ",
-		[14] = "allow_mkchar ",
-		[15] = "allow_truncate ",
-		[16] = "allow_symlink ",
-		[17] = "allow_link ",
-		[18] = "allow_rename ",
-		[19] = "allow_rewrite ",
-		[20] = "allow_argv0 ",
-		[21] = "allow_signal ",
-		[22] = "allow_network UDP bind ",
-		[23] = "allow_network UDP connect ",
-		[24] = "allow_network TCP bind ",
-		[25] = "allow_network TCP listen ",
-		[26] = "allow_network TCP connect ",
-		[27] = "allow_network TCP accept ",
-		[28] = "allow_network RAW bind ",
-		[29] = "allow_network RAW connect ",
-		[30] = "allow_env ",
+		[7]  = "allow_execute ",
+		[8]  = "allow_read ",
+		[9]  = "allow_write ",
+		[10] = "allow_read/write ",
+		[11] = "allow_create ",
+		[12] = "allow_unlink ",
+		[13] = "allow_mkdir ",
+		[14] = "allow_rmdir ",
+		[15] = "allow_mkfifo ",
+		[16] = "allow_mksock ",
+		[17] = "allow_mkblock ",
+		[18] = "allow_mkchar ",
+		[19] = "allow_truncate ",
+		[20] = "allow_symlink ",
+		[21] = "allow_link ",
+		[22] = "allow_rename ",
+		[23] = "allow_rewrite ",
+		[24] = "allow_argv0 ",
+		[25] = "allow_signal ",
+		[26] = "allow_network UDP bind ",
+		[27] = "allow_network UDP connect ",
+		[28] = "allow_network TCP bind ",
+		[29] = "allow_network TCP listen ",
+		[30] = "allow_network TCP connect ",
+		[31] = "allow_network TCP accept ",
+		[32] = "allow_network RAW bind ",
+		[33] = "allow_network RAW connect ",
+		[34] = "allow_env ",
 	};
 	static int directive_list_len[max_optimize_directive_index];
 	static int first = 1;
@@ -1698,10 +1702,10 @@ static void try_optimize(const int current) {
 		if (pathcmp(&sarg3, &darg3)) continue;
 		
 		/* Compare first word. */
-		if (directive_index < 20) {
+		if (directive_index < 24) {
 			if (pathcmp(&sarg1, &darg1)) {
 				const int may_use_pattern = !darg1.is_patterned
-					&& (directive_index != 0) && (directive_index != 2) && (directive_index != 4) && (directive_index != 6);
+					&& (directive_index != 0) && (directive_index != 2) && (directive_index != 4) && (directive_index != 6) && (directive_index != 7);
 				if (darg1.name[0] == '@') continue;
 				if (sarg1.name[0] == '@') {
 					/* path_group component. */
@@ -1719,16 +1723,16 @@ static void try_optimize(const int current) {
 					if (!may_use_pattern || !PathMatchesToPattern(&darg1, &sarg1)) continue;
 				}
 			}
-		} else if (directive_index == 20) {
+		} else if (directive_index == 24) {
 			/* Pathname component. */
 			if (pathcmp(&sarg1, &darg1)) {
 				/* allow_argv0 doesn't support path_group. */
 				if (darg1.name[0] == '@' || darg1.is_patterned || !PathMatchesToPattern(&darg1, &sarg1)) continue;
 			}
-		} else if (directive_index == 21) {
+		} else if (directive_index == 25) {
 			/* Signal number component. */
 			if (strcmp(sarg1.name, darg1.name)) continue;
-		} else if (directive_index < 30) {
+		} else if (directive_index < 34) {
 			struct ip_address_entry dentry;
 			if (parse_ip(darg1.name, &dentry)) continue;
 			if (sarg1.name[0] == '@') {
@@ -1756,7 +1760,7 @@ static void try_optimize(const int current) {
 		}
 
 		/* Compare rest words. */
-		if (directive_index == 17 || directive_index == 18) {
+		if (directive_index == 21 || directive_index == 22) {
 			if (pathcmp(&sarg2, &darg2)) {
 				const int may_use_pattern = !darg2.is_patterned;
 				if (darg2.name[0] == '@') continue;
@@ -1776,18 +1780,18 @@ static void try_optimize(const int current) {
 					if (!may_use_pattern || !PathMatchesToPattern(&darg2, &sarg2)) continue;
 				}
 			}
-		} else if (directive_index == 20) {
+		} else if (directive_index == 24) {
 			/* Basename component. */
 			if (pathcmp(&sarg2, &darg2)) {
 				if (darg2.is_patterned || !PathMatchesToPattern(&darg2, &sarg2)) continue;
 			}
-		} else if (directive_index == 21) {
+		} else if (directive_index == 25) {
 			/* Domainname component. */
 			char c;
 			if (strncmp(sarg2.name, darg2.name, sarg2.total_len)) continue;
 			c = darg2.name[sarg2.total_len];
 			if (c && c != ' ') continue;
-		} else if (directive_index >= 22 && directive_index < 30) {
+		} else if (directive_index >= 26 && directive_index < 34) {
 			/* Port number component. */
 			unsigned int smin, smax, dmin, dmax;
 			switch (sscanf(sarg2.name, "%u-%u", &smin, &smax)) {
