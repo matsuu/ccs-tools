@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.5.3-pre   2008/01/02
+ * Version: 1.6.0-pre   2008/01/15
  *
  */
 #include "ccstools.h"
@@ -120,7 +120,8 @@ static void CheckCapabilityPolicy(char *data) {
 		"inet_tcp_create", "inet_tcp_listen", "inet_tcp_connect", "use_inet_udp", "use_inet_ip", "use_route", "use_packet",
 		"SYS_MOUNT", "SYS_UMOUNT", "SYS_REBOOT", "SYS_CHROOT", "SYS_KILL", "SYS_VHANGUP", "SYS_TIME", "SYS_NICE", "SYS_SETHOSTNAME",
 		"use_kernel_module", "create_fifo", "create_block_dev", "create_char_dev", "create_unix_socket",
-		"SYS_LINK", "SYS_SYMLINK", "SYS_RENAME", "SYS_UNLINK", "SYS_CHMOD", "SYS_CHOWN", "SYS_IOCTL", "SYS_KEXEC_LOAD", "SYS_PIVOT_ROOT", NULL
+		"SYS_LINK", "SYS_SYMLINK", "SYS_RENAME", "SYS_UNLINK", "SYS_CHMOD", "SYS_CHOWN", "SYS_IOCTL", "SYS_KEXEC_LOAD", "SYS_PIVOT_ROOT",
+		"SYS_PTRACE", NULL
 	};
 	int i;
 	char *cp;
@@ -236,7 +237,7 @@ static void CheckFilePolicy(char *data) {
 		const char * const keyword;
 		const int paths;
 	} acl_type_array[] = {
-		{ "read/write", 1},
+		{ "read/write", 1 },
 		{ "execute",    1 },
 		{ "read",       1 },
 		{ "write",      1 },
@@ -300,29 +301,9 @@ static void CheckMountPolicy(char *data) {
 	cp2 = cp + 1; if ((cp = strchr(cp2, ' ')) == NULL) goto out; *cp = '\0'; dir = cp2;
 	cp2 = cp + 1;
 	if ((cp = strchr(cp2, ' ')) != NULL) {
-		char *sp = cp + 1;
 		*cp = '\0';
-		while ((cp = strsep(&sp, " ,")) != NULL) {
-			if (strcmp(cp, "rw") == 0)          disable |= 1;
-			else if (strcmp(cp, "ro") == 0)     enable  |= 1;
-			else if (strcmp(cp, "suid") == 0)   disable |= 2;
-			else if (strcmp(cp, "nosuid") == 0) enable  |= 2;
-			else if (strcmp(cp, "dev") == 0)    disable |= 4;
-			else if (strcmp(cp, "nodev") == 0)  enable  |= 4;
-			else if (strcmp(cp, "exec") == 0)   disable |= 8;
-			else if (strcmp(cp, "noexec") == 0) enable  |= 8;
-			else if (strcmp(cp, "atime") == 0)      disable |= 1024;
-			else if (strcmp(cp, "noatime") == 0)    enable  |= 1024;
-			else if (strcmp(cp, "diratime") == 0)   disable |= 2048;
-			else if (strcmp(cp, "nodiratime") == 0) enable  |= 2048;
-			else if (strcmp(cp, "norecurse") == 0)  disable |= 16384;
-			else if (strcmp(cp, "recurse") == 0)    enable  |= 16384;
-		}
 	}
 	fs = cp2;
-	if (enable & disable) {
-		printf("%u: ERROR: Conflicting mount options.\n", line); errors++;
-	}
 	if (!IsCorrectPath(dev, 0, 0, 0)) {
 		printf("%u: ERROR: '%s' is a bad device name.\n", line, dir); errors++;
 	}
