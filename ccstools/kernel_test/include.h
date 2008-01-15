@@ -3,9 +3,9 @@
  *
  * Common functions for testing TOMOYO Linux's kernel.
  *
- * Copyright (C) 2005-2007  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.5.0   2007/09/20
+ * Version: 1.6.0-pre   2008/01/15
  *
  */
 #include <errno.h>
@@ -36,6 +36,7 @@ struct module;
 #include <arpa/inet.h>
 #include <linux/ip.h>
 #include <sched.h>
+#include <sys/ptrace.h>
 
 #ifndef __NR_sys_kexec_load
 #ifdef __NR_kexec_load
