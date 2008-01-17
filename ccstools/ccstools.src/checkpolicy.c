@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/15
+ * Version: 1.6.0-pre   2008/01/17
  *
  */
 #include "ccstools.h"
@@ -295,20 +295,20 @@ static void CheckFilePolicy(char *data) {
 
 static void CheckMountPolicy(char *data) {
 	char *cp, *cp2;
-	const char *fs, *dev, *dir;
-	unsigned int enable = 0, disable = 0;
+	const char *dev, *dir;
+	unsigned int flags;
 	cp2 = data; if ((cp = strchr(cp2, ' ')) == NULL) goto out; *cp = '\0'; dev = cp2;
 	cp2 = cp + 1; if ((cp = strchr(cp2, ' ')) == NULL) goto out; *cp = '\0'; dir = cp2;
-	cp2 = cp + 1;
-	if ((cp = strchr(cp2, ' ')) != NULL) {
-		*cp = '\0';
-	}
-	fs = cp2;
+	cp2 = strchr(cp + 1, ' ');
+	if (!cp2) goto out;
 	if (!IsCorrectPath(dev, 0, 0, 0)) {
 		printf("%u: ERROR: '%s' is a bad device name.\n", line, dir); errors++;
 	}
 	if (!IsCorrectPath(dir, 0, 0, 0)) {
 		printf("%u: ERROR: '%s' is a bad mount point.\n", line, dir); errors++;
+	}
+	if (sscanf(cp2 + 1, "0x%X", &flags) != 1) {
+		printf("%u: ERROR: '%s' is a bad mount option.\n", line, cp2 + 1); errors++;
 	}
 	return;
  out:
