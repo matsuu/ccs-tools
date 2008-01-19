@@ -1,3 +1,4 @@
+/* gcc -Wall -O3 -o ccs-notifyd ccs-notifyd.c */
 /*
  * ccs-notifyd.c
  *
@@ -5,7 +6,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/19
+ * Version: 1.6.0-pre   2008/01/20
  *
  */
 #include <stdio.h>
@@ -16,8 +17,10 @@
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <syslog.h>
+#include <signal.h>
 
 int main(int argc, char *argv[]) {
+	const char *proc_policy_query = "/proc/ccs/query";
 	int time_to_wait;
 	const char *action_to_take;
 	char buffer[16384];
@@ -70,10 +73,16 @@ int main(int argc, char *argv[]) {
 	{ // Get exclusive lock.
 		int fd = open("/proc/self/exe", O_RDONLY); if (flock(fd, LOCK_EX | LOCK_NB) == EOF) return 0;
 	}
-	query_fd = open("/proc/ccs/query", O_RDONLY);
-	if (query_fd == EOF) query_fd = open("/sys/kernel/security/tomoyo/query", O_RDONLY);
+	query_fd = open(proc_policy_query, O_RDWR);
+	if (query_fd == EOF) {
+		proc_policy_query = "/sys/kernel/security/tomoyo/query";
+		query_fd = open(proc_policy_query, O_RDWR);
+	}
 	if (query_fd == EOF) {
 		fprintf(stderr, "You can't run this utility for this kernel.\n");
+		return 1;
+	} else if (time_to_wait && write(query_fd, "", 0) != 0) {
+		fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_query);
 		return 1;
 	}
 	close(0); close(1); close(2);
@@ -92,6 +101,7 @@ int main(int argc, char *argv[]) {
 		if (read(query_fd, buffer, sizeof(buffer) - 1) <= 0) continue;
 		break;
 	}
+	signal(SIGCLD, SIG_IGN);
 	switch (fork()) {
 	case 0:
 		close(query_fd);
@@ -108,7 +118,10 @@ int main(int argc, char *argv[]) {
 		syslog(LOG_WARNING, "Can't execute %s\n", action_to_take);
 		break;
 	default:
-		sleep(time_to_wait);
+		while (time_to_wait-- > 0) {
+			sleep(1);
+			write(query_fd, "\n", 1);
+		}
 	}
 	close(query_fd);
 	syslog(LOG_WARNING, "Terminated.\n");
