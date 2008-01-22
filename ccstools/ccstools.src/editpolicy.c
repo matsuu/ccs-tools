@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/17
+ * Version: 1.6.0-pre   2008/01/22
  *
  */
 #include "ccstools.h"
@@ -134,6 +134,11 @@ static void ColorSave(int flg) {
 static int string_acl_compare(const void *a, const void *b) {
 	const char *a0 = * (char **) a;
 	const char *b0 = * (char **) b;
+	const char *a1 = strstr(a0, " /");
+	const char *b1 = strstr(b0, " /");
+	if (a1 && !b1) return -1;
+	if (!a1 && b1) return 1;
+	if (a1 && b1) return strcmp(a1, b1);
 	if (*a0 && *b0) return strcmp(a0 + 1, b0 + 1);
 	return 0;
 }
@@ -736,11 +741,6 @@ int loadpolicy_main(int argc, char *argv[]) {
 		SwapDomainList();
 		ReadDomainPolicy(proc_policy_domain_policy);
 		SwapDomainList();
-		if (domain_list_count == 0) {
-			fprintf(stderr, "Can't open %s\n", policy_src);
-			fclose(proc_fp);
-			goto out_domain;
-		}
 		for (new_index = 0; new_index < domain_list_count; new_index++) {
 			const char *domainname = DomainName(new_index);
 			const struct path_info **new_string_ptr = domain_list[new_index].string_ptr;
