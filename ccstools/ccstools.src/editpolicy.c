@@ -727,48 +727,60 @@ int loadpolicy_main(int argc, char *argv[]) {
  out_exception: ;
 
 	if (load_domain_policy) {
-		int new_index;
 		const char *policy_src = read_from_stdin ? NULL : disk_policy_domain_policy;
 		FILE *proc_fp = fopen(proc_policy_domain_policy, "w");
-		struct path_info reserved;
-		reserved.name = "";
-		fill_path_info(&reserved);
 		if (!proc_fp) {
 			fprintf(stderr, "Can't open %s\n", proc_policy_domain_policy);
 			goto out_domain;
 		}
-		ReadDomainPolicy(policy_src);
-		SwapDomainList();
-		ReadDomainPolicy(proc_policy_domain_policy);
-		SwapDomainList();
-		for (new_index = 0; new_index < domain_list_count; new_index++) {
-			const char *domainname = DomainName(new_index);
-			const struct path_info **new_string_ptr = domain_list[new_index].string_ptr;
-			const int new_string_count = domain_list[new_index].string_count;
-			int old_index;
-			int i, j;
-			SwapDomainList(); old_index = FindDomain(domainname, 0, 0); SwapDomainList();
-			if (refresh_policy && old_index >= 0) {
-				/* Old policy for this domain found. */
-				const struct path_info **old_string_ptr = shadow_domain_list[old_index].string_ptr;
-				const int old_string_count = shadow_domain_list[old_index].string_count;
-				fprintf(proc_fp, "select %s\n", domainname);
-				for (j = 0; j < old_string_count; j++) {
-					for (i = 0; i < new_string_count; i++) {
-						if (new_string_ptr[i] == old_string_ptr[j]) break;
-					}
-					/* Delete this entry from old policy if not found in new policy. */
-					if (i == new_string_count) fprintf(proc_fp, "delete %s\n", old_string_ptr[j]->name);
-				}
+		if (!refresh_policy) {
+			FILE *file_fp = read_from_stdin ? stdin : fopen(disk_policy_domain_policy, "r");
+			if (!file_fp) {
+				fprintf(stderr, "Can't open %s\n", disk_policy_domain_policy);
 			} else {
-				/* Old policy for this domain not found or Append to old policy. */
-				fprintf(proc_fp, "%s\n", domainname);
+				get();
+				while (freadline(file_fp)) {
+					if (shared_buffer[0]) fprintf(proc_fp, "%s\n", shared_buffer);
+				}
+				put();
+				if (file_fp != stdin) fclose(file_fp);
 			}
-			for (i = 0; i < new_string_count; i++) fprintf(proc_fp, "%s\n", new_string_ptr[i]->name);
-			if (old_index >= 0) shadow_domain_list[old_index].domainname = &reserved; /* Don't delete this domain later. */
-		}
-		if (refresh_policy) {
+		} else {
+			int new_index;
 			int old_index;
+			struct path_info reserved;
+			reserved.name = "";
+			fill_path_info(&reserved);
+			ReadDomainPolicy(policy_src);
+			SwapDomainList();
+			ReadDomainPolicy(proc_policy_domain_policy);
+			SwapDomainList();
+			for (new_index = 0; new_index < domain_list_count; new_index++) {
+				const char *domainname = DomainName(new_index);
+				const struct path_info **new_string_ptr = domain_list[new_index].string_ptr;
+				const int new_string_count = domain_list[new_index].string_count;
+				int old_index;
+				int i, j;
+				SwapDomainList(); old_index = FindDomain(domainname, 0, 0); SwapDomainList();
+				if (old_index >= 0) {
+					/* Old policy for this domain found. */
+					const struct path_info **old_string_ptr = shadow_domain_list[old_index].string_ptr;
+					const int old_string_count = shadow_domain_list[old_index].string_count;
+					fprintf(proc_fp, "select %s\n", domainname);
+					for (j = 0; j < old_string_count; j++) {
+						for (i = 0; i < new_string_count; i++) {
+							if (new_string_ptr[i] == old_string_ptr[j]) break;
+						}
+						/* Delete this entry from old policy if not found in new policy. */
+						if (i == new_string_count) fprintf(proc_fp, "delete %s\n", old_string_ptr[j]->name);
+					}
+				} else {
+					/* Old policy for this domain not found or Append to old policy. */
+					fprintf(proc_fp, "%s\n", domainname);
+				}
+				for (i = 0; i < new_string_count; i++) fprintf(proc_fp, "%s\n", new_string_ptr[i]->name);
+				if (old_index >= 0) shadow_domain_list[old_index].domainname = &reserved; /* Don't delete this domain later. */
+			}
 			/* Delete all domains that are not defined in new policy. */
 			for (old_index = 0; old_index < shadow_domain_list_count; old_index++) {
 				if (shadow_domain_list[old_index].domainname != &reserved) fprintf(proc_fp, "delete %s\n", shadow_domain_list[old_index].domainname->name);
