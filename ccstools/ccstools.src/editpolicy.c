@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/22
+ * Version: 1.6.0-pre   2008/01/23
  *
  */
 #include "ccstools.h"
@@ -130,18 +130,6 @@ static void ColorSave(int flg) {
 
 #endif
 /// add color end
-
-static int string_acl_compare(const void *a, const void *b) {
-	const char *a0 = * (char **) a;
-	const char *b0 = * (char **) b;
-	const char *a1 = strstr(a0, " /");
-	const char *b1 = strstr(b0, " /");
-	if (a1 && !b1) return -1;
-	if (!a1 && b1) return 1;
-	if (a1 && b1) return strcmp(a1, b1);
-	if (*a0 && *b0) return strcmp(a0 + 1, b0 + 1);
-	return 0;
-}
 
 static char *ReadFile(const char *filename) {
 	char *read_buffer = NULL;
@@ -305,8 +293,7 @@ static int domainname_compare(const void *a, const void *b) {
 static int path_info_compare(const void *a, const void *b) {
 	const char *a0 = (* (struct path_info **) a)->name;
 	const char *b0 = (* (struct path_info **) b)->name;
-	if (*a0 && *b0) return strcmp(a0 + 1, b0 + 1);
-	return 0;
+	return strcmp(a0, b0);
 }
 
 static void SortPolicy(void) {
@@ -948,6 +935,8 @@ static void map_perm_keyword(const u8 forward) {
 		break;
 	}
 }
+
+static int string_acl_compare(const void *a, const void *b);
 
 static void ReadGenericPolicy(void) {
 	FILE *fp;
@@ -1699,6 +1688,25 @@ static const char *directive_list[max_optimize_directive_index] = {
 };
 static int directive_list_len[max_optimize_directive_index];
 
+static int string_acl_compare(const void *a, const void *b) {
+	const char *a0 = * (char **) a;
+	const char *b0 = * (char **) b;
+	int i;
+	for (i = 0; i < max_optimize_directive_index; i++) {
+		if (strncmp(a0, directive_list[i], directive_list_len[i])) continue;
+		a0 += directive_list_len[i];
+		break;
+	}
+	for (i = 0; i < max_optimize_directive_index; i++) {
+		if (strncmp(b0, directive_list[i], directive_list_len[i])) continue;
+		b0 += directive_list_len[i];
+		break;
+	}
+	i = strcmp(a0, b0);
+	if (i == 0) i = strcmp(* (char **) a, * (char **) b);
+	return i;
+}
+
 static void try_optimize(const int current) {
 	char *cp;
 	const char *directive;
@@ -2070,7 +2078,7 @@ static int GenericListLoop(void) {
 						const int len = strlen(line) + 128;
 						if ((last_error = (char *) realloc(last_error, len)) == NULL) OutOfMemory();
 						memset(last_error, 0, len);
-						snprintf(last_error, len - 1, "%s is a bad domainname.", line);
+						snprintf(last_error, len - 1, "%s is an invalid domainname.", line);
 					} else {
 						FILE *fp = open_write(policy_file);
 						if (fp) {
