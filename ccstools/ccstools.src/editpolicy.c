@@ -131,29 +131,6 @@ static void ColorSave(int flg) {
 #endif
 /// add color end
 
-static char *ReadFile(const char *filename) {
-	char *read_buffer = NULL;
-	int fd;
-	if ((fd = open(filename, O_RDONLY)) != EOF) {
-		int read_buffer_len = 0;
-		while (1) {
-			char *cp = realloc(read_buffer, read_buffer_len + 4096);
-			int len;
-			if (!cp) {
-				free(read_buffer);
-				return NULL;
-			}
-			read_buffer = cp;
-			len = read(fd, read_buffer + read_buffer_len, 4095);
-			if (len <= 0) break;
-			read_buffer_len += len;
-		}
-		close(fd);
-		read_buffer[read_buffer_len] = '\0';
-	}
-	return read_buffer;
-}
-
 static struct path_group_entry *path_group_list = NULL;
 static int path_group_list_len = 0;
 static struct address_group_entry *address_group_list = NULL;
@@ -318,27 +295,6 @@ static int WriteDomainPolicy(const int fd) {
 	return 0;
 }
 
-static int IsSameDomainList(void) {
-	if (domain_list_count == shadow_domain_list_count) {
-		int i, j;
-		for (i = 0; i < domain_list_count; i++) {
-			const struct path_info **string_ptr = domain_list[i].string_ptr;
-			const int string_count = domain_list[i].string_count;
-			if (string_count == shadow_domain_list[i].string_count) {
-				const struct path_info **ptr = shadow_domain_list[i].string_ptr;
-				for (j = 0; j < string_count; j++) {
-					/* Faster comparison, for they are SaveName'd and sorted pointers. */
-					if (string_ptr[j] != ptr[j]) break;
-				}
-				if (j == string_count) continue;
-			}
-			break;
-		}
-		if (i == domain_list_count) return 1;
-	}
-	return 0;
-}
-
 static int IsKeeperDomain(const int index) {
 	return domain_list[index].is_domain_keeper;
 }
@@ -394,9 +350,52 @@ int sortpolicy_main(int argc, char *argv[]) {
 
 /***** savepolicy start *****/
 
+static void MoveProcToFile(const char *src, const char *dest) {
+	FILE *proc_fp, *file_fp;
+	if ((proc_fp = fopen(src, "r")) == NULL) {
+		fprintf(stderr, "Can't open %s\n", src);
+		return;
+	}
+	if ((file_fp = dest ? fopen(dest, "w") : stdout) == NULL) {
+		fprintf(stderr, "Can't open %s\n", dest);
+		fclose(proc_fp);
+		return;
+	}
+	get();
+	while (freadline(proc_fp)) {
+		if (shared_buffer[0]) fprintf(file_fp, "%s\n", shared_buffer);
+	}
+	put();
+	fclose(proc_fp);
+	if (file_fp != stdout) fclose(file_fp);
+}
+
+static int IsIdenticalFile(const char *file1, const char *file2) {
+	char buffer1[4096], buffer2[4096];
+	const int fd1 = open(file1, O_RDONLY), fd2 = open(file2, O_RDONLY);
+	int len1, len2;
+	while (1) {
+		len1 = read(fd1, buffer1, sizeof(buffer1));
+		len2 = read(fd2, buffer2, sizeof(buffer2));
+		if (len1 != len2) goto out;
+		if (len1 == EOF) break;
+		if (memcmp(buffer1, buffer2, len1)) goto out;
+	}
+	close(fd1);
+	close(fd2);
+	return 1;
+ out:
+	close(fd1);
+	close(fd2);
+	return 0;
+}
+
 int savepolicy_main(int argc, char *argv[]) {
 	int remount_root = 0;
 	char filename[1024];
+	int write_to_stdout = 0;
+	int save_profile = 0;
+	int save_manager = 0;
 	int save_system_policy = 0;
 	int save_exception_policy = 0;
 	int save_domain_policy = 0;
@@ -415,24 +414,34 @@ int savepolicy_main(int argc, char *argv[]) {
 	} else {
 		int i;
 		for (i = 1; i < argc; i++) {
-			char *p = argv[i];
-			char *s = strchr(p, 's');
-			char *e = strchr(p, 'e');
-			char *d = strchr(p, 'd');
-			char *a = strchr(p, 'a');
-			char *f = strchr(p, 'f');
+			char *ptr = argv[i];
+			char *s = strchr(ptr, 's');
+			char *e = strchr(ptr, 'e');
+			char *d = strchr(ptr, 'd');
+			char *a = strchr(ptr, 'a');
+			char *f = strchr(ptr, 'f');
+			char *p = strchr(ptr, 'p');
+			char *m = strchr(ptr, 'm');
+			char *i = strchr(ptr, '-');
 			if (s || a) save_system_policy = 1;
 			if (e || a) save_exception_policy = 1;
 			if (d || a) save_domain_policy = 1;
+			if (p) save_profile = 1;
+			if (m) save_manager = 1;
 			if (f) force_save = 1;
-			if (strcspn(p, "sedaf")) {
-				printf("%s [s][e][d][a][f]\n"
-					   "s : Save system_policy.\n"
-					   "e : Save exception_policy.\n"
-					   "d : Save domain_policy.\n"
-					   "a : Save all policies.\n"
-					   "f : Save even if on-disk policy and on-memory policy are the same.\n\n"
-					   "If no options given, this program assumes 'a' and 'f' are given.\n", argv[0]);
+			if (i) write_to_stdout = 1;
+			if (strcspn(ptr, "sedafpm-") ||
+			    (write_to_stdout && save_system_policy + save_exception_policy + save_domain_policy + save_profile + save_manager != 1)) {
+				printf("%s [s][e][d][a][f][p][m][-]\n"
+				       "s : Save system_policy.\n"
+				       "e : Save exception_policy.\n"
+				       "d : Save domain_policy.\n"
+				       "a : Save system_policy,exception_policy,domain_policy.\n"
+				       "p : Save profile.\n"
+				       "m : Save manager.\n"
+				       "- : Write policy to stdout. (Only one of 'sedpm' is possible when using '-'.)\n"
+				       "f : Save even if on-disk policy and on-memory policy are the same. (Valid for 'sed'.)\n\n"
+				       "If no options given, this program assumes 'a' and 'f' are given.\n", argv[0]);
 				return 0;
 			}
 		}
@@ -456,81 +465,53 @@ int savepolicy_main(int argc, char *argv[]) {
 
 	/* Repeat twice so that necessary permissions for this program are included in domain policy. */
 	for (repeat = 0; repeat < 2; repeat++) {
-
+		
+		if (save_profile) MoveProcToFile(proc_policy_manager, write_to_stdout ? NULL : disk_policy_profile);
+		
+		if (save_manager) MoveProcToFile(proc_policy_manager, write_to_stdout ? NULL : disk_policy_manager);
+		
 		if (save_system_policy) {
-			char *new_policy = ReadFile(proc_policy_system_policy);
-			char *old_policy = ReadFile(disk_policy_system_policy);
-			if (new_policy && (force_save || !old_policy || strcmp(new_policy, old_policy))) {
-				int fd;
-				snprintf(filename, sizeof(filename) - 1, "system_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-				if ((fd = open(filename, O_WRONLY | O_CREAT, 0600)) != EOF) {
-					ftruncate(fd, 0);
-					write(fd, new_policy, strlen(new_policy));
-					close(fd);
-					unlink(disk_policy_system_policy);
-					symlink(filename, "system_policy.conf");
+			snprintf(filename, sizeof(filename) - 1, "system_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+			MoveProcToFile(proc_policy_system_policy, write_to_stdout ? NULL : filename);
+			if (!write_to_stdout) {
+				if (!force_save && IsIdenticalFile("system_policy.conf", filename)) {
+					unlink(filename);
 				} else {
-					printf("Can't create %s\n", filename);
+					unlink("system_policy.conf");
+					symlink(filename, "system_policy.conf");
 				}
 			}
-			free(old_policy);
-			free(new_policy);
 		}
 		
 		if (save_exception_policy) {
-			char *new_policy = ReadFile(proc_policy_exception_policy);
-			char *old_policy = ReadFile(disk_policy_exception_policy);
-			if (new_policy && (force_save || !old_policy || strcmp(new_policy, old_policy))) {
-				int fd;
-				snprintf(filename, sizeof(filename) - 1, "exception_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-				if ((fd = open(filename, O_WRONLY | O_CREAT, 0600)) != EOF) {
-					ftruncate(fd, 0);
-					write(fd, new_policy, strlen(new_policy));
-					close(fd);
-					unlink(disk_policy_exception_policy);
-					symlink(filename, "exception_policy.conf");
+			snprintf(filename, sizeof(filename) - 1, "exception_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+			MoveProcToFile(proc_policy_exception_policy, write_to_stdout ? NULL : filename);
+			if (!write_to_stdout) {
+				if (!force_save && IsIdenticalFile("exception_policy.conf", filename)) {
+					unlink(filename);
 				} else {
-					printf("Can't create %s\n", filename);
+					unlink("exception_policy.conf");
+					symlink(filename, "exception_policy.conf");
 				}
 			}
-			free(old_policy);
-			free(new_policy);
 		}
 
-	}
-	
-	if (save_domain_policy) {
-		ReadDomainPolicy(proc_policy_domain_policy);
-		for (repeat = 0; repeat < 10; repeat++) {
-			//if (repeat) printf("Domain policy has changed while saving domain policy. Retrying.\n");
-			if (access(disk_policy_domain_policy, R_OK) == 0) {
-				SwapDomainList();
-				ReadDomainPolicy(disk_policy_domain_policy);
-				SwapDomainList();
-			}
-			/* Need to save domain policy? */
-			if (force_save || !IsSameDomainList()) {
-				int fd;
-				snprintf(filename, sizeof(filename) - 1, "domain_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-				if ((fd = open(filename, O_WRONLY | O_CREAT, 0600)) != EOF) {
-					ftruncate(fd, 0);
-					WriteDomainPolicy(fd);
-					close(fd);
-					unlink(disk_policy_domain_policy);
-					symlink(filename, "domain_policy.conf");
+		if (save_domain_policy) {
+			snprintf(filename, sizeof(filename) - 1, "domain_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+			MoveProcToFile(proc_policy_exception_policy, write_to_stdout ? NULL : filename);
+			if (!write_to_stdout) {
+				if (!force_save && IsIdenticalFile("domain_policy.conf", filename)) {
+					unlink(filename);
 				} else {
-					printf("Can't create %s\n", filename);
+					unlink("domain_policy.conf");
+					symlink(filename, "domain_policy.conf");
 				}
 			}
-			/* Has domain policy changed while saving domain policy? */
-			ClearDomainPolicy();
-			ReadDomainPolicy(proc_policy_domain_policy);
-			if (IsSameDomainList()) break;
-			SwapDomainList(); ClearDomainPolicy(); SwapDomainList();
 		}
-		ClearDomainPolicy();
-		SwapDomainList(); ClearDomainPolicy(); SwapDomainList();
+		
+		if (write_to_stdout) break;
 	}
+	
 	if (remount_root) mount("/", "/", "rootfs", MS_REMOUNT | MS_RDONLY, NULL);
 	return 0;
 }
@@ -538,6 +519,91 @@ int savepolicy_main(int argc, char *argv[]) {
 /***** savepolicy end *****/
 
 /***** loadpolicy start *****/
+
+static void MoveFileToProc(const char *src, const char *dest) {
+	FILE *file_fp, *proc_fp;
+	if ((proc_fp = fopen(dest, "w")) == NULL) {
+		fprintf(stderr, "Can't open %s\n", dest);
+		return;
+	}
+	if ((file_fp = src ? fopen(src, "r") : stdin) == NULL) {
+		fprintf(stderr, "Can't open %s\n", src);
+		fclose(proc_fp);
+		return;
+	}
+	get();
+	while (freadline(file_fp)) {
+		if (shared_buffer[0]) fprintf(proc_fp, "%s\n", shared_buffer);
+	}
+	put();
+	fclose(proc_fp);
+	if (file_fp != stdin) fclose(file_fp);
+}
+
+static void DeleteProcPolicy(const char *name) {
+	FILE *proc_write_fp = fopen(name, "w");
+	FILE *proc_read_fp = fopen(name, "r");
+	if (!proc_write_fp || !proc_read_fp) {
+		fprintf(stderr, "Can't open %s\n", name);
+		if (proc_write_fp) fclose(proc_write_fp);
+		if (proc_read_fp) fclose(proc_read_fp);
+	}
+	get();
+	while (freadline(proc_read_fp)) {
+		if (shared_buffer[0]) fprintf(proc_write_fp, "delete %s\n", shared_buffer);
+	}
+	put();
+	fclose(proc_read_fp);
+	fclose(proc_write_fp);
+}
+
+static void LoadDomainPolicy(const char *src, const char *dest) {
+	int new_index;
+	int old_index;
+	struct path_info reserved;
+	FILE *proc_fp = fopen(dest, "w");
+	if (!proc_fp) {
+		fprintf(stderr, "Can't open %s\n", dest);
+		return;
+	}
+	reserved.name = "";
+	fill_path_info(&reserved);
+	ReadDomainPolicy(src);
+	SwapDomainList();
+	ReadDomainPolicy(dest);
+	SwapDomainList();
+	for (new_index = 0; new_index < domain_list_count; new_index++) {
+		int i;
+		const char *domainname = DomainName(new_index);
+		const struct path_info **new_string_ptr = domain_list[new_index].string_ptr;
+		const int new_string_count = domain_list[new_index].string_count;
+		SwapDomainList(); old_index = FindDomain(domainname, 0, 0); SwapDomainList();
+		if (old_index >= 0) {
+			int j;
+			/* Old policy for this domain found. */
+			const struct path_info **old_string_ptr = shadow_domain_list[old_index].string_ptr;
+			const int old_string_count = shadow_domain_list[old_index].string_count;
+			fprintf(proc_fp, "select %s\n", domainname);
+			for (j = 0; j < old_string_count; j++) {
+				for (i = 0; i < new_string_count; i++) {
+					if (new_string_ptr[i] == old_string_ptr[j]) break;
+				}
+				/* Delete this entry from old policy if not found in new policy. */
+				if (i == new_string_count) fprintf(proc_fp, "delete %s\n", old_string_ptr[j]->name);
+			}
+		} else {
+			/* Old policy for this domain not found or Append to old policy. */
+			fprintf(proc_fp, "%s\n", domainname);
+		}
+		for (i = 0; i < new_string_count; i++) fprintf(proc_fp, "%s\n", new_string_ptr[i]->name);
+		if (old_index >= 0) shadow_domain_list[old_index].domainname = &reserved; /* Don't delete this domain later. */
+	}
+	/* Delete all domains that are not defined in new policy. */
+	for (old_index = 0; old_index < shadow_domain_list_count; old_index++) {
+		if (shadow_domain_list[old_index].domainname != &reserved) fprintf(proc_fp, "delete %s\n", shadow_domain_list[old_index].domainname->name);
+	}
+	fclose(proc_fp);
+}
 
 int loadpolicy_main(int argc, char *argv[]) {
 	int read_from_stdin = 0;
@@ -582,7 +648,7 @@ int loadpolicy_main(int argc, char *argv[]) {
 				       "a : Load system_policy,exception_policy,domain_policy.\n"
 				       "p : Load profile.\n"
 				       "m : Load manager.\n"
-				       "- : Load policy from stdin. (Only one of 'sedpm' is possible when using '-'.)\n"
+				       "- : Read policy from stdin. (Only one of 'sedpm' is possible when using '-'.)\n"
 				       "f : Delete on-memory policy before loading on-disk policy. (Valid for 'sed'.)\n\n", argv[0]);
 				return 0;
 			}
@@ -593,190 +659,27 @@ int loadpolicy_main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	if (load_profile) {
-		FILE *file_fp, *proc_fp;
-		const char *policy_src = disk_policy_profile;
-		if ((file_fp = read_from_stdin ? stdin : fopen(policy_src, "r")) == NULL) {
-			fprintf(stderr, "Can't open %s\n", policy_src);
-			goto out_system;
-		}
-		if ((proc_fp = fopen(proc_policy_profile, "w")) == NULL) {
-			fprintf(stderr, "Can't open %s\n", proc_policy_profile);
-			fclose(file_fp);
-			goto out_profile;
-		}
-		get();
-		while (freadline(file_fp)) {
-			if (shared_buffer[0]) fprintf(proc_fp, "%s\n", shared_buffer);
-		}
-		put();
-		fclose(proc_fp);
-		fclose(file_fp);
-	}
- out_profile: ;
-
-	if (load_manager) {
-		FILE *file_fp, *proc_fp;
-		const char *policy_src = disk_policy_manager;
-		if ((file_fp = read_from_stdin ? stdin : fopen(policy_src, "r")) == NULL) {
-			fprintf(stderr, "Can't open %s\n", policy_src);
-			goto out_system;
-		}
-		if ((proc_fp = fopen(proc_policy_manager, "w")) == NULL) {
-			fprintf(stderr, "Can't open %s\n", proc_policy_manager);
-			fclose(file_fp);
-			goto out_manager;
-		}
-		get();
-		while (freadline(file_fp)) {
-			if (shared_buffer[0]) fprintf(proc_fp, "%s\n", shared_buffer);
-		}
-		put();
-		fclose(proc_fp);
-		fclose(file_fp);
-	}
- out_manager: ;
-
+	if (load_profile) MoveFileToProc(read_from_stdin ? NULL : disk_policy_profile, proc_policy_profile);
+	
+	if (load_manager) MoveFileToProc(read_from_stdin ? NULL : disk_policy_manager, proc_policy_manager);
+	
 	if (load_system_policy) {
-		FILE *file_fp, *proc_fp;
-		const char *policy_src = disk_policy_system_policy;
-		if ((file_fp = read_from_stdin ? stdin : fopen(policy_src, "r")) == NULL) {
-			fprintf(stderr, "Can't open %s\n", policy_src);
-			goto out_system;
-		}
-		if ((proc_fp = fopen(proc_policy_system_policy, "w")) == NULL) {
-			fprintf(stderr, "Can't open %s\n", proc_policy_system_policy);
-			fclose(file_fp);
-			goto out_system;
-		}
-		if (refresh_policy) {
-			FILE *proc_clear_fp = fopen(proc_policy_system_policy, "r");
-			if (!proc_clear_fp) {
-				fprintf(stderr, "Can't open %s\n", proc_policy_system_policy);
-				fclose(file_fp);
-				fclose(proc_fp);
-				goto out_system;
-			}
-			get();
-			while (freadline(proc_clear_fp)) {
-				if (shared_buffer[0]) fprintf(proc_fp, "delete %s\n", shared_buffer);
-			}
-			put();
-			fclose(proc_clear_fp);
-			fflush(proc_fp);
-		}
-		get();
-		while (freadline(file_fp)) {
-			if (shared_buffer[0]) fprintf(proc_fp, "%s\n", shared_buffer);
-		}
-		put();
-		fclose(proc_fp);
-		fclose(file_fp);
+		if (refresh_policy) DeleteProcPolicy(proc_policy_system_policy);
+		MoveFileToProc(read_from_stdin ? NULL : disk_policy_system_policy, proc_policy_system_policy);
 	}
- out_system: ;
 	
 	if (load_exception_policy) {
-		FILE *file_fp, *proc_fp;
-		const char *policy_src = disk_policy_exception_policy;
-		if ((file_fp = read_from_stdin ? stdin : fopen(policy_src, "r")) == NULL) {
-			fprintf(stderr, "Can't open %s\n", policy_src);
-			goto out_exception;
-		}
-		if ((proc_fp = fopen(proc_policy_exception_policy, "w")) == NULL) {
-			fprintf(stderr, "Can't open %s\n", proc_policy_exception_policy);
-			fclose(file_fp);
-			goto out_exception;
-		}
-		if (refresh_policy) {
-			FILE *proc_clear_fp = fopen(proc_policy_exception_policy, "r");
-			if (!proc_clear_fp) {
-				fprintf(stderr, "Can't open %s\n", proc_policy_exception_policy);
-				fclose(file_fp);
-				fclose(proc_fp);
-				goto out_exception;
-			}
-			get();
-			while (freadline(proc_clear_fp)) {
-				if (shared_buffer[0]) fprintf(proc_fp, "delete %s\n", shared_buffer);
-			}
-			put();
-			fclose(proc_clear_fp);
-			fflush(proc_fp);
-		}
-		get();
-		while (freadline(file_fp)) {
-			if (shared_buffer[0]) fprintf(proc_fp, "%s\n", shared_buffer);
-		}
-		put();
-		fclose(proc_fp);
-		fclose(file_fp);
+		if (refresh_policy) DeleteProcPolicy(proc_policy_exception_policy);
+		MoveFileToProc(read_from_stdin ? NULL : disk_policy_exception_policy, proc_policy_exception_policy);
 	}
- out_exception: ;
 
 	if (load_domain_policy) {
-		const char *policy_src = read_from_stdin ? NULL : disk_policy_domain_policy;
-		FILE *proc_fp = fopen(proc_policy_domain_policy, "w");
-		if (!proc_fp) {
-			fprintf(stderr, "Can't open %s\n", proc_policy_domain_policy);
-			goto out_domain;
-		}
-		if (!refresh_policy) {
-			FILE *file_fp = read_from_stdin ? stdin : fopen(disk_policy_domain_policy, "r");
-			if (!file_fp) {
-				fprintf(stderr, "Can't open %s\n", disk_policy_domain_policy);
-			} else {
-				get();
-				while (freadline(file_fp)) {
-					if (shared_buffer[0]) fprintf(proc_fp, "%s\n", shared_buffer);
-				}
-				put();
-				if (file_fp != stdin) fclose(file_fp);
-			}
+		if (refresh_policy) {
+			LoadDomainPolicy(read_from_stdin ? NULL : disk_policy_domain_policy, proc_policy_domain_policy);
 		} else {
-			int new_index;
-			int old_index;
-			struct path_info reserved;
-			reserved.name = "";
-			fill_path_info(&reserved);
-			ReadDomainPolicy(policy_src);
-			SwapDomainList();
-			ReadDomainPolicy(proc_policy_domain_policy);
-			SwapDomainList();
-			for (new_index = 0; new_index < domain_list_count; new_index++) {
-				const char *domainname = DomainName(new_index);
-				const struct path_info **new_string_ptr = domain_list[new_index].string_ptr;
-				const int new_string_count = domain_list[new_index].string_count;
-				int old_index;
-				int i, j;
-				SwapDomainList(); old_index = FindDomain(domainname, 0, 0); SwapDomainList();
-				if (old_index >= 0) {
-					/* Old policy for this domain found. */
-					const struct path_info **old_string_ptr = shadow_domain_list[old_index].string_ptr;
-					const int old_string_count = shadow_domain_list[old_index].string_count;
-					fprintf(proc_fp, "select %s\n", domainname);
-					for (j = 0; j < old_string_count; j++) {
-						for (i = 0; i < new_string_count; i++) {
-							if (new_string_ptr[i] == old_string_ptr[j]) break;
-						}
-						/* Delete this entry from old policy if not found in new policy. */
-						if (i == new_string_count) fprintf(proc_fp, "delete %s\n", old_string_ptr[j]->name);
-					}
-				} else {
-					/* Old policy for this domain not found or Append to old policy. */
-					fprintf(proc_fp, "%s\n", domainname);
-				}
-				for (i = 0; i < new_string_count; i++) fprintf(proc_fp, "%s\n", new_string_ptr[i]->name);
-				if (old_index >= 0) shadow_domain_list[old_index].domainname = &reserved; /* Don't delete this domain later. */
-			}
-			/* Delete all domains that are not defined in new policy. */
-			for (old_index = 0; old_index < shadow_domain_list_count; old_index++) {
-				if (shadow_domain_list[old_index].domainname != &reserved) fprintf(proc_fp, "delete %s\n", shadow_domain_list[old_index].domainname->name);
-			}
+			MoveFileToProc(read_from_stdin ? NULL : disk_policy_domain_policy, proc_policy_domain_policy);
 		}
-		fclose(proc_fp);
 	}
- out_domain: ;
-
 	return 0;
 }
 
