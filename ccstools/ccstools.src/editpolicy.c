@@ -378,7 +378,7 @@ static int IsIdenticalFile(const char *file1, const char *file2) {
 		len1 = read(fd1, buffer1, sizeof(buffer1));
 		len2 = read(fd2, buffer2, sizeof(buffer2));
 		if (len1 != len2) goto out;
-		if (len1 == EOF) break;
+		if (len1 <= 0) break;
 		if (memcmp(buffer1, buffer2, len1)) goto out;
 	}
 	close(fd1);
@@ -466,7 +466,7 @@ int savepolicy_main(int argc, char *argv[]) {
 	/* Repeat twice so that necessary permissions for this program are included in domain policy. */
 	for (repeat = 0; repeat < 2; repeat++) {
 		
-		if (save_profile) MoveProcToFile(proc_policy_manager, write_to_stdout ? NULL : disk_policy_profile);
+		if (save_profile) MoveProcToFile(proc_policy_profile, write_to_stdout ? NULL : disk_policy_profile);
 		
 		if (save_manager) MoveProcToFile(proc_policy_manager, write_to_stdout ? NULL : disk_policy_manager);
 		
@@ -485,7 +485,7 @@ int savepolicy_main(int argc, char *argv[]) {
 		
 		if (save_exception_policy) {
 			snprintf(filename, sizeof(filename) - 1, "exception_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-			MoveProcToFile(proc_policy_exception_policy, write_to_stdout ? NULL : filename);
+			MoveProcToFile(proc_policy_domain_policy, write_to_stdout ? NULL : filename);
 			if (!write_to_stdout) {
 				if (!force_save && IsIdenticalFile("exception_policy.conf", filename)) {
 					unlink(filename);
@@ -522,6 +522,8 @@ int savepolicy_main(int argc, char *argv[]) {
 
 static void MoveFileToProc(const char *src, const char *dest) {
 	FILE *file_fp, *proc_fp;
+	int first = 1;
+	int is_domain_policy = 0;
 	if ((proc_fp = fopen(dest, "w")) == NULL) {
 		fprintf(stderr, "Can't open %s\n", dest);
 		return;
@@ -533,7 +535,14 @@ static void MoveFileToProc(const char *src, const char *dest) {
 	}
 	get();
 	while (freadline(file_fp)) {
+		if (first) {
+			first = 0;
+			if (strncmp(shared_buffer, "<kernel>", 8) == 0) is_domain_policy = 1;
+		} else if (is_domain_policy && strncmp(shared_buffer, "<kernel>", 8) == 0) {
+			fprintf(file_fp, "\n");
+		}
 		if (shared_buffer[0]) fprintf(proc_fp, "%s\n", shared_buffer);
+		if (is_domain_policy && strncmp(shared_buffer, "use_profile ", 12) == 0) fprintf(file_fp, "\n");
 	}
 	put();
 	fclose(proc_fp);
