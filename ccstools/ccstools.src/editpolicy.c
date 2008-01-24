@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/23
+ * Version: 1.6.0-pre   2008/01/24
  *
  */
 #include "ccstools.h"
@@ -350,16 +350,16 @@ int sortpolicy_main(int argc, char *argv[]) {
 
 /***** savepolicy start *****/
 
-static void MoveProcToFile(const char *src, const char *dest) {
+static int MoveProcToFile(const char *src, const char *dest) {
 	FILE *proc_fp, *file_fp;
 	if ((proc_fp = fopen(src, "r")) == NULL) {
 		fprintf(stderr, "Can't open %s\n", src);
-		return;
+		return 0;
 	}
 	if ((file_fp = dest ? fopen(dest, "w") : stdout) == NULL) {
 		fprintf(stderr, "Can't open %s\n", dest);
 		fclose(proc_fp);
-		return;
+		return 0;
 	}
 	get();
 	while (freadline(proc_fp)) {
@@ -368,6 +368,7 @@ static void MoveProcToFile(const char *src, const char *dest) {
 	put();
 	fclose(proc_fp);
 	if (file_fp != stdout) fclose(file_fp);
+	return 1;
 }
 
 static int IsIdenticalFile(const char *file1, const char *file2) {
@@ -472,8 +473,7 @@ int savepolicy_main(int argc, char *argv[]) {
 		
 		if (save_system_policy) {
 			snprintf(filename, sizeof(filename) - 1, "system_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-			MoveProcToFile(proc_policy_system_policy, write_to_stdout ? NULL : filename);
-			if (!write_to_stdout) {
+			if (MoveProcToFile(proc_policy_system_policy, write_to_stdout ? NULL : filename) && !write_to_stdout) {
 				if (!force_save && IsIdenticalFile("system_policy.conf", filename)) {
 					unlink(filename);
 				} else {
@@ -485,8 +485,7 @@ int savepolicy_main(int argc, char *argv[]) {
 		
 		if (save_exception_policy) {
 			snprintf(filename, sizeof(filename) - 1, "exception_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-			MoveProcToFile(proc_policy_exception_policy, write_to_stdout ? NULL : filename);
-			if (!write_to_stdout) {
+			if (MoveProcToFile(proc_policy_exception_policy, write_to_stdout ? NULL : filename) && !write_to_stdout) {
 				if (!force_save && IsIdenticalFile("exception_policy.conf", filename)) {
 					unlink(filename);
 				} else {
@@ -498,8 +497,7 @@ int savepolicy_main(int argc, char *argv[]) {
 
 		if (save_domain_policy) {
 			snprintf(filename, sizeof(filename) - 1, "domain_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-			MoveProcToFile(proc_policy_domain_policy, write_to_stdout ? NULL : filename);
-			if (!write_to_stdout) {
+			if (MoveProcToFile(proc_policy_domain_policy, write_to_stdout ? NULL : filename) && !write_to_stdout) {
 				if (!force_save && IsIdenticalFile("domain_policy.conf", filename)) {
 					unlink(filename);
 				} else {
@@ -1599,11 +1597,13 @@ static const char *directive_list[max_optimize_directive_index] = {
 	[34] = "allow_env ",
 };
 static int directive_list_len[max_optimize_directive_index];
+static int sort_type = 1;
 
 static int string_acl_compare(const void *a, const void *b) {
 	const char *a0 = * (char **) a;
 	const char *b0 = * (char **) b;
 	int i;
+	if (sort_type == 0) return strcmp(a0, b0);
 	for (i = 0; i < max_optimize_directive_index; i++) {
 		if (strncmp(a0, directive_list[i], directive_list_len[i])) continue;
 		a0 += directive_list_len[i];
@@ -2084,6 +2084,10 @@ static int GenericListLoop(void) {
 		case 'O':
 			if (current_screen == SCREEN_ACL_LIST) try_optimize(current);
 			break;
+		case '@':
+			if (current_screen != SCREEN_ACL_LIST) break;
+			sort_type = (sort_type + 1) % 2;
+			goto start;
 		case '?':
 			{
 				int c;
