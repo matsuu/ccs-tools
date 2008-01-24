@@ -352,6 +352,8 @@ int sortpolicy_main(int argc, char *argv[]) {
 
 static int MoveProcToFile(const char *src, const char *dest) {
 	FILE *proc_fp, *file_fp;
+	int first = 1;
+	int is_domain_policy = 0;
 	if ((proc_fp = fopen(src, "r")) == NULL) {
 		fprintf(stderr, "Can't open %s\n", src);
 		return 0;
@@ -363,7 +365,14 @@ static int MoveProcToFile(const char *src, const char *dest) {
 	}
 	get();
 	while (freadline(proc_fp)) {
+		if (first) {
+			first = 0;
+			if (strncmp(shared_buffer, "<kernel>", 8) == 0) is_domain_policy = 1;
+		} else if (is_domain_policy && strncmp(shared_buffer, "<kernel>", 8) == 0) {
+			fprintf(file_fp, "\n");
+		}
 		if (shared_buffer[0]) fprintf(file_fp, "%s\n", shared_buffer);
+		if (is_domain_policy && strncmp(shared_buffer, "use_profile ", 12) == 0) fprintf(file_fp, "\n");
 	}
 	put();
 	fclose(proc_fp);
@@ -520,8 +529,6 @@ int savepolicy_main(int argc, char *argv[]) {
 
 static void MoveFileToProc(const char *src, const char *dest) {
 	FILE *file_fp, *proc_fp;
-	int first = 1;
-	int is_domain_policy = 0;
 	if ((proc_fp = fopen(dest, "w")) == NULL) {
 		fprintf(stderr, "Can't open %s\n", dest);
 		return;
@@ -533,14 +540,7 @@ static void MoveFileToProc(const char *src, const char *dest) {
 	}
 	get();
 	while (freadline(file_fp)) {
-		if (first) {
-			first = 0;
-			if (strncmp(shared_buffer, "<kernel>", 8) == 0) is_domain_policy = 1;
-		} else if (is_domain_policy && strncmp(shared_buffer, "<kernel>", 8) == 0) {
-			fprintf(file_fp, "\n");
-		}
 		if (shared_buffer[0]) fprintf(proc_fp, "%s\n", shared_buffer);
-		if (is_domain_policy && strncmp(shared_buffer, "use_profile ", 12) == 0) fprintf(file_fp, "\n");
 	}
 	put();
 	fclose(proc_fp);
