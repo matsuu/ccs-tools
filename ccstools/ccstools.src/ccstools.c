@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/23
+ * Version: 1.6.0-pre   2008/01/24
  *
  */
 #include "ccstools.h"
@@ -432,6 +432,7 @@ extern int ccstree_main(int argc, char *argv[]);
 extern int ccsqueryd_main(int argc, char *argv[]);
 extern int ccsauditd_main(int argc, char *argv[]);
 extern int patternize_main(int argc, char *argv[]);
+extern int ccsnotifyd_main(int argc, char *argv[]);
 
 const char *proc_policy_dir           = "/proc/ccs/",
 	*disk_policy_dir              = "/etc/ccs/",
@@ -510,6 +511,7 @@ retry:
 	if (strcmp(argv0, "ccs-queryd") == 0) return ccsqueryd_main(argc, argv);
 	if (strcmp(argv0, "ccs-auditd") == 0) return ccsauditd_main(argc, argv);
 	if (strcmp(argv0, "patternize") == 0) return patternize_main(argc, argv);
+	if (strcmp(argv0, "ccs-notifyd") == 0) return ccsnotifyd_main(argc, argv);
 	if (strncmp(argv0, "ccs-", 4) == 0) {
 		argv0 += 4;
 		goto retry;
@@ -519,7 +521,7 @@ retry:
 	 * because it is dangerous to allow updating policies via unchecked argv[1].
 	 * You should use either "symbolic links with 'alias' directive" or "hard links".
 	 */
-	printf("ccstools version 1.6.0-pre build 2008/01/23\n");
+	printf("ccstools version 1.6.0-pre build 2008/01/24\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }

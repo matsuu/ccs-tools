@@ -485,7 +485,7 @@ int savepolicy_main(int argc, char *argv[]) {
 		
 		if (save_exception_policy) {
 			snprintf(filename, sizeof(filename) - 1, "exception_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-			MoveProcToFile(proc_policy_domain_policy, write_to_stdout ? NULL : filename);
+			MoveProcToFile(proc_policy_exception_policy, write_to_stdout ? NULL : filename);
 			if (!write_to_stdout) {
 				if (!force_save && IsIdenticalFile("exception_policy.conf", filename)) {
 					unlink(filename);
@@ -498,7 +498,7 @@ int savepolicy_main(int argc, char *argv[]) {
 
 		if (save_domain_policy) {
 			snprintf(filename, sizeof(filename) - 1, "domain_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-			MoveProcToFile(proc_policy_exception_policy, write_to_stdout ? NULL : filename);
+			MoveProcToFile(proc_policy_domain_policy, write_to_stdout ? NULL : filename);
 			if (!write_to_stdout) {
 				if (!force_save && IsIdenticalFile("domain_policy.conf", filename)) {
 					unlink(filename);

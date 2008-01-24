@@ -1,4 +1,3 @@
-/* gcc -Wall -O3 -o ccs-notifyd ccs-notifyd.c */
 /*
  * ccs-notifyd.c
  *
@@ -6,21 +5,12 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/20
+ * Version: 1.6.0-pre   2008/01/24
  *
  */
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include <syslog.h>
-#include <signal.h>
+#include "ccstools.h"
 
-int main(int argc, char *argv[]) {
-	const char *proc_policy_query = "/proc/ccs/query";
+int ccsnotifyd_main(int argc, char *argv[]) {
 	int time_to_wait;
 	const char *action_to_take;
 	char buffer[16384];
@@ -70,14 +60,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Can't chdir()\n");
 		return 1;
 	}
-	{ // Get exclusive lock.
-		int fd = open("/proc/self/exe", O_RDONLY); if (flock(fd, LOCK_EX | LOCK_NB) == EOF) return 0;
-	}
 	query_fd = open(proc_policy_query, O_RDWR);
-	if (query_fd == EOF) {
-		proc_policy_query = "/sys/kernel/security/tomoyo/query";
-		query_fd = open(proc_policy_query, O_RDWR);
-	}
 	if (query_fd == EOF) {
 		fprintf(stderr, "You can't run this utility for this kernel.\n");
 		return 1;
