@@ -432,7 +432,6 @@ extern int ccstree_main(int argc, char *argv[]);
 extern int ccsqueryd_main(int argc, char *argv[]);
 extern int ccsauditd_main(int argc, char *argv[]);
 extern int patternize_main(int argc, char *argv[]);
-extern int ccsnotifyd_main(int argc, char *argv[]);
 
 const char *proc_policy_dir           = "/proc/ccs/",
 	*disk_policy_dir              = "/etc/ccs/",
@@ -511,7 +510,6 @@ retry:
 	if (strcmp(argv0, "ccs-queryd") == 0) return ccsqueryd_main(argc, argv);
 	if (strcmp(argv0, "ccs-auditd") == 0) return ccsauditd_main(argc, argv);
 	if (strcmp(argv0, "patternize") == 0) return patternize_main(argc, argv);
-	if (strcmp(argv0, "ccs-notifyd") == 0) return ccsnotifyd_main(argc, argv);
 	if (strncmp(argv0, "ccs-", 4) == 0) {
 		argv0 += 4;
 		goto retry;
