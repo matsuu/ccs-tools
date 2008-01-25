@@ -28,15 +28,9 @@ install:
 	mkdir -p $(INSTALLDIR)/usr/share/man/man8/
 	cp -af --remove-destination man/man8/* $(INSTALLDIR)/usr/share/man/man8/
 
-#
-# If you want to suppress "warning: pointer targets in passing argument ... differ in signedness" warning messages,
-# you can add "-Wno-pointer-sign" options to CFLAGS.
-#
-#CFLAGS=-Wall -Wno-pointer-sign -O2
-#
-CFLAGS=-Wall -O2
-
 CC=gcc
+
+CFLAGS=-Wall -O2 ${shell echo 'int main() { return 0; } ' | $(CC) -Wall -Wno-pointer-sign -E - > /dev/null 2>&1 && echo "-Wno-pointer-sign"}
 
 /usr/include/curses.h:
 	@echo "/usr/include/curses.h is missing."

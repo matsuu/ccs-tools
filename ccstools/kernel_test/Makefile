@@ -3,15 +3,9 @@ ALL_FILES = sakura_bind_test sakura_filesystem_test tomoyo_capability_test tomoy
 all: $(ALL_FILES)
 	chmod 755 testall.sh
 
-#
-# If you want to suppress "warning: pointer targets in passing argument ... differ in signedness" warning messages,
-# you can add "-Wno-pointer-sign" options to CFLAGS.
-#
-#CFLAGS=-Wall -Wno-pointer-sign -O2
-#
-CFLAGS=-Wall -O2
-
 CC=gcc
+
+CFLAGS=-Wall -O2 ${shell echo 'int main() { return 0; } ' | $(CC) -Wall -Wno-pointer-sign -E - > /dev/null 2>&1 && echo "-Wno-pointer-sign"}
 
 #
 # Tools for kernel testing.
