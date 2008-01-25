@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/24
+ * Version: 1.6.0-pre   2008/01/25
  *
  */
 #include "ccstools.h"
@@ -382,15 +382,17 @@ static int MoveProcToFile(const char *src, const char *dest) {
 
 static int IsIdenticalFile(const char *file1, const char *file2) {
 	char buffer1[4096], buffer2[4096];
+	struct stat sb1, sb2;
 	const int fd1 = open(file1, O_RDONLY), fd2 = open(file2, O_RDONLY);
 	int len1, len2;
-	while (1) {
+	/* Don't compare if file1 is a symlink to file2. */
+	if (fstat(fd1, &sb1) || fstat(fd2, &sb2) || sb1.st_ino == sb2.st_ino) goto out;
+	do {
 		len1 = read(fd1, buffer1, sizeof(buffer1));
 		len2 = read(fd2, buffer2, sizeof(buffer2));
-		if (len1 != len2) goto out;
-		if (len1 <= 0) break;
+		if (len1 < 0 || len1 != len2) goto out;
 		if (memcmp(buffer1, buffer2, len1)) goto out;
-	}
+	} while (len1);
 	close(fd1);
 	close(fd2);
 	return 1;
