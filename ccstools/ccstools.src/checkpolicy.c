@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/17
+ * Version: 1.6.0-pre   2008/01/25
  *
  */
 #include "ccstools.h"
@@ -134,7 +134,7 @@ static void CheckCapabilityPolicy(char *data) {
 
 static void CheckSignalPolicy(char *data) {
 	int sig;
-    char *cp;
+	char *cp;
 	if ((cp = FindConditionPart(data)) != NULL && !CheckCondition(cp)) return;
 	cp = strchr(data, ' ');
 	if (!cp) {
@@ -356,12 +356,12 @@ static void CheckDomainInitializerEntry(const char *domainname, const char *prog
 
 static void CheckDomainInitializerPolicy(char *data) {
 	char *cp = strstr(data, " from ");
-    if (cp) {
-        *cp = '\0';
-        CheckDomainInitializerEntry(cp + 6, data);
-    } else {
-        CheckDomainInitializerEntry(NULL, data);
-    }
+	if (cp) {
+		*cp = '\0';
+		CheckDomainInitializerEntry(cp + 6, data);
+	} else {
+		CheckDomainInitializerEntry(NULL, data);
+	}
 }
 
 static void CheckDomainKeeperEntry(const char *domainname, const char *program) {
@@ -375,12 +375,12 @@ static void CheckDomainKeeperEntry(const char *domainname, const char *program) 
 
 static void CheckDomainKeeperPolicy(char *data) {
 	char *cp = strstr(data, " from ");
-    if (cp) {
-	    *cp = '\0';
-        CheckDomainKeeperEntry(cp + 6, data);
-    } else {
-	    CheckDomainKeeperEntry(data, NULL);
-    }
+	if (cp) {
+		*cp = '\0';
+		CheckDomainKeeperEntry(cp + 6, data);
+	} else {
+		CheckDomainKeeperEntry(data, NULL);
+	}
 }
 
 static void CheckGroupPolicy(char *data) {

@@ -3,9 +3,9 @@
  *
  * TOMOYO Linux's utilities.
  *
- * Copyright (C) 2005-2007  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.5.0   2007/09/20
+ * Version: 1.6.0-pre   2008/01/25
  *
  */
 #include "ccstools.h"
@@ -39,11 +39,11 @@ int ccsqueryd_main(int argc, char *argv[]) {
 	write(query_fd, "\n", 1);
 	initscr();
 	cbreak();
-    noecho();
-    nonl();
-    intrflush(stdscr, FALSE);
-    keypad(stdscr, TRUE);
-    clear(); refresh();
+	noecho();
+	nonl();
+	intrflush(stdscr, FALSE);
+	keypad(stdscr, TRUE);
+	clear(); refresh();
 	scrollok(stdscr, 1);
 	while (1) {
 		static int first = 1;
