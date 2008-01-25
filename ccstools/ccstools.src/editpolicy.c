@@ -1932,16 +1932,9 @@ static int GenericListLoop(void) {
 					} else {
 						FILE *fp = open_write(policy_file);
 						if (fp) {
-							if (current_screen == SCREEN_ACL_LIST) {
-								fprintf(fp, "select %s\n", current_domain);
-								for (index = 0; index < generic_acl_list_count; index++) {
-									if (!generic_acl_list_selected[index]) continue;
-									fprintf(fp, "delete %s\n", map_perm_keyword(0, generic_acl_list[index]));
-								}
-							} else {
-								for (index = 0; index < generic_acl_list_count; index++) {
-									if (generic_acl_list_selected[index]) fprintf(fp, "delete %s\n", generic_acl_list[index]);
-								}
+							if (current_screen == SCREEN_ACL_LIST) fprintf(fp, "select %s\n", current_domain);
+							for (index = 0; index < generic_acl_list_count; index++) {
+								if (generic_acl_list_selected[index]) fprintf(fp, "delete %s\n", current_screen == SCREEN_ACL_LIST ? map_perm_keyword(0, generic_acl_list[index]) : generic_acl_list[index]);
 							}
 							fclose(fp);
 						}
@@ -1967,12 +1960,8 @@ static int GenericListLoop(void) {
 					} else {
 						FILE *fp = open_write(policy_file);
 						if (fp) {
-							if (current_screen == SCREEN_ACL_LIST) {
-								fprintf(fp, "select %s\n", current_domain);
-								fprintf(fp, "%s\n", map_perm_keyword(0, line));
-							} else {
-								fprintf(fp, "%s\n", line);
-							}
+							if (current_screen == SCREEN_ACL_LIST) fprintf(fp, "select %s\n", current_domain);
+							fprintf(fp, "%s\n", current_screen == SCREEN_ACL_LIST ? map_perm_keyword(0, line) : line);
 							fclose(fp);
 						}
 					}
