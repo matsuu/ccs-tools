@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/25
+ * Version: 1.6.0-pre   2008/01/29
  *
  */
 #include "ccstools.h"
@@ -412,7 +412,6 @@ int savepolicy_main(int argc, char *argv[]) {
 	int save_exception_policy = 0;
 	int save_domain_policy = 0;
 	int force_save = 0;
-	int repeat;
 	time_t now = time(NULL);
 	struct tm *tm = localtime(&now);
 	memset(filename, 0, sizeof(filename));
@@ -469,56 +468,50 @@ int savepolicy_main(int argc, char *argv[]) {
 		}
 		remount_root = 1;
 	}
-
+	
 	/* Exclude nonexistent policy. */
 	if (access(proc_policy_system_policy, R_OK)) save_system_policy = 0;
 	if (access(proc_policy_exception_policy, R_OK)) save_exception_policy = 0;
 	if (access(proc_policy_domain_policy, R_OK)) save_domain_policy = 0;
-
-	/* Repeat twice so that necessary permissions for this program are included in domain policy. */
-	for (repeat = 0; repeat < 2; repeat++) {
-		
-		if (save_profile) MoveProcToFile(proc_policy_profile, write_to_stdout ? NULL : disk_policy_profile);
-		
-		if (save_manager) MoveProcToFile(proc_policy_manager, write_to_stdout ? NULL : disk_policy_manager);
-		
-		if (save_system_policy) {
-			snprintf(filename, sizeof(filename) - 1, "system_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-			if (MoveProcToFile(proc_policy_system_policy, write_to_stdout ? NULL : filename) && !write_to_stdout) {
-				if (!force_save && IsIdenticalFile("system_policy.conf", filename)) {
-					unlink(filename);
-				} else {
-					unlink("system_policy.conf");
-					symlink(filename, "system_policy.conf");
-				}
+	
+	if (save_profile) MoveProcToFile(proc_policy_profile, write_to_stdout ? NULL : disk_policy_profile);
+	
+	if (save_manager) MoveProcToFile(proc_policy_manager, write_to_stdout ? NULL : disk_policy_manager);
+	
+	if (save_system_policy) {
+		snprintf(filename, sizeof(filename) - 1, "system_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+		if (MoveProcToFile(proc_policy_system_policy, write_to_stdout ? NULL : filename) && !write_to_stdout) {
+			if (!force_save && IsIdenticalFile("system_policy.conf", filename)) {
+				unlink(filename);
+			} else {
+				unlink("system_policy.conf");
+				symlink(filename, "system_policy.conf");
 			}
 		}
-		
-		if (save_exception_policy) {
-			snprintf(filename, sizeof(filename) - 1, "exception_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-			if (MoveProcToFile(proc_policy_exception_policy, write_to_stdout ? NULL : filename) && !write_to_stdout) {
-				if (!force_save && IsIdenticalFile("exception_policy.conf", filename)) {
-					unlink(filename);
-				} else {
-					unlink("exception_policy.conf");
-					symlink(filename, "exception_policy.conf");
-				}
+	}
+	
+	if (save_exception_policy) {
+		snprintf(filename, sizeof(filename) - 1, "exception_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+		if (MoveProcToFile(proc_policy_exception_policy, write_to_stdout ? NULL : filename) && !write_to_stdout) {
+			if (!force_save && IsIdenticalFile("exception_policy.conf", filename)) {
+				unlink(filename);
+			} else {
+				unlink("exception_policy.conf");
+				symlink(filename, "exception_policy.conf");
 			}
 		}
-
-		if (save_domain_policy) {
-			snprintf(filename, sizeof(filename) - 1, "domain_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-			if (MoveProcToFile(proc_policy_domain_policy, write_to_stdout ? NULL : filename) && !write_to_stdout) {
-				if (!force_save && IsIdenticalFile("domain_policy.conf", filename)) {
-					unlink(filename);
-				} else {
-					unlink("domain_policy.conf");
-					symlink(filename, "domain_policy.conf");
-				}
+	}
+	
+	if (save_domain_policy) {
+		snprintf(filename, sizeof(filename) - 1, "domain_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+		if (MoveProcToFile(proc_policy_domain_policy, write_to_stdout ? NULL : filename) && !write_to_stdout) {
+			if (!force_save && IsIdenticalFile("domain_policy.conf", filename)) {
+				unlink(filename);
+			} else {
+				unlink("domain_policy.conf");
+				symlink(filename, "domain_policy.conf");
 			}
 		}
-		
-		if (write_to_stdout) break;
 	}
 	
 	if (remount_root) mount("/", "/", "rootfs", MS_REMOUNT | MS_RDONLY, NULL);
@@ -556,6 +549,7 @@ static void DeleteProcPolicy(const char *name) {
 		fprintf(stderr, "Can't open %s\n", name);
 		if (proc_write_fp) fclose(proc_write_fp);
 		if (proc_read_fp) fclose(proc_read_fp);
+		return;
 	}
 	get();
 	while (freadline(proc_read_fp)) {
@@ -587,12 +581,13 @@ static void LoadDomainPolicy(const char *src, const char *dest) {
 		const struct path_info **new_string_ptr = domain_list[new_index].string_ptr;
 		const int new_string_count = domain_list[new_index].string_count;
 		SwapDomainList(); old_index = FindDomain(domainname, 0, 0); SwapDomainList();
+		fprintf(proc_fp, "%s\n", domainname);
 		if (old_index >= 0) {
 			int j;
 			/* Old policy for this domain found. */
 			const struct path_info **old_string_ptr = shadow_domain_list[old_index].string_ptr;
 			const int old_string_count = shadow_domain_list[old_index].string_count;
-			fprintf(proc_fp, "select %s\n", domainname);
+			shadow_domain_list[old_index].domainname = &reserved; /* Don't delete this domain later. */
 			for (j = 0; j < old_string_count; j++) {
 				for (i = 0; i < new_string_count; i++) {
 					if (new_string_ptr[i] == old_string_ptr[j]) break;
@@ -600,12 +595,9 @@ static void LoadDomainPolicy(const char *src, const char *dest) {
 				/* Delete this entry from old policy if not found in new policy. */
 				if (i == new_string_count) fprintf(proc_fp, "delete %s\n", old_string_ptr[j]->name);
 			}
-		} else {
-			/* Old policy for this domain not found or Append to old policy. */
-			fprintf(proc_fp, "%s\n", domainname);
 		}
+		/* Append entries defined in new policy. */
 		for (i = 0; i < new_string_count; i++) fprintf(proc_fp, "%s\n", new_string_ptr[i]->name);
-		if (old_index >= 0) shadow_domain_list[old_index].domainname = &reserved; /* Don't delete this domain later. */
 	}
 	/* Delete all domains that are not defined in new policy. */
 	for (old_index = 0; old_index < shadow_domain_list_count; old_index++) {
