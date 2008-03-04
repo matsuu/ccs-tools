@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/25
+ * Version: 1.6.0-pre   2008/03/04
  *
  */
 #include "ccstools.h"
@@ -17,7 +17,7 @@ static int strendswith(const char *name, const char *tail) {
 	return len >= 0 && strcmp(name + len, tail) == 0;
 }
 
-static int parse_ulong(unsigned long *result, const char **str) {
+static int parse_ulong(unsigned long *result, char **str) {
 	const char *cp = *str;
 	char *ep;
 	int base = 10;
@@ -38,7 +38,9 @@ static int parse_ulong(unsigned long *result, const char **str) {
 static char *FindConditionPart(char *data) {
 	char *cp = strstr(data, " if "), *cp2;
 	if (cp) {
-		while ((cp2 = strstr(cp + 4, " if ")) != NULL) cp = cp2;
+		while ((cp2 = strstr(cp + 3, " if ")) != NULL) cp = cp2;
+		*cp++ = '\0';
+	} else if ((cp = strstr(data, " ; set ")) != NULL) {
 		*cp++ = '\0';
 	}
 	return cp;
@@ -46,46 +48,96 @@ static char *FindConditionPart(char *data) {
 
 static unsigned int line = 0, errors = 0, warnings = 0;
 
-static int CheckCondition(const char *condition) {
-	static const struct {
-		const char * const keyword;
+static int CheckCondition(char *condition) {
+	enum { TASK_UID, TASK_EUID, TASK_SUID, TASK_FSUID, TASK_GID, TASK_EGID, TASK_SGID, TASK_FSGID,
+	       TASK_PID, TASK_PPID, PATH1_UID, PATH1_GID, PATH1_INO, PATH1_PARENT_UID, PATH1_PARENT_GID, PATH1_PARENT_INO,
+	       PATH2_PARENT_UID, PATH2_PARENT_GID, PATH2_PARENT_INO, EXEC_ARGC, EXEC_ENVC, EXEC_ARGV, EXEC_ENVP, TASK_STATE_0,
+	       TASK_STATE_1, TASK_STATE_2, MAX_KEYWORD };
+	static struct {
+		const char *keyword;
 		const int keyword_len; /* strlen(keyword) */
-	} condition_control_keyword[] = {
-		{ "task.uid",           8 },
-		{ "task.euid",          9 },
-		{ "task.suid",          9 },
-		{ "task.fsuid",        10 },
-		{ "task.gid",           8 },
-		{ "task.egid",          9 },
-		{ "task.sgid",          9 },
-		{ "task.fsgid",        10 },
-		{ "task.pid",           8 },
-		{ "task.ppid",          9 },
-		{ "path1.uid",          9 },
-		{ "path1.gid",          9 },
-		{ "path1.ino",          9 },
-		{ "path1.parent.uid",  16 },
-		{ "path1.parent.gid",  16 },
-		{ "path1.parent.ino",  16 },
-		{ "path2.parent.uid",  16 },
-		{ "path2.parent.gid",  16 },
-		{ "path2.parent.ino",  16 },
-		{ NULL, 0 }
+	} condition_control_keyword[MAX_KEYWORD] = {
+		[TASK_UID]         = { "task.uid",           8 },
+		[TASK_EUID]        = { "task.euid",          9 },
+		[TASK_SUID]        = { "task.suid",          9 },
+		[TASK_FSUID]       = { "task.fsuid",        10 },
+		[TASK_GID]         = { "task.gid",           8 },
+		[TASK_EGID]        = { "task.egid",          9 },
+		[TASK_SGID]        = { "task.sgid",          9 },
+		[TASK_FSGID]       = { "task.fsgid",        10 },
+		[TASK_PID]         = { "task.pid",           8 },
+		[TASK_PPID]        = { "task.ppid",          9 },
+		[PATH1_UID]        = { "path1.uid",          9 },
+		[PATH1_GID]        = { "path1.gid",          9 },
+		[PATH1_INO]        = { "path1.ino",          9 },
+		[PATH1_PARENT_UID] = { "path1.parent.uid",  16 },
+		[PATH1_PARENT_GID] = { "path1.parent.gid",  16 },
+		[PATH1_PARENT_INO] = { "path1.parent.ino",  16 },
+		[PATH2_PARENT_UID] = { "path2.parent.uid",  16 },
+		[PATH2_PARENT_GID] = { "path2.parent.gid",  16 },
+		[PATH2_PARENT_INO] = { "path2.parent.ino",  16 },
+		[EXEC_ARGC]        = { "exec.argc",          9 },
+		[EXEC_ENVC]        = { "exec.envc",          9 },
+		[EXEC_ARGV]        = { "exec.argv[",        10 },
+		[EXEC_ENVP]        = { "exec.envp[\"",      11 },
+		[TASK_STATE_0]     = { "task.state[0]",     13 },
+		[TASK_STATE_1]     = { "task.state[1]",     13 },
+		[TASK_STATE_2]     = { "task.state[2]",     13 },
 	};
-	const char *start = condition;
-	int left, right;
+	char *start = condition;
+	u8 left, right, i;
 	unsigned long left_min = 0, left_max = 0, right_min = 0, right_max = 0;
-	if (strncmp(condition, "if ", 3)) goto out;
-	condition += 3;
-	while (*condition) {
-		if (*condition == ' ') condition++;
-		for (left = 0; condition_control_keyword[left].keyword; left++) {
+	u8 post_state[4] = { 0, 0, 0, 0 };
+	if ((condition = strstr(condition, "; set ")) != NULL) {
+		*condition = '\0';
+		condition += 6;
+		while (1) {
+			while (*condition == ' ') condition++;
+			if (!*condition) break;
+			if (strncmp(condition, "task.state[0]=", 14) == 0) i = 0;
+			else if (strncmp(condition, "task.state[1]=", 14) == 0) i = 1;
+			else if (strncmp(condition, "task.state[2]=", 14) == 0) i = 2;
+			else goto out;
+			condition += 14;
+			if (post_state[3] & (1 << i)) goto out;
+			post_state[3] |= 1 << i;
+			if (!parse_ulong(&right_min, &condition) || right_min > 255) goto out;
+			post_state[i] = (u8) right_min;
+		}
+	}
+	condition = start;
+	if (strncmp(condition, "if ", 3) == 0) condition += 3;
+	else if (*condition) goto out;
+	start = condition;
+	while (1) {
+		while (*condition == ' ') condition++;
+		if (!*condition) break;
+		for (left = 0; left < MAX_KEYWORD; left++) {
 			if (strncmp(condition, condition_control_keyword[left].keyword, condition_control_keyword[left].keyword_len) == 0) {
 				condition += condition_control_keyword[left].keyword_len;
 				break;
 			}
 		}
-		if (!condition_control_keyword[left].keyword) {
+		if (left == EXEC_ARGV) {
+			if (!parse_ulong(&left_min, &condition)) goto out;
+			if (*condition++ != ']') goto out;
+		} else if (left == EXEC_ENVP) {
+			char *tmp = condition;
+			while (1) {
+				const char c = *condition;
+				/*
+				 * Since environment variable names don't contain '=',
+				 * I can treat '"]=' and '"]!=' sequences as delimiters.
+				 */
+				if (strncmp(condition, "\"]=", 3) == 0 || strncmp(condition, "\"]!=", 4) == 0) break;
+				if (!c || c == ' ') goto out;
+				condition++;
+			}
+			*condition = '\0';
+			if (!SaveName(tmp)) goto out;
+			*condition = '"';
+			condition += 2;
+		} else if (left == MAX_KEYWORD) {
 			if (!parse_ulong(&left_min, &condition)) goto out;
 			if (*condition == '-') {
 				condition++;
@@ -95,13 +147,38 @@ static int CheckCondition(const char *condition) {
 		if (strncmp(condition, "!=", 2) == 0) condition += 2;
 		else if (*condition == '=') condition++;
 		else goto out;
-		for (right = 0; condition_control_keyword[right].keyword; right++) {
+		if (left == EXEC_ENVP && strncmp(condition, "NULL", 4) == 0) {
+			char c;
+			condition += 4;
+			c = *condition;
+			if (!c || c == ' ') continue;
+			goto out;
+		} else if (left == EXEC_ARGV || left == EXEC_ENVP) {
+			char c;
+			char *tmp;
+			if (*condition++ != '"') goto out;
+			tmp = condition;
+			while (1) {
+				c = *condition++;
+				if (!c || c == ' ') goto out;
+				if (c != '"') continue;
+				c = *condition;
+				if (!c || c == ' ') break;
+			}
+			c = *--condition;
+			*condition = '\0';
+			if (!SaveName(tmp)) goto out;
+			*condition = c;
+			condition++;
+			continue;
+		}
+		for (right = 0; right < MAX_KEYWORD; right++) {
 			if (strncmp(condition, condition_control_keyword[right].keyword, condition_control_keyword[right].keyword_len) == 0) {
 				condition += condition_control_keyword[right].keyword_len;
 				break;
 			}
 		}
-		if (!condition_control_keyword[right].keyword) {
+		if (right == MAX_KEYWORD) {
 			if (!parse_ulong(&right_min, &condition)) goto out;
 			if (*condition == '-') {
 				condition++;
@@ -124,8 +201,6 @@ static void CheckCapabilityPolicy(char *data) {
 		"SYS_PTRACE", NULL
 	};
 	int i;
-	char *cp;
-	if ((cp = FindConditionPart(data)) != NULL && !CheckCondition(cp)) return;
 	for (i = 0; capability_keywords[i]; i++) {
 		if (strcmp(data, capability_keywords[i]) == 0) return;
 	}
@@ -135,7 +210,6 @@ static void CheckCapabilityPolicy(char *data) {
 static void CheckSignalPolicy(char *data) {
 	int sig;
 	char *cp;
-	if ((cp = FindConditionPart(data)) != NULL && !CheckCondition(cp)) return;
 	cp = strchr(data, ' ');
 	if (!cp) {
 		printf("%u: ERROR: Too few parameters.\n", line); errors++;
@@ -152,13 +226,11 @@ static void CheckSignalPolicy(char *data) {
 
 static void CheckArgv0Policy(char *data) {
 	char *argv0 = strchr(data, ' ');
-	char *cp;
 	if (!argv0) {
 		printf("%u: ERROR: Too few parameters.\n", line); errors++;
 		return;
 	}
 	*argv0++ = '\0';
-	if ((cp = FindConditionPart(argv0)) != NULL && !CheckCondition(cp)) return;
 	if (!IsCorrectPath(data, 1, 0, -1)) {
 		printf("%u: ERROR: '%s' is a bad pathname.\n", line, data); errors++;
 	}
@@ -168,8 +240,6 @@ static void CheckArgv0Policy(char *data) {
 }
 
 static void CheckEnvPolicy(char *data) {
-	char *cp;
-	if ((cp = FindConditionPart(data)) != NULL && !CheckCondition(cp)) return;
 	if (!IsCorrectPath(data, 0, 0, 0)) {
 		printf("%u: ERROR: '%s' is a bad variable name.\n", line, data); errors++;
 	}
@@ -181,7 +251,6 @@ static void CheckNetworkPolicy(char *data) {
 	unsigned int min_port, max_port;
 	int count;
 	char *cp1 = NULL, *cp2 = NULL;
-	if ((cp1 = FindConditionPart(data)) != NULL && !CheckCondition(cp1)) return;
 	if ((cp1 = strchr(data, ' ')) == NULL) goto out; cp1++;
 	if (strncmp(data, "TCP ", 4) == 0) sock_type = SOCK_STREAM;
 	else if (strncmp(data, "UDP ", 4) == 0) sock_type = SOCK_DGRAM;
@@ -264,7 +333,6 @@ static void CheckFilePolicy(char *data) {
 		return;
 	}
 	*filename++ = '\0';
-	if ((cp = FindConditionPart(filename)) != NULL && !CheckCondition(cp)) return;
 	if (sscanf(data, "%u", &perm) == 1 && perm > 0 && perm <= 7) {
 		if (filename[0] != '@' && strendswith(filename, "/")) { // Don't reject path_group.
 			printf("%u: WARNING: Only 'mkdir' and 'rmdir' are valid for directory '%s'.\n", line, filename); warnings++;
@@ -493,20 +561,30 @@ int checkpolicy_main(int argc, char *argv[]) {
 				if (sscanf(shared_buffer, "%u", &profile) != 1 || profile >= 256) {
 					printf("%u: ERROR: '%s' is a bad profile.\n", line, shared_buffer); errors++;
 				}
+			} else if (strcmp(shared_buffer, "ignore_global_allow_read") == 0) {
+				/* Nothing to do. */
+			} else if (strcmp(shared_buffer, "ignore_global_allow_env") == 0) {
+				/* Nothing to do. */
+			} else if (strcmp(shared_buffer, "force_alt_exec") == 0) {
+				/* Nothing to do. */
 			} else if (strcmp(shared_buffer, "quota_exceeded") == 0) {
 				/* Nothing to do. */
-			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_CAPABILITY, KEYWORD_ALLOW_CAPABILITY_LEN) == 0) {
-				CheckCapabilityPolicy(shared_buffer + KEYWORD_ALLOW_CAPABILITY_LEN);
-			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_NETWORK, KEYWORD_ALLOW_NETWORK_LEN) == 0) {
-				CheckNetworkPolicy(shared_buffer + KEYWORD_ALLOW_NETWORK_LEN);
-			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_SIGNAL, KEYWORD_ALLOW_SIGNAL_LEN) == 0) {
-				CheckSignalPolicy(shared_buffer + KEYWORD_ALLOW_SIGNAL_LEN);
-			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_ARGV0, KEYWORD_ALLOW_ARGV0_LEN) == 0) {
-				CheckArgv0Policy(shared_buffer + KEYWORD_ALLOW_ARGV0_LEN);
-			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_ENV, KEYWORD_ALLOW_ENV_LEN) == 0) {
-				CheckEnvPolicy(shared_buffer + KEYWORD_ALLOW_ENV_LEN);
 			} else {
-				CheckFilePolicy(shared_buffer);
+				char *cp;
+				if ((cp = FindConditionPart(shared_buffer)) != NULL && !CheckCondition(cp)) break;
+				if (strncmp(shared_buffer, KEYWORD_ALLOW_CAPABILITY, KEYWORD_ALLOW_CAPABILITY_LEN) == 0) {
+					CheckCapabilityPolicy(shared_buffer + KEYWORD_ALLOW_CAPABILITY_LEN);
+				} else if (strncmp(shared_buffer, KEYWORD_ALLOW_NETWORK, KEYWORD_ALLOW_NETWORK_LEN) == 0) {
+					CheckNetworkPolicy(shared_buffer + KEYWORD_ALLOW_NETWORK_LEN);
+				} else if (strncmp(shared_buffer, KEYWORD_ALLOW_SIGNAL, KEYWORD_ALLOW_SIGNAL_LEN) == 0) {
+					CheckSignalPolicy(shared_buffer + KEYWORD_ALLOW_SIGNAL_LEN);
+				} else if (strncmp(shared_buffer, KEYWORD_ALLOW_ARGV0, KEYWORD_ALLOW_ARGV0_LEN) == 0) {
+					CheckArgv0Policy(shared_buffer + KEYWORD_ALLOW_ARGV0_LEN);
+				} else if (strncmp(shared_buffer, KEYWORD_ALLOW_ENV, KEYWORD_ALLOW_ENV_LEN) == 0) {
+					CheckEnvPolicy(shared_buffer + KEYWORD_ALLOW_ENV_LEN);
+				} else {
+					CheckFilePolicy(shared_buffer);
+				}
 			}
 			break;
 		case POLICY_TYPE_EXCEPTION_POLICY:

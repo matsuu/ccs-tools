@@ -1,7 +1,7 @@
 About this package:
 
 This package contains userland programs
-for TOMOYO Linux version 1.5.2 .
+for TOMOYO Linux version 1.5.3 .
 
 http://tomoyo.sourceforge.jp/
 
@@ -253,7 +253,7 @@ Version 1.5.0 2007/09/20   Usability enhancement release.
 
   The /.init is renamed to /sbin/ccs-init .
 
-Version 1.5.1 2007/10/19      Minor update release.
+Version 1.5.1 2007/10/19   Minor update release.
 
   The following programs were updated.
 
@@ -281,7 +281,7 @@ Version 1.5.1 2007/10/19      Minor update release.
       Removed openssl-devel dependency.
       Use decimal numbers instead of random ASCII character.
 
-Version 1.5.2 2007/12/05      Minor update release.
+Version 1.5.2 2007/12/05   Minor update release.
 
   The following program was updated.
 
@@ -290,3 +290,26 @@ Version 1.5.2 2007/12/05      Minor update release.
 
     editpolicy_offline:
       Allow invoking as ccs-editpolicy_offline .
+
+Version 1.5.3 2008/01/31   Minor update release.
+
+  The following program was updated.
+
+    editpolicy:
+      Allow keyword aliasing.
+
+    loadpolicy:
+      Allow deleting domain definition.
+      Fix some bugs.
+
+    savepolicy:
+      Allow printing to stdout.
+      Allow saving profile and manager.
+
+    checkpolicy:
+      Fix some bugs.
+
+  The following program was added.
+
+    ccs-notifyd:
+      Notify the occurrence of first policy violation in enforcing mode.

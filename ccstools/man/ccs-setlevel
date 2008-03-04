@@ -3,9 +3,9 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-setlevel 1.5.2
+ccs-setlevel 1.6.0
 
-Copyright (C) 2005-2007 NTT DATA CORPORATION.
+Copyright (C) 2005-2008 NTT DATA CORPORATION.
 
 This program is free software; you may redistribute it under the terms of
 the GNU General Public License. This program has absolutely no warranty.
@@ -21,10 +21,10 @@ You can see list of profiles currently defined via /proc/ccs/profile .
 
 Examples:
 
-# ccs-setlevel 2-TOMOYO_VERBOSE=1
+# ccs-setlevel 2-TOMOYO_VERBOSE=enabled
  Turn on verbose mode for profile 2.
 
-# ccs-setlevel 3-ALLOW_ENFORCE_GRACE=1
+# ccs-setlevel 3-ALLOW_ENFORCE_GRACE=enabled
  Turn on delayed enforcing mode for profile 3.
 
 EOF

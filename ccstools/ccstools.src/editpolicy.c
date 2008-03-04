@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/29
+ * Version: 1.6.0-pre   2008/03/04
  *
  */
 #include "ccstools.h"
@@ -1102,6 +1102,8 @@ static void ReadDomainAndExceptionPolicy(void) {
 			unsigned int profile;
 			if (IsDomainDef(shared_buffer)) {
 				index = FindOrAssignNewDomain(shared_buffer, 0, 0);
+			} else if (index >= 0 && strcmp(shared_buffer, "force_alt_exec") == 0) {
+				domain_list[index].is_force_alt_exec = 1;
 			} else if (index >= 0 && ((atoi(shared_buffer) & 1) == 1 || strncmp(shared_buffer, "allow_execute ", 14) == 0) && (cp = strchr(shared_buffer, ' ')) != NULL) {
 				cp++;
 				if ((cp2 = strchr(cp, ' ')) != NULL) *cp2 = '\0';
@@ -1116,6 +1118,12 @@ static void ReadDomainAndExceptionPolicy(void) {
 	
 	{
 		int index, max_index = domain_list_count;
+		
+		// Delete "allow_execute" entry from domains with "force_alt_exec".
+		for (index = 0; index < max_index; index++) {
+			if (!domain_list[index].is_force_alt_exec) continue;
+			domain_list[index].string_count = 0;
+		}
 		
 		// Find unreachable domains.
 		for (index = 0; index < max_index; index++) {
