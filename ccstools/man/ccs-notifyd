@@ -1,0 +1,48 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+ccs-notifyd 1.5.3
+
+Copyright (C) 2005-2008 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: ccs-notifyd timeout action
+
+This program detects policy violation in enforcing mode and notify users (e.g. send a mail). You can know the first occurence of policy violation in enforcing mode as soon as possible. You may use this program for holding your judgement of the request that violates policy in enforcing mode provided that you can login to the system and start "ccs-queryd" command for responding within timeout seconds.
+
+You need to enable "delayed enforcing mode" when you use this program.
+To enable "delayed enforcing mode", you need to either set "ALLOW_ENFORCE_GRACE=1" in /proc/ccs/profile using "ccs-setlevel" command or assign a profile whose ALLOW_ENFORCE_GRACE is set to 1 to domains using "ccs-setprofile" or "ccs-editpolicy" commands.
+
+Examples:
+
+# ccs-notifyd 180 'mail admin@example.com'
+        Wait for 180 seconds before rejecting the request. The occurrence is notified by sending mail to admin@example.com (if SMTP service is available).
+
+# ccs-notifyd 0 'curl --data-binary @- https://your.server/path_to_cgi'
+        Reject the request immediately. The occurrence is notified by executing curl command.
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "Notify TOMOYO Linux's policy violation" $0 | gzip -9 > man8/ccs-notifyd.8.gz
+[SEE ALSO]
+
+ ccs-queryd (8)
+
+[NOTES]
+
+ You need to register either path to this program ( /usr/lib/ccs/ccs-notifyd ) or a domain for this program in /proc/ccs/manager before invoking this program if you set non-zero value for timeout.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0
