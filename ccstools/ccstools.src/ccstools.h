@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/03/04
+ * Version: 1.6.0-pre   2008/03/05
  *
  */
 
@@ -128,6 +128,8 @@
 #define ROOT_NAME_LEN                    (sizeof(ROOT_NAME) - 1)
 
 #define shared_buffer_len 8192
+
+#define CCSTOOLS_CONFIG_FILE "/usr/lib/ccs/ccstools.conf"
 
 /***** CONSTANTS DEFINITION END *****/
 

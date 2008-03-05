@@ -15,78 +15,66 @@
 #define OFF 0
 #define ON !OFF
 
-#define ENV_KEYWORD	"EDITPOLICY_COLORS"
-#define	ENV_DELIM	":"
-
-enum color_pair {	NORMAL,
-			DOMAIN_HEAD, DOMAIN_CURSOR,
-			SYSTEM_HEAD, SYSTEM_CURSOR,
-			EXCEPTION_HEAD, EXCEPTION_CURSOR,
-			ACL_HEAD, ACL_CURSOR,
-			DISP_ERR }; 
-
-static struct color_env_t {
-	enum color_pair	tag;
-	short		fore;
-	short		back;
-	char		*name;
-} color_env[] = {
-	{DOMAIN_HEAD,	COLOR_BLACK, COLOR_GREEN,	"DOMAIN_HEAD="},
-	{DOMAIN_CURSOR,	COLOR_BLACK, COLOR_GREEN,	"DOMAIN_CURSOR="},
-	{SYSTEM_HEAD,	COLOR_WHITE, COLOR_BLUE,	"SYSTEM_HEAD="},
-	{SYSTEM_CURSOR,	COLOR_WHITE, COLOR_BLUE,	"SYSTEM_CURSOR="},
-	{EXCEPTION_HEAD,	COLOR_BLACK, COLOR_CYAN,	"EXCEPTION_HEAD="},
-	{EXCEPTION_CURSOR,	COLOR_BLACK, COLOR_CYAN,	"EXCEPTION_CURSOR="},
-	{ACL_HEAD,		COLOR_BLACK, COLOR_YELLOW,		"ACL_HEAD="},
-	{ACL_CURSOR,	COLOR_BLACK, COLOR_YELLOW,		"ACL_CURSOR="},
-	{NORMAL,	COLOR_WHITE, COLOR_BLACK,	NULL}
-};
-
-static void	getColorEnv(char *env)
-{
-	int i, len;
-	char *p;
-	short fore, back;
-
-	for (i = 0; color_env[i].name != NULL; i++) {
-		p = color_env[i].name;
-		len = strlen(p);
-		if (strncmp(p, env, len)) continue;
-		env += len;
-		if (strlen(env) != 2) break;
-		fore = (*env++) - '0';		// foreground color
-		back = (*env) - '0';		// background color
-		if (fore < 0 || fore > 7 ||
-		    back < 0 || back > 7) break;
-		color_env[i].fore = fore;
-		color_env[i].back = back;
-		break;
-	}
-}
-
-static void ColorInit(void){
-	char *env, *p;
-	int i;
-	struct color_env_t *colorp;
+enum color_pair {
+	NORMAL,
+	DOMAIN_HEAD, DOMAIN_CURSOR,
+	SYSTEM_HEAD, SYSTEM_CURSOR,
+	EXCEPTION_HEAD, EXCEPTION_CURSOR,
+	ACL_HEAD, ACL_CURSOR,
+	DISP_ERR
+}; 
 	
-	env = getenv(ENV_KEYWORD);
-	if (env) {
-		p = strtok(env, ENV_DELIM);
-		if (p) {
-			getColorEnv(p);
-			while ((p = strtok(NULL, ENV_DELIM)) != NULL) {
-				getColorEnv(p);
-			}
+static void ColorInit(void){
+	static struct color_env_t {
+		enum color_pair	tag;
+		short		fore;
+		short		back;
+		char		*name;
+	} color_env[] = {
+		{DOMAIN_HEAD,      COLOR_BLACK, COLOR_GREEN,  "DOMAIN_HEAD"},
+		{DOMAIN_CURSOR,    COLOR_BLACK, COLOR_GREEN,  "DOMAIN_CURSOR"},
+		{SYSTEM_HEAD,      COLOR_WHITE, COLOR_BLUE,   "SYSTEM_HEAD"},
+		{SYSTEM_CURSOR,    COLOR_WHITE, COLOR_BLUE,   "SYSTEM_CURSOR"},
+		{EXCEPTION_HEAD,   COLOR_BLACK, COLOR_CYAN,   "EXCEPTION_HEAD"},
+		{EXCEPTION_CURSOR, COLOR_BLACK, COLOR_CYAN,   "EXCEPTION_CURSOR"},
+		{ACL_HEAD,         COLOR_BLACK, COLOR_YELLOW, "ACL_HEAD"},
+		{ACL_CURSOR,       COLOR_BLACK, COLOR_YELLOW, "ACL_CURSOR"},
+		{NORMAL,           COLOR_WHITE, COLOR_BLACK,  NULL}
+	};
+	FILE *fp;
+	int i;
+	if ((fp = fopen(CCSTOOLS_CONFIG_FILE, "r")) == NULL) goto use_default;
+	get();
+	while (freadline(fp)) {
+		char *cp;
+		if (strncmp(shared_buffer, "editpolicy.line_color ", 22)) continue;
+		memmove(shared_buffer, shared_buffer + 22, strlen(shared_buffer + 22) + 1);
+		if ((cp = strchr(shared_buffer, '=')) == NULL) continue;
+		*cp++ = '\0';
+		NormalizeLine(shared_buffer);
+		NormalizeLine(cp);
+		if (!*shared_buffer || !*cp) continue;
+		for (i = 0; color_env[i].name != NULL; i++) {
+			short fore, back;
+			if (strcmp(shared_buffer, color_env[i].name)) continue;
+			if (strlen(cp) != 2) break;
+			fore = (*cp++) - '0';		// foreground color
+			back = (*cp) - '0';		// background color
+			if (fore < 0 || fore > 7 ||
+			    back < 0 || back > 7) break;
+			color_env[i].fore = fore;
+			color_env[i].back = back;
+			break;
 		}
 	}
-
+	put();
+	fclose(fp);
+ use_default:
 	start_color();
-	
 	for (i = 0; color_env[i].name != NULL; i++) {
-		colorp = &color_env[i];
+		struct color_env_t *colorp = &color_env[i];
 		init_pair(colorp->tag, colorp->fore, colorp->back);
 	}
-	
 	init_pair(DISP_ERR, COLOR_RED, COLOR_BLACK);	// error massage
 }
 
@@ -841,7 +829,7 @@ static void ReadGenericPolicy(void) {
 			while (freadline(fp)) {
 				if (!shared_buffer[0]) continue;
 				if ((generic_acl_list = (char **) realloc(generic_acl_list, (generic_acl_list_count + 1) * sizeof(char *))) == NULL
-					|| (generic_acl_list[generic_acl_list_count++] = strdup(shared_buffer)) == NULL) OutOfMemory();
+					|| (generic_acl_list[generic_acl_list_count++] = strdup(map_perm_keyword(1, shared_buffer))) == NULL) OutOfMemory();
 			}
 			put();
 			qsort(generic_acl_list, generic_acl_list_count, sizeof(char *), string_compare);
@@ -1936,7 +1924,7 @@ static int GenericListLoop(void) {
 						if (fp) {
 							if (current_screen == SCREEN_ACL_LIST) fprintf(fp, "select %s\n", current_domain);
 							for (index = 0; index < generic_acl_list_count; index++) {
-								if (generic_acl_list_selected[index]) fprintf(fp, "delete %s\n", current_screen == SCREEN_ACL_LIST ? map_perm_keyword(0, generic_acl_list[index]) : generic_acl_list[index]);
+								if (generic_acl_list_selected[index]) fprintf(fp, "delete %s\n", map_perm_keyword(0, generic_acl_list[index]));
 							}
 							fclose(fp);
 						}
@@ -1963,7 +1951,7 @@ static int GenericListLoop(void) {
 						FILE *fp = open_write(policy_file);
 						if (fp) {
 							if (current_screen == SCREEN_ACL_LIST) fprintf(fp, "select %s\n", current_domain);
-							fprintf(fp, "%s\n", current_screen == SCREEN_ACL_LIST ? map_perm_keyword(0, line) : line);
+							fprintf(fp, "%s\n", map_perm_keyword(0, line));
 							fclose(fp);
 						}
 					}
@@ -2400,28 +2388,23 @@ static char *map_perm_keyword(const u8 forward, const char *line) {
 }
 
 static void init_keyword_map(void) {
-	/* example: export EDITPOLICY_KEYWORD_ALIAS="allow_execute=1:allow_write=2:allow_read=4:allow_read/write=6" */
+	FILE *fp;
 	int i;
-	char accept_list[100];
-	char *env = getenv("EDITPOLICY_KEYWORD_ALIAS");
-	char *token;
-	memset(accept_list, 0, sizeof(accept_list));
-	for (i = 0; i < 95; i++) accept_list[i] = i + 32;
-	if (!env || strspn(env, accept_list) != strlen(env)) env = "";
-	for (token = strtok(env, ":"); token; token = strtok(NULL, ":")) {
-		char *separator;
+	if ((fp = fopen(CCSTOOLS_CONFIG_FILE, "r")) == NULL) return;
+	get();
+	while (freadline(fp)) {
 		char *cp;
+		if (strncmp(shared_buffer, "editpolicy.keyword_alias ", 25)) continue;
+		memmove(shared_buffer, shared_buffer + 25, strlen(shared_buffer + 25) + 1);
+		if ((cp = strchr(shared_buffer, '=')) == NULL) continue;
+		*cp++ = '\0';
+		NormalizeLine(shared_buffer);
+		NormalizeLine(cp);
+		if (!*shared_buffer || !*cp) continue;
 		if ((directive_alias = (struct directive_alias_list *) realloc(directive_alias, (directive_alias_len + 1) * sizeof(struct directive_alias_list))) == NULL) OutOfMemory();
-		if ((token = strdup(token)) == NULL) OutOfMemory();
-		separator = strchr(token, '=');
-		if (!separator) goto out;
-		*separator = '\0';
-		NormalizeLine(token);
-		NormalizeLine(separator + 1);
-		if (!*token || !*(separator + 1)) goto out;
-		if ((cp = strdup2(separator + 1)) == NULL) OutOfMemory();
+		if ((cp = strdup2(cp)) == NULL) OutOfMemory();
 		directive_alias[directive_alias_len].alias = cp;
-		if ((cp = strdup2(token)) == NULL) OutOfMemory();
+		if ((cp = strdup2(shared_buffer)) == NULL) OutOfMemory();
 		directive_alias[directive_alias_len].keyword = cp;
 		/* Modify keyword list for try_optimize(). */
 		for (i = 0; i < max_optimize_directive_index; i++) {
@@ -2430,9 +2413,9 @@ static void init_keyword_map(void) {
 			break;
 		}
 		directive_alias_len++;
-	out:
-		free(token);
 	}
+	put();
+	fclose(fp);
 	for (i = 0; i < max_optimize_directive_index; i++) {
 		directive_list_len[i] = strlen(directive_list[i]);
 	}
