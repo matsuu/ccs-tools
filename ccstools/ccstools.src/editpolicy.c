@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/03/04
+ * Version: 1.6.0-pre   2008/03/05
  *
  */
 #include "ccstools.h"
@@ -1511,17 +1511,19 @@ static int PathMatchesToPattern(const struct path_info *pathname0, const struct 
 }
 
 static void split_acl(char *data, struct path_info *arg1, struct path_info *arg2, struct path_info *arg3) {
-	/* data = word[0] word[1] ... word[n-1] word[n] if cond[0] cond[1] ... cond[m] */
-	/*                                        */
-	/* arg1 = word[0]                         */
-	/* arg2 = word[1] ... word[n-1] word[n]   */
-	/* arg3 = if cond[0] cond[1] ... cond[m]  */
+	/* data = word[0] word[1] ... word[n-1] word[n] if cond[0] cond[1] ... cond[m] ; set ... */
+	/*                                                 */
+	/* arg1 = word[0]                                  */
+	/* arg2 = word[1] ... word[n-1] word[n]            */
+	/* arg3 = if cond[0] cond[1] ... cond[m] ; set ... */
 	char *cp;
 	arg1->name = data;
 	cp = strstr(data, " if ");
 	if (cp) {
 		char *cp2;
 		while ((cp2 = strstr(cp + 3, " if ")) != NULL) cp = cp2;
+		*cp++ = '\0';
+	} else if ((cp = strstr(data, " ; set ")) != NULL) {
 		*cp++ = '\0';
 	} else {
 		cp = "";
