@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/03/05
+ * Version: 1.6.0-pre   2008/03/10
  *
  */
 
@@ -206,7 +206,6 @@ struct domain_info {
 	unsigned char is_domain_keeper:1;
 	unsigned char is_domain_unreachable:1;
 	unsigned char is_domain_deleted:1;
-	unsigned char is_force_alt_exec:1;
 };
 
 struct task_entry {

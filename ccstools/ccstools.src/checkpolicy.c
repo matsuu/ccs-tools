@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/03/04
+ * Version: 1.6.0-pre   2008/03/10
  *
  */
 #include "ccstools.h"
@@ -565,8 +565,16 @@ int checkpolicy_main(int argc, char *argv[]) {
 				/* Nothing to do. */
 			} else if (strcmp(shared_buffer, "ignore_global_allow_env") == 0) {
 				/* Nothing to do. */
-			} else if (strcmp(shared_buffer, "force_alt_exec") == 0) {
-				/* Nothing to do. */
+			} else if (strncmp(shared_buffer, "preferred_execute_handler ", 26) == 0) {
+				RemoveHeader(shared_buffer, 26);
+				if (!IsCorrectPath(shared_buffer, 1, -1, -1)) {
+					printf("%u: ERROR: '%s' is a bad pathname.\n", line, shared_buffer); errors++;
+				}
+			} else if (strncmp(shared_buffer, "default_execute_handler ", 24) == 0) {
+				RemoveHeader(shared_buffer, 24);
+				if (!IsCorrectPath(shared_buffer, 1, -1, -1)) {
+					printf("%u: ERROR: '%s' is a bad pathname.\n", line, shared_buffer); errors++;
+				}
 			} else if (strcmp(shared_buffer, "quota_exceeded") == 0) {
 				/* Nothing to do. */
 			} else {

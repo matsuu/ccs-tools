@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/03/05
+ * Version: 1.6.0-pre   2008/03/10
  *
  */
 #include "ccstools.h"
@@ -1090,8 +1090,13 @@ static void ReadDomainAndExceptionPolicy(void) {
 			unsigned int profile;
 			if (IsDomainDef(shared_buffer)) {
 				index = FindOrAssignNewDomain(shared_buffer, 0, 0);
-			} else if (index >= 0 && strcmp(shared_buffer, "force_alt_exec") == 0) {
-				domain_list[index].is_force_alt_exec = 1;
+			} else if (index >= 0 && strncmp(shared_buffer, "preferred_execute_handler ", 26) == 0) {
+				cp = shared_buffer + 25;
+				*cp = '!'; /* This indicates "preferred_execute_handler" entry. */
+				AddStringEntry(cp, index);
+			} else if (index >= 0 && strncmp(shared_buffer, "default_execute_handler ", 24) == 0) {
+				cp = shared_buffer + 24;
+				AddStringEntry(cp, index);
 			} else if (index >= 0 && ((atoi(shared_buffer) & 1) == 1 || strncmp(shared_buffer, "allow_execute ", 14) == 0) && (cp = strchr(shared_buffer, ' ')) != NULL) {
 				cp++;
 				if ((cp2 = strchr(cp, ' ')) != NULL) *cp2 = '\0';
@@ -1107,10 +1112,20 @@ static void ReadDomainAndExceptionPolicy(void) {
 	{
 		int index, max_index = domain_list_count;
 		
-		// Delete "allow_execute" entry from domains with "force_alt_exec".
+		// Delete "allow_execute" and "default_execute_handler" entries
+		// from domains if "preferred_execute_handler" entry exists.
 		for (index = 0; index < max_index; index++) {
-			if (!domain_list[index].is_force_alt_exec) continue;
-			domain_list[index].string_count = 0;
+			const struct path_info **string_ptr = domain_list[index].string_ptr;
+			const int max_count = domain_list[index].string_count;
+			for (i = 0; i < max_count; i++) {
+				const struct path_info *cp = string_ptr[i];
+				if (cp->name[0] != '!') continue;
+				cp = SaveName(cp->name + 1);
+				if (!cp) OutOfMemory();
+				domain_list[index].string_ptr[0] = cp;
+				domain_list[index].string_count = 1;
+				break;
+			}
 		}
 		
 		// Find unreachable domains.

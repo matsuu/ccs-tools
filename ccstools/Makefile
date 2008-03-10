@@ -12,7 +12,7 @@ main: $(MAIN_FILES)
 
 misc: $(MISC_FILES)
 
-install:
+install: all
 	mkdir -p $(INSTALLDIR)/usr/lib/ccs/misc $(INSTALLDIR)/sbin $(INSTALLDIR)/usr/sbin
 	chmod 700 $(INSTALLDIR)/usr/lib/ccs
 	chmod 755 domainmatch init_policy.sh tomoyo_init_policy.sh

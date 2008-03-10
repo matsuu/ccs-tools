@@ -5,12 +5,12 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/28
+ * Version: 1.6.0-pre   2008/03/10
  *
  */
 /*
  * This utility forcibly chases away the user who logged in via network (e.g. SSH).
- * This utility is designed for ALT_EXEC feature so that an intruder who attempted to
+ * This utility is designed for default_execute_handler so that an intruder who attempted to
  * execute some programs which are not permitted by policy is automatically chased away.
  * You need to set SUID bit to make vhangup() work.
  */
