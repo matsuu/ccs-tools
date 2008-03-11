@@ -2,9 +2,9 @@
 #
 # Policy Loader.
 #
-# Copyright (C) 2005-2007  NTT DATA CORPORATION
+# Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 1.5.1 2007/10/23
+# Version: 1.6.0-pre 2008/03/11
 #
 # This program is executed automatically by kernel
 # when execution of /sbin/init is requested.
@@ -133,6 +133,9 @@ fi
 if [ $TOMOYO_QUIET -eq 1 ]; then
     grep -F TOMOYO_VERBOSE /proc/ccs/profile | sed -e 's/[0-9]*$/0/' > /proc/ccs/profile
 fi
+
+# Do additional initialization.
+[ -x /etc/ccs/ccs-post-init ] && /etc/ccs/ccs-post-init
 
 [ -r /proc/ccs/domain_policy ] && awk ' BEGIN { domain=0; acl=0; } { if ( $1 == "<kernel>" ) domain++; else if ( $1 != "" && $1 != "use_profile") acl++; } END { print domain " domains. " acl " ACL entries."; } ' /proc/ccs/domain_policy
 
