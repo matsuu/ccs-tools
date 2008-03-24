@@ -14,6 +14,7 @@ newns tomoyo_network_test
 newns tomoyo_argv0_test
 newns tomoyo_env_test
 newns tomoyo_bprm_test
+newns tomoyo_cond_test
 echo
 echo
 echo
@@ -28,3 +29,4 @@ newns tomoyo_network_test | grep -vF OK | grep -F '('
 newns tomoyo_argv0_test | grep -vF OK | grep -F '('
 newns tomoyo_env_test | grep -vF OK | grep -F '('
 newns tomoyo_bprm_test | grep -vF OK
+newns tomoyo_cond_test | grep -vF OK

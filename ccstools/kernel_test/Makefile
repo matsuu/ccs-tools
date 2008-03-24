@@ -1,4 +1,4 @@
-ALL_FILES = sakura_bind_test sakura_filesystem_test tomoyo_capability_test tomoyo_file_test tomoyo_rewrite_test tomoyo_argv0_test tomoyo_env_test tomoyo_network_test tomoyo_signal_test newns tomoyo_accept_test tomoyo_bprm_test
+ALL_FILES = sakura_bind_test sakura_filesystem_test tomoyo_capability_test tomoyo_file_test tomoyo_rewrite_test tomoyo_argv0_test tomoyo_env_test tomoyo_network_test tomoyo_signal_test newns tomoyo_accept_test tomoyo_bprm_test tomoyo_cond_test
 
 all: $(ALL_FILES)
 	chmod 755 testall.sh

@@ -5,21 +5,48 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/03/17
+ * Version: 1.6.0-pre   2008/03/24
  *
  */
 #include "include.h"
 
 static int domain_fd = EOF;
+static char self_domain[4096];
 
 static void try_exec(const char *policy, char *argv[], char *envp[], const char should_success) {
+	FILE *fp = fopen(proc_policy_domain_policy, "r");
+	char buffer[8192];
+	char *cp;
+	int domain_found = 0;
+	int policy_found = 0;
 	int err = 0;
 	int pipe_fd[2] = { EOF, EOF };
 	pipe(pipe_fd);
 	printf("%s: ", policy);
 	write(domain_fd, policy, strlen(policy));
 	write(domain_fd, "\n", 1);
-	fflush(stdout); fflush(stderr);
+	fflush(stdout);
+	if (!fp) {
+		printf("BUG: policy read failed\n");
+		return;
+	}
+	while (fgets(buffer, sizeof(buffer) - 1, fp)) {
+		cp = strchr(buffer, '\n');
+		if (cp) *cp = '\0';
+		if (!strncmp(buffer, "<kernel>", 8)) domain_found = !strcmp(self_domain, buffer);
+		if (domain_found) {
+			//printf("<%s>\n", buffer);
+			if (!strcmp(buffer, policy)) {
+				policy_found = 1;
+				break;
+			}
+		}
+	}
+	fclose(fp);
+	if (!policy_found) {
+		printf("BUG: policy write failed\n");
+		return;
+	}
 	if (fork() == 0) {
 		execve("/bin/true", argv, envp);
 		err = errno;
@@ -86,17 +113,20 @@ static void StageExecTest(void) {
 	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=NULL", argv, envp, 1);
 	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=\"/\"", argv, envp, 0);
 	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=\"/\"", argv, envp, 1);
+	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=NULL exec.envp[\"HOME3\"]=NULL", argv, envp, 0);
+	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=NULL exec.envp[\"HOME3\"]=NULL", argv, envp, 1);
+	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=\"/\" exec.envp[\"HOME3\"]=NULL", argv, envp, 0);
+	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=\"/\" exec.envp[\"HOME3\"]=NULL", argv, envp, 1);
 }
 
 int main(int argc, char *argv[]) {
 	const char *cp;
-	static char self_domain[4096];
 	int profile_fd;
 	int self_fd;
 	Init();
-	profile_fd = open("/proc/ccs/profile", O_WRONLY);
-	self_fd = open("/proc/ccs/self_domain", O_RDONLY);
-	domain_fd = open("/proc/ccs/domain_policy", O_WRONLY);
+	profile_fd = open(proc_policy_profile, O_WRONLY);
+	self_fd = open(proc_policy_self_domain, O_RDONLY);
+	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
 	memset(self_domain, 0, sizeof(self_domain));
 	read(self_fd, self_domain, sizeof(self_domain) - 1);
 	close(self_fd);
@@ -109,6 +139,11 @@ int main(int argc, char *argv[]) {
 	write(domain_fd, "\n", 1);
 	cp = "use_profile 255\n";
 	write(domain_fd, cp, strlen(cp));
+	cp = "allow_read/write ";
+	write(domain_fd, cp, strlen(cp));
+	cp = proc_policy_domain_policy;
+	write(domain_fd, cp, strlen(cp));
+	write(domain_fd, "\n", 1);
 	cp = "255-MAC_FOR_FILE=enforcing\n";
 	write(profile_fd, cp, strlen(cp));
 	StageExecTest();
