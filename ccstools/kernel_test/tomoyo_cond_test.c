@@ -5,16 +5,17 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/03/24
+ * Version: 1.6.0-pre   2008/03/25
  *
  */
 #include "include.h"
 
 static int domain_fd = EOF;
+static int profile_fd = EOF;
 static char self_domain[4096];
 
 static void try_open(const char *policy, const char *file, const int mode, const char should_success) {
-	FILE *fp = fopen(proc_policy_domain_policy, "r");
+	FILE *fp;
 	char buffer[8192];
 	char *cp;
 	int domain_found = 0;
@@ -22,6 +23,11 @@ static void try_open(const char *policy, const char *file, const int mode, const
 	int err = 0;
 	int fd;
 	memset(buffer, 0, sizeof(buffer));
+	cp = "255-MAC_FOR_FILE=disabled\n";
+	write(profile_fd, cp, strlen(cp));
+	fp = fopen(proc_policy_domain_policy, "r");
+	cp = "255-MAC_FOR_FILE=enforcing\n";
+	write(profile_fd, cp, strlen(cp));
 	printf("%s: ", policy);
 	fflush(stdout);
 	write(domain_fd, policy, strlen(policy));
@@ -148,7 +154,6 @@ static void StageOpenTest(void) {
 
 int main(int argc, char *argv[]) {
 	const char *cp;
-	int profile_fd;
 	int self_fd;
 	Init();
 	profile_fd = open(proc_policy_profile, O_WRONLY);
