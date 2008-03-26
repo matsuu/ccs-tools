@@ -1,14 +1,14 @@
 Summary: TOMOYO Linux tools
 
 Name: ccs-tools
-Version: 1.5.3
+Version: 1.6.0
 Release: 1
 License: GPL
 Group: System Environment/Kernel
 ExclusiveOS: Linux
 Autoreqprov: no
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
-Conflicts: ccs-tools < 1.5.3-1
+Conflicts: ccs-tools < 1.6.0-1
 
 Source0: http://osdn.dl.sourceforge.jp/tomoyo/27220/ccs-tools-1.5.3-20080131.tar.gz
 
@@ -41,6 +41,9 @@ rm -rf $RPM_BUILD_ROOT
 %attr(4755,root,root) /usr/lib/ccs/misc/proxy
 
 %changelog
+* Thu ??? ?? 2008 1.6.0-1
+- Feature enhancement release.
+
 * Thu Jan 31 2008 1.5.3-1
 - Minor update release.
 

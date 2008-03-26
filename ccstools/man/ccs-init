@@ -3,9 +3,9 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-init 1.5.2
+ccs-init 1.6.0
 
-Copyright (C) 2005-2007 NTT DATA CORPORATION.
+Copyright (C) 2005-2008 NTT DATA CORPORATION.
 
 This program is free software; you may redistribute it under the terms of
 the GNU General Public License. This program has absolutely no warranty.
@@ -28,6 +28,21 @@ This program copies the following files.
    /etc/ccs/profile.conf => /proc/ccs/profile
 
    /etc/ccs/manager.conf => /proc/ccs/manager
+
+If /etc/ccs/ccs-post-init is an executable file, /etc/ccs/ccs-post-init is also executed.
+You can use /etc/ccs/ccs-post-init for additional initialization purpose.
+For example, you can write
+
+  #! /bin/sh
+  echo manage_by_non_root > /proc/ccs/manager
+  chown -R demo /proc/ccs/
+
+in the /etc/ccs/ccs-post-init and chown/chmod like
+
+  chown -R demo /etc/ccs/
+  chmod 755 /usr/lib/ccs/
+
+to allow policy management by user "demo" as well as user "root".
 
 Examples:
 

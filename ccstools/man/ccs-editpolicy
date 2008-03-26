@@ -3,9 +3,9 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-editpolicy 1.5.2
+ccs-editpolicy 1.6.0
 
-Copyright (C) 2005-2007 NTT DATA CORPORATION.
+Copyright (C) 2005-2008 NTT DATA CORPORATION.
 
 This program is free software; you may redistribute it under the terms of
 the GNU General Public License. This program has absolutely no warranty.
@@ -28,7 +28,7 @@ Examples:
 # ccs-editpolicy
  Start policy editor with domain_policy editor screen.
 
-Usage with images are available at http://tomoyo.sourceforge.jp/en/1.5.x/tool-editpolicy.html
+Usage with images are available at http://tomoyo.sourceforge.jp/en/1.6.x/tool-editpolicy.html
 
 EOF
 else

@@ -1,7 +1,8 @@
 About this package:
 
 This package contains userland programs
-for TOMOYO Linux version 1.5.3 .
+for TOMOYO Linux version 1.6.0 .
+This package is released under the GPLv2.
 
 http://tomoyo.sourceforge.jp/
 
@@ -313,3 +314,11 @@ Version 1.5.3 2008/01/31   Minor update release.
 
     ccs-notifyd:
       Notify the occurrence of first policy violation in enforcing mode.
+
+Version 1.6.0 2008/??/??   Feature enhancement release.
+
+  The following program was updated.
+
+    editpolicy:
+      Allow keyword aliasing via configuration file.
+      Allow line coloring via configuration file.

@@ -22,6 +22,7 @@ install: all
 	for i in $(ALIAS_LIST); do ln -sf /usr/lib/ccs/$$i $(INSTALLDIR)/usr/sbin/ccs-`echo $$i | sed 's:^ccs-::'`; done
 	cp -af --remove-destination realpath domainmatch init_policy.sh tomoyo_init_policy.sh $(INSTALLDIR)/usr/lib/ccs/
 	cp -af --remove-destination $(MISC_FILES) $(INSTALLDIR)/usr/lib/ccs/misc/
+	cp -af --remove-destination README.ccs COPYING.ccs $(INSTALLDIR)/usr/lib/ccs/
 	chown -R root:root ccs-init tomoyo-init $(INSTALLDIR)/usr/lib/ccs/
 	chmod 4755 $(INSTALLDIR)/usr/lib/ccs/misc/proxy
 	chmod 700 ccs-init tomoyo-init

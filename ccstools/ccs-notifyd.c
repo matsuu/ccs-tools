@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-pre   2008/01/25
+ * Version: 1.6.0-rc   2008/03/26
  *
  */
 #include <stdio.h>
