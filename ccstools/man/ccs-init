@@ -34,12 +34,15 @@ You can use /etc/ccs/ccs-post-init for additional initialization purpose.
 For example, you can write
 
   #! /bin/sh
+
   echo manage_by_non_root > /proc/ccs/manager
+
   chown -R demo /proc/ccs/
 
 in the /etc/ccs/ccs-post-init and chown/chmod like
 
   chown -R demo /etc/ccs/
+
   chmod 755 /usr/lib/ccs/
 
 to allow policy management by user "demo" as well as user "root".
