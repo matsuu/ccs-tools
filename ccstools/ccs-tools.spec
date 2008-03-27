@@ -39,9 +39,11 @@ rm -rf $RPM_BUILD_ROOT
 /usr/sbin/
 /usr/share/man/
 %attr(4755,root,root) /usr/lib/ccs/misc/proxy
+%attr(4755,root,root) /usr/lib/ccs/misc/force-logout
+%config(noreplace) /usr/lib/ccs/ccstools.conf
 
 %changelog
-* Thu ??? ?? 2008 1.6.0-1
+* ??? ??? ?? 2008 1.6.0-1
 - Feature enhancement release.
 
 * Thu Jan 31 2008 1.5.3-1

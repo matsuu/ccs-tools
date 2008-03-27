@@ -2,7 +2,7 @@ INSTALLDIR = /
 
 MAIN_FILES = ccstools realpath
 
-MISC_FILES = makesyaoranconf candy chaplet checktoken gettoken groovy honey mailauth proxy timeauth falsh ccs-notifyd
+MISC_FILES = makesyaoranconf candy chaplet checktoken gettoken groovy honey mailauth proxy timeauth falsh ccs-notifyd force-logout audit-exec-param
 
 ALIAS_LIST = ccs-auditd ccs-queryd ccstree checkpolicy editpolicy editpolicy_offline findtemp ld-watch loadpolicy pathmatch patternize savepolicy setlevel setprofile sortpolicy domainmatch
 
@@ -24,7 +24,7 @@ install: all
 	cp -af --remove-destination $(MISC_FILES) $(INSTALLDIR)/usr/lib/ccs/misc/
 	cp -af --remove-destination README.ccs COPYING.ccs $(INSTALLDIR)/usr/lib/ccs/
 	chown -R root:root ccs-init tomoyo-init $(INSTALLDIR)/usr/lib/ccs/
-	chmod 4755 $(INSTALLDIR)/usr/lib/ccs/misc/proxy
+	chmod 4755 $(INSTALLDIR)/usr/lib/ccs/misc/proxy $(INSTALLDIR)/usr/lib/ccs/misc/force-logout
 	chmod 700 ccs-init tomoyo-init
 	cp -af --remove-destination ccs-init tomoyo-init $(INSTALLDIR)/sbin/
 	mkdir -p $(INSTALLDIR)/usr/share/man/man8/
