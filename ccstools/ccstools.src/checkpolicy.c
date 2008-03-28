@@ -565,13 +565,13 @@ int checkpolicy_main(int argc, char *argv[]) {
 				/* Nothing to do. */
 			} else if (strcmp(shared_buffer, "ignore_global_allow_env") == 0) {
 				/* Nothing to do. */
-			} else if (strncmp(shared_buffer, "preferred_execute_handler ", 26) == 0) {
-				RemoveHeader(shared_buffer, 26);
+			} else if (strncmp(shared_buffer, "execute_handler ", 16) == 0) {
+				RemoveHeader(shared_buffer, 16);
 				if (!IsCorrectPath(shared_buffer, 1, -1, -1)) {
 					printf("%u: ERROR: '%s' is a bad pathname.\n", line, shared_buffer); errors++;
 				}
-			} else if (strncmp(shared_buffer, "default_execute_handler ", 24) == 0) {
-				RemoveHeader(shared_buffer, 24);
+			} else if (strncmp(shared_buffer, "denied_execute_handler ", 23) == 0) {
+				RemoveHeader(shared_buffer, 23);
 				if (!IsCorrectPath(shared_buffer, 1, -1, -1)) {
 					printf("%u: ERROR: '%s' is a bad pathname.\n", line, shared_buffer); errors++;
 				}
