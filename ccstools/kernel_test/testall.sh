@@ -13,6 +13,7 @@ newns tomoyo_signal_test
 newns tomoyo_network_test
 newns tomoyo_argv0_test
 newns tomoyo_env_test
+newns tomoyo_new_file_test
 echo
 echo
 echo
@@ -30,3 +31,4 @@ echo "Testing policy I/O.  (Only ERRORS are reported)"
 newns tomoyo_bprm_test | grep -vF OK
 newns tomoyo_cond_test | grep -vF OK
 newns ccs_policy_io_test | grep -vF OK
+newns tomoyo_new_file_test | grep -vF OK
