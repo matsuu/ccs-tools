@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-rc   2008/03/26
+ * Version: 1.6.0-rc   2008/03/28
  *
  */
 #include "include.h"
@@ -75,54 +75,57 @@ static void try_exec(const char *policy, char *argv[], char *envp[], const char 
 }
 
 static void StageExecTest(void) {
+	int i;
 	static char *argv[128], *envp[128];
-	memset(argv, 0, sizeof(argv)); memset(envp, 0, sizeof(envp));
-
-	argv[0] = "/bin/true";
-	try_exec("allow_execute /bin/true if exec.argc=1", argv, envp, 1);
-	argv[0] = NULL;
-	try_exec("allow_execute /bin/true if exec.argc=1", argv, envp, 0);
-
-	envp[0] = "";
-	try_exec("allow_execute /bin/true if exec.envc=1", argv, envp, 1);
-	envp[0] = NULL;
-	try_exec("allow_execute /bin/true if exec.envc=1", argv, envp, 0);
-
-	argv[0] = "/bin/true";
-	argv[1] = "--";
-	try_exec("allow_execute /bin/true if exec.argc=1-5", argv, envp, 1);
-	try_exec("allow_execute /bin/true if exec.argc!=1-5", argv, envp, 0);
-
-	envp[0] = "";
-	envp[1] = "";
-	try_exec("allow_execute /bin/true if exec.envc=1-5", argv, envp, 1);
-	try_exec("allow_execute /bin/true if exec.envc!=1-5", argv, envp, 0);
-
-	argv[0] = "/bin/true";
-	argv[1] = "--";
-	try_exec("allow_execute /bin/true if exec.argv[1]=\"--\"", argv, envp, 1);
-	try_exec("allow_execute /bin/true if exec.argv[1]!=\"--\"", argv, envp, 0);
-
-	argv[0] = "/bin/true";
-	argv[1] = "-";
-	try_exec("allow_execute /bin/true if exec.argv[1]=\"--\"", argv, envp, 0);
-	try_exec("allow_execute /bin/true if exec.argv[1]!=\"--\"", argv, envp, 1);
-
-	envp[0] = "HOME=/";
-	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=NULL", argv, envp, 1);
-	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=NULL", argv, envp, 0);
-	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=\"/\"", argv, envp, 1);
-	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=\"/\"", argv, envp, 0);
-
-	envp[0] = "HOME2=/";
-	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=NULL", argv, envp, 0);
-	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=NULL", argv, envp, 1);
-	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=\"/\"", argv, envp, 0);
-	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=\"/\"", argv, envp, 1);
-	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=NULL exec.envp[\"HOME3\"]=NULL", argv, envp, 0);
-	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=NULL exec.envp[\"HOME3\"]=NULL", argv, envp, 1);
-	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=\"/\" exec.envp[\"HOME3\"]=NULL", argv, envp, 0);
-	try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=\"/\" exec.envp[\"HOME3\"]=NULL", argv, envp, 1);
+	for (i = 0; i < 10; i++) { 
+		memset(argv, 0, sizeof(argv)); memset(envp, 0, sizeof(envp));
+		
+		argv[0] = "/bin/true";
+		try_exec("allow_execute /bin/true if exec.argc=1", argv, envp, 1);
+		argv[0] = NULL;
+		try_exec("allow_execute /bin/true if exec.argc=1", argv, envp, 0);
+		
+		envp[0] = "";
+		try_exec("allow_execute /bin/true if exec.envc=1", argv, envp, 1);
+		envp[0] = NULL;
+		try_exec("allow_execute /bin/true if exec.envc=1", argv, envp, 0);
+		
+		argv[0] = "/bin/true";
+		argv[1] = "--";
+		try_exec("allow_execute /bin/true if exec.argc=1-5", argv, envp, 1);
+		try_exec("allow_execute /bin/true if exec.argc!=1-5", argv, envp, 0);
+		
+		envp[0] = "";
+		envp[1] = "";
+		try_exec("allow_execute /bin/true if exec.envc=1-5", argv, envp, 1);
+		try_exec("allow_execute /bin/true if exec.envc!=1-5", argv, envp, 0);
+		
+		argv[0] = "/bin/true";
+		argv[1] = "--";
+		try_exec("allow_execute /bin/true if exec.argv[1]=\"--\"", argv, envp, 1);
+		try_exec("allow_execute /bin/true if exec.argv[1]!=\"--\"", argv, envp, 0);
+		
+		argv[0] = "/bin/true";
+		argv[1] = "-";
+		try_exec("allow_execute /bin/true if exec.argv[1]=\"--\"", argv, envp, 0);
+		try_exec("allow_execute /bin/true if exec.argv[1]!=\"--\"", argv, envp, 1);
+		
+		envp[0] = "HOME=/";
+		try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=NULL", argv, envp, 1);
+		try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=NULL", argv, envp, 0);
+		try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=\"/\"", argv, envp, 1);
+		try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=\"/\"", argv, envp, 0);
+		
+		envp[0] = "HOME2=/";
+		try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=NULL", argv, envp, 0);
+		try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=NULL", argv, envp, 1);
+		try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=\"/\"", argv, envp, 0);
+		try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=\"/\"", argv, envp, 1);
+		try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=NULL exec.envp[\"HOME3\"]=NULL", argv, envp, 0);
+		try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=NULL exec.envp[\"HOME3\"]=NULL", argv, envp, 1);
+		try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]=\"/\" exec.envp[\"HOME3\"]=NULL", argv, envp, 0);
+		try_exec("allow_execute /bin/true if exec.envp[\"HOME\"]!=\"/\" exec.envp[\"HOME3\"]=NULL", argv, envp, 1);
+	}
 }
 
 int main(int argc, char *argv[]) {

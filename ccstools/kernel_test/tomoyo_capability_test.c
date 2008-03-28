@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-rc   2008/03/26
+ * Version: 1.6.0-rc   2008/03/28
  *
  */
 #include "include.h"
@@ -16,15 +16,20 @@ static int child(void *arg) {
 	return errno;
 }
 
+static int domain_fd = EOF;
 static int is_enforce = 0;
 
 static void ShowPrompt(const char *str) {
-	printf("Testing %34s: (%s) ", str, is_enforce ? "must fail" : "should success");
+	if (domain_fd != EOF) printf("Testing %34s: (%s) ", str, "should success");
+	else printf("Testing %34s: (%s) ", str, is_enforce ? "must fail" : "should success");
 	errno = 0;
 }
 
 static void ShowResult(int result) {
-	if (is_enforce) {
+	if (domain_fd != EOF) {
+		if (result != EOF) printf("OK\n");
+		else printf("FAILED: %s\n", strerror(errno));
+	} else if (is_enforce) {
 		if (result == EOF) {
 			if (errno == EPERM) printf("OK: Permission denied.\n");
 			else printf("FAILED: %s\n", strerror(errno));
@@ -33,7 +38,7 @@ static void ShowResult(int result) {
 		}
 	} else {
 		if (result != EOF) printf("OK\n");
-		else printf("%s\n", strerror(errno));
+		else printf("FAILED: %s\n", strerror(errno));
 	}
 }
 
@@ -42,6 +47,10 @@ static void SetCapability(const char *capability) {
 	memset(buffer, 0, sizeof(buffer));
 	snprintf(buffer, sizeof(buffer) - 1, "MAC_FOR_CAPABILITY::%s=%d\n", capability, is_enforce ? 3 : 2);
 	WriteStatus(buffer);
+	if (domain_fd != EOF) {
+		snprintf(buffer, sizeof(buffer) - 1, "allow_capability %s\n", capability);
+		write(domain_fd, buffer, strlen(buffer));
+	}
 }
 
 static void UnsetCapability(const char *capability) {
@@ -49,6 +58,10 @@ static void UnsetCapability(const char *capability) {
 	memset(buffer, 0, sizeof(buffer));
 	snprintf(buffer, sizeof(buffer) - 1, "MAC_FOR_CAPABILITY::%s=%d\n", capability, 0);
 	WriteStatus(buffer);
+	if (domain_fd != EOF) {
+		snprintf(buffer, sizeof(buffer) - 1, "delete allow_capability %s\n", capability);
+		write(domain_fd, buffer, strlen(buffer));
+	}
 }
 
 static void StageCapabilityTest(void) {
@@ -403,6 +416,21 @@ int main(int argc, char *argv[]) {
 	is_enforce = 0;
 	StageCapabilityTest();
 	printf("\n\n");
+	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
+	printf("***** Testing capability hooks in enforce mode with policy. *****\n");
+	is_enforce = 1;
+	{
+		char self_domain[4096];
+		int self_fd = open(proc_policy_self_domain, O_RDONLY);
+		memset(self_domain, 0, sizeof(self_domain));
+		read(self_fd, self_domain, sizeof(self_domain) - 1);
+		close(self_fd);
+		write(domain_fd, self_domain, strlen(self_domain));
+		write(domain_fd, "\n", 1);
+	}
+	StageCapabilityTest();
+	printf("\n\n");	
+	close(domain_fd);
 	ClearStatus();
 	return 0;
 }

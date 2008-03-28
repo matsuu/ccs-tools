@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-rc   2008/03/26
+ * Version: 1.6.0-rc   2008/03/28
  *
  */
 #include "include.h"
@@ -71,85 +71,88 @@ static void try_open(const char *policy, const char *file, const int mode, const
 
 static void StageOpenTest(void) {
 	const pid_t pid = getppid();
+	int i;
 	char buffer[128];
-	memset(buffer, 0, sizeof(buffer));
-	snprintf(buffer, sizeof(buffer) - 1, "/proc/%u/mounts", pid);
-	try_open("allow_read /etc/fstab", "/etc/fstab", O_RDONLY, 1);
-	try_open("allow_write /etc/fstab", "/etc/fstab", O_WRONLY, 1);
-	try_open("allow_write /etc/fstab", "/etc/fstab", O_RDONLY, 0);
-	try_open("allow_read /etc/fstab", "/etc/fstab", O_WRONLY, 0);
-	try_open("allow_read/write /etc/fstab", "/etc/fstab", O_RDWR, 1);
-	try_open("allow_read/write /etc/fstab", "/etc/fstab", O_RDONLY, 1);
-	try_open("allow_read/write /etc/fstab", "/etc/fstab", O_WRONLY, 1);
-	try_open("allow_read /etc/fstab if task.uid=0 task.euid=0", "/etc/fstab", O_RDONLY, 1);
-	try_open("allow_read /etc/fstab if task.uid=0 task.euid=0-4294967295", "/etc/fstab", O_RDONLY, 1);
-	try_open("allow_read /etc/fstab if task.uid=0 task.euid!=0-4294967295", "/etc/fstab", O_RDONLY, 0);
-	try_open("allow_read /etc/fstab if task.uid=0 task.euid!=0", "/etc/fstab", O_RDONLY, 0);
-	try_open("allow_read /etc/fstab if exec.argc=0", "/etc/fstab", O_RDONLY, 0);
-	try_open("allow_read /etc/fstab if exec.envc=0", "/etc/fstab", O_RDONLY, 0);
-	try_open("allow_read /etc/fstab if exec.argv[0]=\"\"", "/etc/fstab", O_RDONLY, 0);
-	try_open("allow_read /etc/fstab if exec.argv[0]!=\"\"", "/etc/fstab", O_RDONLY, 0);
-	try_open("allow_read /etc/fstab if exec.envp[\"HOME\"]=\"\"", "/etc/fstab", O_RDONLY, 0);
-	try_open("allow_read /etc/fstab if exec.envp[\"HOME\"]!=\"\"", "/etc/fstab", O_RDONLY, 0);
-	try_open("allow_read /etc/fstab if exec.envp[\"HOME\"]=NULL", "/etc/fstab", O_RDONLY, 0);
-	try_open("allow_read /etc/fstab if exec.envp[\"HOME\"]!=NULL", "/etc/fstab", O_RDONLY, 0);
-
-	try_open("allow_read /proc/\\*/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\@/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\$/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\X/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\+/mounts", buffer, O_RDONLY, pid >= 0 && pid < 10);
-	try_open("allow_read /proc/\\+\\+/mounts", buffer, O_RDONLY, pid >= 10 && pid < 100);
-	try_open("allow_read /proc/\\+\\+\\+/mounts", buffer, O_RDONLY, pid >= 100 && pid < 1000);
-	try_open("allow_read /proc/\\+\\+\\+\\+/mounts", buffer, O_RDONLY, pid >= 1000 && pid < 10000);
-	try_open("allow_read /proc/\\+\\+\\+\\+\\+/mounts", buffer, O_RDONLY, pid >= 10000 && pid < 100000);
-	try_open("allow_read /proc/\\+\\+\\+\\+\\+\\+/mounts", buffer, O_RDONLY, pid >= 100000 && pid < 1000000);
-
-	try_open("allow_read /proc/\\x/mounts", buffer, O_RDONLY, pid < 10);
-	try_open("allow_read /proc/\\x\\x/mounts", buffer, O_RDONLY, pid >= 10 && pid < 100);
-	try_open("allow_read /proc/\\x\\x\\x/mounts", buffer, O_RDONLY, pid >= 100 && pid < 1000);
-	try_open("allow_read /proc/\\x\\x\\x\\x/mounts", buffer, O_RDONLY, pid >= 1000 && pid < 10000);
-	try_open("allow_read /proc/\\x\\x\\x\\x\\x/mounts", buffer, O_RDONLY, pid >= 10000 && pid < 100000);
-	try_open("allow_read /proc/\\x\\x\\x\\x\\x\\x/mounts", buffer, O_RDONLY, pid >= 100000 && pid < 1000000);
-
-	try_open("allow_read /proc/\\$\\*/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\$\\@/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\$\\*\\*/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\$\\@\\@/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\$\\*\\@/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\$\\@\\*/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\$\\*/mounts\\*", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\$\\@/mounts\\@", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\$\\*\\*/mounts\\*\\*", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\$\\@\\@/mounts\\@\\@", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\$\\*\\@/mounts\\*\\@", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\$\\@\\*/mounts\\@\\*", buffer, O_RDONLY, 1);
-
-	try_open("allow_read /proc/\\*\\$/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\@\\$/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\*\\*\\$/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\@\\@\\$/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\*\\@\\$/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\@\\*\\$/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\*\\$/\\*mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\@\\$/\\@mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\*\\*\\$/\\*\\*mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\@\\@\\$/\\@\\@mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\*\\@\\$/\\*\\@mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\@\\*\\$/\\@\\*mounts", buffer, O_RDONLY, 1);
-
-	try_open("allow_read /proc/\\*\\$\\*/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\@\\$\\@/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\*\\*\\$\\*\\*/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\@\\@\\$\\@\\@/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\*\\@\\$\\*\\@/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\@\\*\\$\\@\\*/mounts", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\*\\$\\*/\\*mounts\\*", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\@\\$\\@/\\@mounts\\@", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\*\\*\\$\\*\\*/\\*\\*mounts\\*\\*", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\@\\@\\$\\@\\@/\\@\\@mounts\\@\\@", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\*\\@\\$\\*\\@/\\*\\@mounts\\*\\@", buffer, O_RDONLY, 1);
-	try_open("allow_read /proc/\\@\\*\\$\\@\\*/\\@\\*mounts\\@\\*", buffer, O_RDONLY, 1);
+	for (i = 0; i < 10; i++) {
+		memset(buffer, 0, sizeof(buffer));
+		snprintf(buffer, sizeof(buffer) - 1, "/proc/%u/mounts", pid);
+		try_open("allow_read /etc/fstab", "/etc/fstab", O_RDONLY, 1);
+		try_open("allow_write /etc/fstab", "/etc/fstab", O_WRONLY, 1);
+		try_open("allow_write /etc/fstab", "/etc/fstab", O_RDONLY, 0);
+		try_open("allow_read /etc/fstab", "/etc/fstab", O_WRONLY, 0);
+		try_open("allow_read/write /etc/fstab", "/etc/fstab", O_RDWR, 1);
+		try_open("allow_read/write /etc/fstab", "/etc/fstab", O_RDONLY, 1);
+		try_open("allow_read/write /etc/fstab", "/etc/fstab", O_WRONLY, 1);
+		try_open("allow_read /etc/fstab if task.uid=0 task.euid=0", "/etc/fstab", O_RDONLY, 1);
+		try_open("allow_read /etc/fstab if task.uid=0 task.euid=0-4294967295", "/etc/fstab", O_RDONLY, 1);
+		try_open("allow_read /etc/fstab if task.uid=0 task.euid!=0-4294967295", "/etc/fstab", O_RDONLY, 0);
+		try_open("allow_read /etc/fstab if task.uid=0 task.euid!=0", "/etc/fstab", O_RDONLY, 0);
+		try_open("allow_read /etc/fstab if exec.argc=0", "/etc/fstab", O_RDONLY, 0);
+		try_open("allow_read /etc/fstab if exec.envc=0", "/etc/fstab", O_RDONLY, 0);
+		try_open("allow_read /etc/fstab if exec.argv[0]=\"\"", "/etc/fstab", O_RDONLY, 0);
+		try_open("allow_read /etc/fstab if exec.argv[0]!=\"\"", "/etc/fstab", O_RDONLY, 0);
+		try_open("allow_read /etc/fstab if exec.envp[\"HOME\"]=\"\"", "/etc/fstab", O_RDONLY, 0);
+		try_open("allow_read /etc/fstab if exec.envp[\"HOME\"]!=\"\"", "/etc/fstab", O_RDONLY, 0);
+		try_open("allow_read /etc/fstab if exec.envp[\"HOME\"]=NULL", "/etc/fstab", O_RDONLY, 0);
+		try_open("allow_read /etc/fstab if exec.envp[\"HOME\"]!=NULL", "/etc/fstab", O_RDONLY, 0);
+		
+		try_open("allow_read /proc/\\*/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\@/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\$/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\X/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\+/mounts", buffer, O_RDONLY, pid >= 0 && pid < 10);
+		try_open("allow_read /proc/\\+\\+/mounts", buffer, O_RDONLY, pid >= 10 && pid < 100);
+		try_open("allow_read /proc/\\+\\+\\+/mounts", buffer, O_RDONLY, pid >= 100 && pid < 1000);
+		try_open("allow_read /proc/\\+\\+\\+\\+/mounts", buffer, O_RDONLY, pid >= 1000 && pid < 10000);
+		try_open("allow_read /proc/\\+\\+\\+\\+\\+/mounts", buffer, O_RDONLY, pid >= 10000 && pid < 100000);
+		try_open("allow_read /proc/\\+\\+\\+\\+\\+\\+/mounts", buffer, O_RDONLY, pid >= 100000 && pid < 1000000);
+		
+		try_open("allow_read /proc/\\x/mounts", buffer, O_RDONLY, pid < 10);
+		try_open("allow_read /proc/\\x\\x/mounts", buffer, O_RDONLY, pid >= 10 && pid < 100);
+		try_open("allow_read /proc/\\x\\x\\x/mounts", buffer, O_RDONLY, pid >= 100 && pid < 1000);
+		try_open("allow_read /proc/\\x\\x\\x\\x/mounts", buffer, O_RDONLY, pid >= 1000 && pid < 10000);
+		try_open("allow_read /proc/\\x\\x\\x\\x\\x/mounts", buffer, O_RDONLY, pid >= 10000 && pid < 100000);
+		try_open("allow_read /proc/\\x\\x\\x\\x\\x\\x/mounts", buffer, O_RDONLY, pid >= 100000 && pid < 1000000);
+		
+		try_open("allow_read /proc/\\$\\*/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\$\\@/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\$\\*\\*/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\$\\@\\@/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\$\\*\\@/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\$\\@\\*/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\$\\*/mounts\\*", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\$\\@/mounts\\@", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\$\\*\\*/mounts\\*\\*", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\$\\@\\@/mounts\\@\\@", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\$\\*\\@/mounts\\*\\@", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\$\\@\\*/mounts\\@\\*", buffer, O_RDONLY, 1);
+		
+		try_open("allow_read /proc/\\*\\$/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\@\\$/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\*\\*\\$/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\@\\@\\$/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\*\\@\\$/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\@\\*\\$/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\*\\$/\\*mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\@\\$/\\@mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\*\\*\\$/\\*\\*mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\@\\@\\$/\\@\\@mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\*\\@\\$/\\*\\@mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\@\\*\\$/\\@\\*mounts", buffer, O_RDONLY, 1);
+		
+		try_open("allow_read /proc/\\*\\$\\*/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\@\\$\\@/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\*\\*\\$\\*\\*/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\@\\@\\$\\@\\@/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\*\\@\\$\\*\\@/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\@\\*\\$\\@\\*/mounts", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\*\\$\\*/\\*mounts\\*", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\@\\$\\@/\\@mounts\\@", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\*\\*\\$\\*\\*/\\*\\*mounts\\*\\*", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\@\\@\\$\\@\\@/\\@\\@mounts\\@\\@", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\*\\@\\$\\*\\@/\\*\\@mounts\\*\\@", buffer, O_RDONLY, 1);
+		try_open("allow_read /proc/\\@\\*\\$\\@\\*/\\@\\*mounts\\@\\*", buffer, O_RDONLY, 1);
+	}
 }
 
 int main(int argc, char *argv[]) {
