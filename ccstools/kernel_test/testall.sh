@@ -14,6 +14,7 @@ newns tomoyo_network_test
 newns tomoyo_argv0_test
 newns tomoyo_env_test
 newns tomoyo_new_file_test
+newns tomoyo_new_capability_test
 echo
 echo
 echo
@@ -32,3 +33,4 @@ newns tomoyo_bprm_test | grep -vF OK
 newns tomoyo_cond_test | grep -vF OK
 newns ccs_policy_io_test | grep -vF OK
 newns tomoyo_new_file_test | grep -vF OK
+newns tomoyo_new_capability_test | grep -vF OK

@@ -1,4 +1,4 @@
-ALL_FILES = sakura_bind_test sakura_filesystem_test tomoyo_capability_test tomoyo_file_test tomoyo_rewrite_test tomoyo_argv0_test tomoyo_env_test tomoyo_network_test tomoyo_signal_test newns tomoyo_accept_test tomoyo_bprm_test tomoyo_cond_test ccs_policy_io_test tomoyo_new_file_test
+ALL_FILES = sakura_bind_test sakura_filesystem_test tomoyo_capability_test tomoyo_file_test tomoyo_rewrite_test tomoyo_argv0_test tomoyo_env_test tomoyo_network_test tomoyo_signal_test newns tomoyo_accept_test tomoyo_bprm_test tomoyo_cond_test ccs_policy_io_test tomoyo_new_file_test tomoyo_new_capability_test
 
 all: $(ALL_FILES)
 	chmod 755 testall.sh
@@ -14,6 +14,10 @@ CFLAGS=-Wall -O2 ${shell $(CC) -Wno-pointer-sign -S -o /dev/null -x c - < /dev/n
 tomoyo_capability_test: tomoyo_capability_test.c include.h
 	$(CC) $(CFLAGS) -o tomoyo_capability_test tomoyo_capability_test.c -lutil
 	chmod 700 tomoyo_capability_test
+
+tomoyo_new_capability_test: tomoyo_new_capability_test.c include.h
+	$(CC) $(CFLAGS) -o tomoyo_new_capability_test tomoyo_new_capability_test.c -lutil
+	chmod 700 tomoyo_new_capability_test
 
 .c:	include.h
 	$(CC) $(CFLAGS) -o $@ $<
