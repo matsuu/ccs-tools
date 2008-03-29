@@ -3,9 +3,9 @@
  *
  * Testing program for fs/tomoyo_file.c
  *
- * Copyright (C) 2005-2007  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.5.0   2007/09/20
+ * Version: 1.6.0-rc   2008/03/29
  *
  */
 #include "include.h"
@@ -83,7 +83,7 @@ static void StageRewriteTest(void) {
 	AddDomainPolicy("allow_create " REWRITE_PATH);
 	AddDomainPolicy("allow_unlink " REWRITE_PATH);
 	AddExceptionPolicy("deny_rewrite " REWRITE_PATH);
-	close(open(REWRITE_PATH, 0600 | O_WRONLY | O_APPEND | O_CREAT));
+	close(open(REWRITE_PATH, O_WRONLY | O_APPEND | O_CREAT, 0600));
 
 	/* Enforce mode */
 	SetStatus(3);

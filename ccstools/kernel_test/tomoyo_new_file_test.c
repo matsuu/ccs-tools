@@ -12,6 +12,7 @@
 
 static int profile_fd = EOF;
 static int domain_fd = EOF;
+static int exception_fd = EOF;
 static const char *policy = "";
 static char self_domain[4096] = "";
 
@@ -432,6 +433,57 @@ static void StageFileTest(void) {
 		show_result(bind(fd, (struct sockaddr *) &addr, sizeof(addr)), 0);
 		if (fd != EOF) close(fd);
 	}
+
+	filename = "/tmp/rewrite_test";
+	create2(filename);
+	policy = "allow_read/write /tmp/rewrite_test";
+	if (write_policy()) {
+		char *cp = "deny_rewrite /tmp/rewrite_test\n";
+		write(exception_fd, cp, strlen(cp));
+		policy = "allow_truncate /tmp/rewrite_test";
+		if (write_policy()) {
+			int fd;
+
+			fd = open(filename, O_RDONLY);
+			show_result(fd, 1);
+			if (fd != EOF) close(fd);
+			
+			fd = open(filename, O_WRONLY | O_APPEND);
+			show_result(fd, 1);
+			if (fd != EOF) close(fd);
+			
+			fd = open(filename, O_WRONLY);
+			show_result(fd, 0);
+			if (fd != EOF) close(fd);
+			
+			fd = open(filename, O_WRONLY | O_TRUNC);
+			show_result(fd, 0);
+			if (fd != EOF) close(fd);
+			
+			fd = open(filename, O_WRONLY | O_TRUNC | O_APPEND);
+			show_result(fd, 0);
+			if (fd != EOF) close(fd);
+			
+			show_result(truncate(filename, 0), 0);
+			
+			cp = "255-MAC_FOR_FILE=disabled\n";
+			write(profile_fd, cp, strlen(cp));
+			fd = open(filename, O_WRONLY | O_APPEND);
+			cp = "255-MAC_FOR_FILE=enforcing\n";
+			write(profile_fd, cp, strlen(cp));
+			show_result(ftruncate(fd, 0), 0);
+			
+			show_result(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) & ~O_APPEND), 0);
+			if (fd != EOF) close(fd);
+
+			delete_policy();
+		}
+		policy = "allow_read/write /tmp/rewrite_test";
+		delete_policy();
+		cp = "delete deny_rewrite /tmp/rewrite_test\n";
+		write(exception_fd, cp, strlen(cp));
+	}
+	unlink2(filename);
 }
 
 int main(int argc, char *argv[]) {
@@ -439,6 +491,7 @@ int main(int argc, char *argv[]) {
 	Init();
 	profile_fd = open(proc_policy_profile, O_WRONLY);
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
+	exception_fd = open(proc_policy_exception_policy, O_WRONLY);
 	{
 		int self_fd = open(proc_policy_self_domain, O_RDONLY);
 		memset(self_domain, 0, sizeof(self_domain));
