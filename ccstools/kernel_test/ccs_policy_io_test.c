@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-rc   2008/03/28
+ * Version: 1.6.0-rc   2008/03/30
  *
  */
 #include "include.h"
@@ -50,7 +50,7 @@ static void StagePolicyIOTest(void) {
 	int i;
 	policy_file = proc_policy_system_policy;
 	fd = open(policy_file, O_WRONLY);
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < 3; i++) {
 		try_io("allow_chroot /", 1);
 		try_io("allow_chroot ", 0);
 		try_io("allow_chroot *", 0);
@@ -118,7 +118,7 @@ static void StagePolicyIOTest(void) {
 	close(fd);
 	policy_file = proc_policy_exception_policy;
 	fd = open(policy_file, O_WRONLY);
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < 3; i++) {
 		try_io("allow_read /tmp/abc", 1);
 		try_io("allow_read /tmp/abc\\*", 0);
 		try_io("allow_read abc", 0);

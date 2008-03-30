@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-rc   2008/03/29
+ * Version: 1.6.0-rc   2008/03/30
  *
  */
 #include "include.h"
@@ -634,7 +634,6 @@ static void StageCapabilityTest(void) {
 }
 
 int main(int argc, char *argv[]) {
-	PreInit();
 	Init();
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
 	{
@@ -646,7 +645,6 @@ int main(int argc, char *argv[]) {
 		write(domain_fd, "\n", 1);
 	}
 	StageCapabilityTest();
-	printf("\n\n");	
 	close(domain_fd);
 	ClearStatus();
 	return 0;
