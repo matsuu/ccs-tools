@@ -1,11 +1,11 @@
 /*
- * policy_io_test.c
+ * ccs_policy_io_test.c
  *
  * Testing program for policy parser.
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-rc   2008/03/30
+ * Version: 1.6.0   2008/04/01
  *
  */
 #include "include.h"

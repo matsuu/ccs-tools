@@ -10,7 +10,7 @@ Autoreqprov: no
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 Conflicts: ccs-tools < 1.6.0-1
 
-Source0: http://osdn.dl.sourceforge.jp/tomoyo/27220/ccs-tools-1.5.3-20080131.tar.gz
+Source0: http://osdn.dl.sourceforge.jp/tomoyo/30298/ccs-tools-1.6.0-20080401.tar.gz
 
 %description
 This is TOMOYO Linux tools.
@@ -43,7 +43,7 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) /usr/lib/ccs/ccstools.conf
 
 %changelog
-* ??? ??? ?? 2008 1.6.0-1
+* Tue Apr 01 2008 1.6.0-1
 - Feature enhancement release.
 
 * Thu Jan 31 2008 1.5.3-1

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-rc   2008/03/26
+ * Version: 1.6.0   2008/04/01
  *
  */
 #include <errno.h>
@@ -133,6 +133,8 @@ static void ClearStatus(void) {
 		}
 		write(status_fd, "=0\n", 3);
 	}
+	snprintf(buffer, sizeof(buffer) - 1, "255-ALLOW_ENFORCE_GRACE=1\n");
+	write(status_fd, buffer, strlen(buffer));
 	fclose(fp);
 }
 

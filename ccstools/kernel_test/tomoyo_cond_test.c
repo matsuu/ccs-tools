@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0-rc   2008/03/28
+ * Version: 1.6.0   2008/04/01
  *
  */
 #include "include.h"
@@ -152,6 +152,15 @@ static void StageOpenTest(void) {
 		try_open("allow_read /proc/\\@\\@\\$\\@\\@/\\@\\@mounts\\@\\@", buffer, O_RDONLY, 1);
 		try_open("allow_read /proc/\\*\\@\\$\\*\\@/\\*\\@mounts\\*\\@", buffer, O_RDONLY, 1);
 		try_open("allow_read /proc/\\@\\*\\$\\@\\*/\\@\\*mounts\\@\\*", buffer, O_RDONLY, 1);
+
+		snprintf(buffer, sizeof(buffer) - 1, "/etc/fstab");
+ 		try_open("allow_read /etc/fstab ; set task.state[0]=1", buffer, O_RDONLY, 1);
+		try_open("allow_read /etc/fstab if task.state[0]=0-2 ; set task.state[1]=3", buffer, O_RDONLY, 1);
+		try_open("allow_read /etc/fstab if task.state[0]=1 task.state[1]=3 ; set task.state[1]=5", buffer, O_RDONLY, 1);
+		try_open("allow_read /etc/fstab if task.state[0]!=1 ; set task.state[2]=254", buffer, O_RDONLY, 0);
+		try_open("allow_read /etc/fstab if task.state[0]!=2-255 task.state[1]=5-7 ; set task.state[2]=10", buffer, O_RDONLY, 1);
+		try_open("allow_read /etc/fstab if task.state[0]=4-255 task.state[1]=5-7 ; set task.state[2]=0", buffer, O_RDONLY, 0);
+		try_open("allow_read /etc/fstab if task.state[0]=1 task.state[1]=0-10 task.state[2]!=0-9 ; set task.state[0]=0 task.state[1]=0 task.state[2]=0", buffer, O_RDONLY, 1);
 	}
 }
 
