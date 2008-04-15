@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0   2008/04/01
+ * Version: 1.6.0+   2008/04/15
  *
  */
 #include "include.h"
@@ -131,6 +131,7 @@ static void StageNetworkTest(void) {
 		if (write_policy()) {
 			fd3 = accept(fd1, (struct sockaddr *) &caddr, &size);
 			show_result(fd3, 1);
+			delete_policy();
 			if (fd3 != EOF) close(fd3);
 		}
 
@@ -200,6 +201,7 @@ static void StageNetworkTest(void) {
 		if (write_policy()) {
 			fd3 = accept(fd1, (struct sockaddr *) &caddr, &size);
 			show_result(fd3, 1);
+			delete_policy();
 			if (fd3 != EOF) close(fd3);
 		}
 
