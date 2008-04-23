@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0   2008/04/01
+ * Version: 1.6.0+   2008/04/23
  *
  */
 #include <errno.h>
@@ -34,6 +34,7 @@ struct module;
 #include <unistd.h>
 #include <utime.h>
 #include <arpa/inet.h>
+#include <asm/byteorder.h>
 #include <linux/ip.h>
 #include <sched.h>
 #include <sys/ptrace.h>
