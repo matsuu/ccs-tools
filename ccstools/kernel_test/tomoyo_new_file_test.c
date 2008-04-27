@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0   2008/04/01
+ * Version: 1.6.1-rc   2008/04/27
  *
  */
 #include "include.h"
@@ -83,6 +83,7 @@ static void create2(const char *pathname) {
 	close(creat(pathname, 0600));
 	cp = "255-MAC_FOR_FILE=enforcing\n";
 	write(profile_fd, cp, strlen(cp));
+	errno = 0;
 }
 
 static void mkdir2(const char *pathname) {
@@ -91,6 +92,7 @@ static void mkdir2(const char *pathname) {
 	mkdir(pathname, 0600);
 	cp = "255-MAC_FOR_FILE=enforcing\n";
 	write(profile_fd, cp, strlen(cp));
+	errno = 0;
 }
 
 static void unlink2(const char *pathname) {
@@ -99,6 +101,7 @@ static void unlink2(const char *pathname) {
 	unlink(pathname);
 	cp = "255-MAC_FOR_FILE=enforcing\n";
 	write(profile_fd, cp, strlen(cp));
+	errno = 0;
 }			
 
 static void rmdir2(const char *pathname) {
@@ -107,6 +110,7 @@ static void rmdir2(const char *pathname) {
 	rmdir(pathname);
 	cp = "255-MAC_FOR_FILE=enforcing\n";
 	write(profile_fd, cp, strlen(cp));
+	errno = 0;
 }
 
 static void StageFileTest(void) {
