@@ -449,12 +449,13 @@ chown root:root /etc/tomoyo/
 
 if [ ! -r /etc/tomoyo/manager.conf ]; then
 	echo Creating manager policy.
-	echo /usr/lib/ccs/loadpolicy  > /etc/tomoyo/manager.conf
-	echo /usr/lib/ccs/editpolicy >> /etc/tomoyo/manager.conf
-	echo /usr/lib/ccs/setlevel   >> /etc/tomoyo/manager.conf
-	echo /usr/lib/ccs/setprofile >> /etc/tomoyo/manager.conf
-	echo /usr/lib/ccs/ld-watch   >> /etc/tomoyo/manager.conf
-	echo /usr/lib/ccs/ccs-queryd >> /etc/tomoyo/manager.conf
+	ccs_libdir=`realpath /usr/lib/ccs`
+	echo ${ccs_libdir}/loadpolicy  > /etc/tomoyo/manager.conf
+	echo ${ccs_libdir}/editpolicy >> /etc/tomoyo/manager.conf
+	echo ${ccs_libdir}/setlevel   >> /etc/tomoyo/manager.conf
+	echo ${ccs_libdir}/setprofile >> /etc/tomoyo/manager.conf
+	echo ${ccs_libdir}/ld-watch   >> /etc/tomoyo/manager.conf
+	echo ${ccs_libdir}/ccs-queryd >> /etc/tomoyo/manager.conf
 fi
 
 if [ ! -r /etc/tomoyo/profile.conf ]; then

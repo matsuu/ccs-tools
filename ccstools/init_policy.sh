@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 1.6.0   2008/04/01
+# Version: 1.6.1-rc   2008/04/29
 #
 
 cd ${0%/*}
@@ -450,12 +450,13 @@ chown root:root /etc/ccs/
 
 if [ ! -r /etc/ccs/manager.conf ]; then
 	echo Creating manager policy.
-	echo /usr/lib/ccs/loadpolicy  > /etc/ccs/manager.conf
-	echo /usr/lib/ccs/editpolicy >> /etc/ccs/manager.conf
-	echo /usr/lib/ccs/setlevel   >> /etc/ccs/manager.conf
-	echo /usr/lib/ccs/setprofile >> /etc/ccs/manager.conf
-	echo /usr/lib/ccs/ld-watch   >> /etc/ccs/manager.conf
-	echo /usr/lib/ccs/ccs-queryd >> /etc/ccs/manager.conf
+	ccs_libdir=`realpath /usr/lib/ccs`
+	echo ${ccs_libdir}/loadpolicy  > /etc/ccs/manager.conf
+	echo ${ccs_libdir}/editpolicy >> /etc/ccs/manager.conf
+	echo ${ccs_libdir}/setlevel   >> /etc/ccs/manager.conf
+	echo ${ccs_libdir}/setprofile >> /etc/ccs/manager.conf
+	echo ${ccs_libdir}/ld-watch   >> /etc/ccs/manager.conf
+	echo ${ccs_libdir}/ccs-queryd >> /etc/ccs/manager.conf
 fi
 
 if [ ! -r /etc/ccs/profile.conf ]; then
