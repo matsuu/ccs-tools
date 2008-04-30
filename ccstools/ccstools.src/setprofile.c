@@ -3,9 +3,9 @@
  *
  * TOMOYO Linux's utilities.
  *
- * Copyright (C) 2005-2007  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.5.0   2007/09/20
+ * Version: 1.6.1-rc   2008/04/30
  *
  */
 #include "ccstools.h"
@@ -27,7 +27,7 @@ int setprofile_main(int argc, char *argv[]) {
 	{
 		const int fd = open(proc_policy_domain_status, O_RDWR);
 		if (fd == EOF) {
-			fprintf(stderr, "You can't run this daemon for this kernel.\n");
+			fprintf(stderr, "You can't run this command for this kernel.\n");
 			return 1;
 		} else if (write(fd, "", 0) != 0) {
 			fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
