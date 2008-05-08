@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-sortpolicy 1.6.0
+ccs-sortpolicy 1.6.1
 
 Copyright (C) 2005-2008 NTT DATA CORPORATION.
 

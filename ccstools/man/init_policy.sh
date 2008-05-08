@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-init_policy.sh 1.6.0
+init_policy.sh 1.6.1
 
 Copyright (C) 2005-2008 NTT DATA CORPORATION.
 
@@ -39,6 +39,8 @@ cat << EOF | help2man -i - -N -s 8 -n "Initialize TOMOYO Linux's policy" $0 | gz
 [AUTHORS]
 
  penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+ Bug fix for Gentoo 64bit environment by Naohiro Aota <naota _at_ namazu.org>.
 
 EOF
 fi
