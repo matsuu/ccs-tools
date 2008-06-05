@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0   2008/04/01
+ * Version: 1.6.1   2008/06/05
  *
  */
 #include <stdio.h>
@@ -17,12 +17,13 @@
 #include <sys/file.h>
 #include <syslog.h>
 #include <signal.h>
+#include <time.h>
 
 int main(int argc, char *argv[]) {
 	const char *proc_policy_query = "/proc/ccs/query";
 	int time_to_wait;
 	const char *action_to_take;
-	char buffer[16384];
+	char buffer[32768];
 	FILE *fp;
 	int query_fd;
 	unsetenv("SHELLOPTS"); /* Make sure popen() executes commands. */
@@ -109,9 +110,19 @@ int main(int argc, char *argv[]) {
 			syslog(LOG_WARNING, "Can't execute %s\n", action_to_take);
 			closelog();
 			_exit(1);
+		} else {
+			time_t stamp;
+			char *cp = strchr(buffer, '\n'), *cp2;
+			if (cp && sscanf(cp + 1, "#timestamp=%lu", &stamp) == 1 && (cp2 = strchr(cp + 1, ' ')) != NULL) {
+				struct tm *tm = localtime(&stamp);
+				*(cp + 1) = '\0';
+				fprintf(fp, "%s#%04d-%02d-%02d %02d:%02d:%02d#%s\n", buffer,
+					tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec, cp2);
+			} else {
+				fprintf(fp, "%s\n", buffer);
+			}
+			pclose(fp);
 		}
-		fprintf(fp, "%s\n", buffer);
-		pclose(fp);
 		_exit(0);
 	case -1:
 		syslog(LOG_WARNING, "Can't execute %s\n", action_to_take);
