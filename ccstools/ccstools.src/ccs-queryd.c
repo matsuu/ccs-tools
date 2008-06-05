@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0   2008/04/01
+ * Version: 1.6.1   2008/06/05
  *
  */
 #include "ccstools.h"
@@ -48,7 +48,7 @@ int ccsqueryd_main(int argc, char *argv[]) {
 	while (1) {
 		static int first = 1;
 		static unsigned int prev_serial = 0;
-		static const int buffer_len = 16384;
+		static const int buffer_len = 32768;
 		static char *buffer = NULL, *prev_buffer = NULL;
 		fd_set rfds;
 		unsigned int serial;
@@ -82,7 +82,87 @@ int ccsqueryd_main(int argc, char *argv[]) {
 		first = 0;
 		prev_serial = serial;
 		timeout(1000);
-			
+		if (strncmp(buffer, "#timestamp=", 11) == 0) {
+			/* New format. */
+			static unsigned int prev_pid = 0;
+			unsigned int pid;
+			time_t stamp;
+			char *cp = strstr(buffer, " pid=");
+			if (!cp || sscanf(cp + 5, "%u", &pid) != 1)
+				break;
+			cp = strchr(buffer, '\0');
+			if (*(cp - 1) != '\n')
+				break;
+			*(cp - 1) = '\0';
+			if (pid != prev_pid) {
+				if (prev_pid) printw("----------------------------------------\n");
+				prev_pid = pid;
+			}
+			if (sscanf(buffer, "#timestamp=%lu", &stamp) == 1 && (cp = strchr(buffer, ' ')) != NULL) {
+				struct tm *tm = localtime(&stamp);
+				printw("#%04d-%02d-%02d %02d:%02d:%02d#", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+				memmove(buffer, cp, strlen(cp) + 1);
+			}
+			printw("%s\n", buffer);
+			if (!strstr(buffer, "\n#")) {
+				int c = 0;
+				printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o):"); refresh();
+				while (1) {
+					c = getch2();
+					if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' || c == 'A' || c == 'a') break;
+					write(query_fd, "\n", 1);
+				}
+				printw("%c\n", c); refresh();
+				
+				// Append to domain policy.
+				if (c == 'A' || c == 'a') {
+					int y, x;
+					char *line;
+					getyx(stdscr, y, x);
+					cp = strrchr(buffer, '\n');
+					if (!cp)
+						break;
+					*cp++ = '\0';
+					initial_readline_data = cp;
+					readline_history_count = simple_add_history(cp, readline_history, readline_history_count, max_readline_history);
+					line = simple_readline(y, 0, "Enter new entry> ", readline_history, readline_history_count, 4000, 8);
+					scrollok(stdscr, 1);
+					printw("\n"); refresh();
+					if (line && *line) {
+						readline_history_count = simple_add_history(line, readline_history, readline_history_count, max_readline_history);
+						write(domain_policy_fd, buffer, strlen(buffer));
+						write(domain_policy_fd, "\n", 1);
+						write(domain_policy_fd, line, strlen(line));
+						write(domain_policy_fd, "\n", 1);
+						printw("Added '%s'.\n", line);
+					} else {
+						printw("None added.\n", line);
+					}
+					refresh();
+					free(line);
+				}
+
+				// Write answer.
+				snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial, c == 'Y' || c == 'y' || c == 'A' || c == 'a' ? 1 : 2);
+				write(query_fd, buffer, strlen(buffer));
+			} else {
+				int c;
+				printw("Allow? ('Y'es/'N'o):"); refresh();
+				while (1) {
+					c = getch2();
+					if (c == 'Y' || c == 'y' || c == 'N' || c == 'n') break;
+					write(query_fd, "\n", 1);
+				}
+				printw("%c\n", c); refresh();
+				
+				// Write answer.
+				snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial, c == 'Y' || c == 'y' ? 1 : 2);
+				write(query_fd, buffer, strlen(buffer));
+			}
+			printw("\n"); refresh();
+			continue;
+                }
+		
 		// Is this domain query?
 		if (strncmp(buffer, "<kernel>", 8) == 0 && (buffer[8] == '\0' || buffer[8] == ' ') && (cp = strchr(buffer, '\n')) != NULL) {
 			int c = 0;
