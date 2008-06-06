@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 1.6.1 2008/06/05
+# Version: 1.6.2-pre 2008/06/06
 #
 # This program is executed automatically by kernel
 # when execution of /sbin/init is requested.
@@ -139,10 +139,7 @@ fi
 
 [ -r /proc/ccs/domain_policy ] && awk ' BEGIN { domain=0; acl=0; } { if ( $1 == "<kernel>" ) domain++; else if ( $1 != "" && $1 != "use_profile") acl++; } END { print domain " domains. " acl " ACL entries."; } ' /proc/ccs/domain_policy
 
-#
-# Don't remove the following line.
-# The kernel waits until /proc/ccs/meminfo is opened and closed.
-#
+# Show memory usage.
 awk ' BEGIN { shared_mem=0; private_mem=0; } { if ( $1 == "Shared:" ) shared_mem = $2 / 1024; else if ( $1 == "Private:" ) private_mem = $2 / 1024; } END { print shared_mem " KB shared. " private_mem " KB private."; } ' /proc/ccs/meminfo
 
 [ $PROC_UNMOUNT -eq 1 ] && umount -n /proc

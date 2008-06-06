@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.1   2008/06/05
+ * Version: 1.6.2-pre   2008/06/06
  *
  */
 #include <stdio.h>
@@ -103,6 +103,8 @@ int main(int argc, char *argv[]) {
 	}
 	signal(SIGCLD, SIG_IGN);
 	switch (fork()) {
+		time_t stamp;
+		char *cp1, *cp2;
 	case 0:
 		close(query_fd);
 		fp = popen(action_to_take, "w");
@@ -110,19 +112,18 @@ int main(int argc, char *argv[]) {
 			syslog(LOG_WARNING, "Can't execute %s\n", action_to_take);
 			closelog();
 			_exit(1);
-		} else {
-			time_t stamp;
-			char *cp = strchr(buffer, '\n'), *cp2;
-			if (cp && sscanf(cp + 1, "#timestamp=%lu", &stamp) == 1 && (cp2 = strchr(cp + 1, ' ')) != NULL) {
-				struct tm *tm = localtime(&stamp);
-				*(cp + 1) = '\0';
-				fprintf(fp, "%s#%04d-%02d-%02d %02d:%02d:%02d#%s\n", buffer,
-					tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec, cp2);
-			} else {
-				fprintf(fp, "%s\n", buffer);
-			}
-			pclose(fp);
 		}
+		cp1 = strchr(buffer, '\n');
+		if (cp1 && sscanf(cp1 + 1, "#timestamp=%lu", &stamp) == 1 && (cp2 = strchr(cp1 + 1, ' ')) != NULL) {
+			/* New format. */
+			struct tm *tm = localtime(&stamp);
+			*(cp1 + 1) = '\0';
+			fprintf(fp, "%s#%04d-%02d-%02d %02d:%02d:%02d#%s\n", buffer,
+				tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec, cp2);
+		} else {
+			fprintf(fp, "%s\n", buffer);
+		}
+		pclose(fp);
 		_exit(0);
 	case -1:
 		syslog(LOG_WARNING, "Can't execute %s\n", action_to_take);

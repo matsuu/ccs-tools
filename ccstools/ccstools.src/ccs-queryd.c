@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.1   2008/06/05
+ * Version: 1.6.2-pre   2008/06/06
  *
  */
 #include "ccstools.h"
@@ -54,10 +54,6 @@ int ccsqueryd_main(int argc, char *argv[]) {
 		unsigned int serial;
 		char *cp;
 		if (!buffer && (buffer = malloc(buffer_len)) == NULL) break;
-		if (!prev_buffer) {
-			if ((prev_buffer = malloc(buffer_len)) == NULL) break;
-			memset(prev_buffer, 0, buffer_len);
-		}
 		// Wait for query.
 		FD_ZERO(&rfds);
 		FD_SET(query_fd, &rfds);
@@ -88,11 +84,15 @@ int ccsqueryd_main(int argc, char *argv[]) {
 			unsigned int pid;
 			time_t stamp;
 			char *cp = strstr(buffer, " pid=");
-			if (!cp || sscanf(cp + 5, "%u", &pid) != 1)
+			if (!cp || sscanf(cp + 5, "%u", &pid) != 1) {
+				printw("ERROR: Unsupported query.\n");
 				break;
+			}
 			cp = strchr(buffer, '\0');
-			if (*(cp - 1) != '\n')
+			if (*(cp - 1) != '\n') {
+				printw("ERROR: Unsupported query.\n");
 				break;
+			}
 			*(cp - 1) = '\0';
 			if (pid != prev_pid) {
 				if (prev_pid) printw("----------------------------------------\n");
@@ -104,6 +104,7 @@ int ccsqueryd_main(int argc, char *argv[]) {
 				memmove(buffer, cp, strlen(cp) + 1);
 			}
 			printw("%s\n", buffer);
+			// Is this domain query?
 			if (!strstr(buffer, "\n#")) {
 				int c = 0;
 				printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o):"); refresh();
@@ -161,8 +162,12 @@ int ccsqueryd_main(int argc, char *argv[]) {
 			}
 			printw("\n"); refresh();
 			continue;
-                }
+		}
 		
+		if (!prev_buffer) {
+			if ((prev_buffer = malloc(buffer_len)) == NULL) break;
+			memset(prev_buffer, 0, buffer_len);
+		}
 		// Is this domain query?
 		if (strncmp(buffer, "<kernel>", 8) == 0 && (buffer[8] == '\0' || buffer[8] == ' ') && (cp = strchr(buffer, '\n')) != NULL) {
 			int c = 0;
