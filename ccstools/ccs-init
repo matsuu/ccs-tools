@@ -122,7 +122,7 @@ if [ $CHDIR_OK -eq 1 ]; then
     [ -r manager.conf ] && cat manager.conf > /proc/ccs/manager
     [ -r system_policy.conf -a -w /proc/ccs/system_policy ] && cat system_policy.conf > /proc/ccs/system_policy
     [ -r exception_policy.conf -a -w /proc/ccs/exception_policy ] && cat exception_policy.conf > /proc/ccs/exception_policy
-    [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.conf -a -w /proc/ccs/domain_policy ] && awk ' { if ( $2 == "pipe:" ) $2 = "pipe:[\\$]"; else if ( $2 == "socket:" ) $2 = "socket:[\\$]"; print $0; } ' < domain_policy.conf > /proc/ccs/domain_policy
+    [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.conf -a -w /proc/ccs/domain_policy ] && cat domain_policy.conf > /proc/ccs/domain_policy
     if [ "x$PROFILE" = "xdefault" ]; then
 	[ -r profile.conf ] && cat profile.conf > /proc/ccs/profile
     elif [ "x$PROFILE" != "xdisable" ]; then
