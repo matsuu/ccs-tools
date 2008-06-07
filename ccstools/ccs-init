@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 1.6.2-pre 2008/06/06
+# Version: 1.6.2-pre 2008/06/07
 #
 # This program is executed automatically by kernel
 # when execution of /sbin/init is requested.
@@ -89,6 +89,12 @@ fi
 
 # Show prompt if something went wrong or explicitly asked.
 if [ "x$PROFILE" = "xask" ]; then
+  # Check if /dev/initctl is opened by /sbin/init , which means this program is
+  # called after /sbin/init has started.
+  if ls -l /proc/1/fd/ | grep -qF /dev/initctl; then
+    echo "TOMOYO Linux: /sbin/init is already running."
+    PROFILE="disable"
+  else
     while :
       do
       echo "TOMOYO Linux: Select a profile from the following list."
@@ -108,6 +114,7 @@ if [ "x$PROFILE" = "xask" ]; then
       [ "x$PROFILE" = "xTOMOYO_NOLOAD" ] && TOMOYO_NOLOAD=1
       [ "x$PROFILE" = "xTOMOYO_QUIET" ] && TOMOYO_QUIET=1
     done
+  fi
 fi
 
 # Load policy.
