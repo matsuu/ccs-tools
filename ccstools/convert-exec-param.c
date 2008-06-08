@@ -1,5 +1,5 @@
 /*
- * ccs-convert-allow_execute.c
+ * convert-exec-param.c
  *
  * TOMOYO Linux's utilities.
  *
