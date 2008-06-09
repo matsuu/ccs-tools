@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 1.6.1   2008/05/10
+# Version: 1.6.2-pre   2008/06/09
 #
 
 cd ${0%/*}
@@ -42,22 +42,22 @@ make_exception() {
 	#
 	for i in `find /proc/1/ /proc/self/ -type f`
 	do
-		echo "file_pattern "$i | sed 's@/[0-9]*/@/\\$/@g'
-	done | sort | uniq
+		echo "file_pattern "$i | sed -e 's@/[0-9]*/@/\\$/@g' -e 's@/[0-9]*$@/\\$@'
+	done | sort | uniq | grep -F '\'
 	
 	#
 	# Make patterns for /sys/ directory.
 	#
-	if [ -e /sys/block/ ]
-	then
-		for i in /sys/*
-		do
-			for j in `find $i | awk -F / ' { print NF-1 }'`
-			do
-				echo -n "file_pattern "$i; for k in `seq 3 $j`; do echo -n '/\*'; done; echo
-			done
-		done | grep -F '\' | sort | uniq
-	fi
+	#if [ -e /sys/block/ ]
+	#then
+	#	for i in /sys/*
+	#	do
+	#		for j in `find $i | awk -F / ' { print NF-1 }'`
+	#		do
+	#			echo -n "file_pattern "$i; for k in `seq 3 $j`; do echo -n '/\*'; done; echo
+	#		done
+	#	done | grep -F '\' | sort | uniq
+	#fi
       
 	#
 	# Make patterns for /dev/ directory.
