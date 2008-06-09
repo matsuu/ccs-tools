@@ -5,18 +5,18 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.2-pre   2008/06/08
+ * Version: 1.6.2-pre   2008/06/09
  *
  */
 #include <stdio.h>
 #include <string.h>
 
 int main(int argc, char *argv[]) {
-	char buffer[2][16384];
+	char buffer[3][16384];
 	int line = 0;
 	memset(buffer, 0, sizeof(buffer));
 	while (1) {
-		int i;
+		int i, len;
 		char *cp1, *cp2;
 		
 		// Find header line.
@@ -47,22 +47,25 @@ int main(int argc, char *argv[]) {
 		// Get domainname.
 		line++;
 		if (!fgets(buffer[1], sizeof(buffer[1]) - 1, stdin) || !strchr(buffer[1], '\n')) goto out;
-		printf("select %s", buffer[1]);
 		
 		// Get "allow_execute " line.
 		line++;
-		if (!fgets(buffer[1], sizeof(buffer[1]) - 1, stdin) ||
-		    strncmp(buffer[1], "allow_execute ", 14) ||
-		    (cp1 = strchr(buffer[1], '\n')) == NULL) goto out;
-		*cp1 = '\0';
-		printf("%s if exec.argc=%d", buffer[1], argc);
+		if (!fgets(buffer[2], sizeof(buffer[2]) - 1, stdin) ||
+		    (cp1 = strchr(buffer[2], '\n')) == NULL) goto out;
+		*cp1-- = '\0';
+		while (*cp1 == ' ') *cp1-- = '\0';
+		if (strncmp(buffer[2], "allow_execute ", 14)) continue;
+		printf("select %s", buffer[1]);
+		len = printf("%s if exec.argc=%d", buffer[2], argc);
 		i = 0;
 		cp1 = strtok(buffer[0], " ");
 		while (cp1) {
-			printf(" exec.argv[%d]=%s", i++, cp1);
+			len += printf(" exec.argv[%d]=%s", i++, cp1);
 			cp1 = strtok(NULL, " ");
 		}
-		printf("\ndelete %s\n\n", buffer[1]);
+		len += printf("\n");
+		if (len < 8192) printf("delete %s\n", buffer[2]);
+		printf("\n");
 	}
 	if (!line) {
 		fprintf(stderr, "Usage: %s < /proc/ccs/grant_log or /proc/ccs/reject_log\n", argv[0]);
