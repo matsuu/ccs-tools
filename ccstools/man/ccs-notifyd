@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-notifyd 1.6.1
+ccs-notifyd 1.6.2
 
 Copyright (C) 2005-2008 NTT DATA CORPORATION.
 
@@ -16,9 +16,6 @@ cat << EOF
 Usage: ccs-notifyd timeout action
 
 This program detects policy violation in enforcing mode and notify users (e.g. send a mail). You can know the first occurence of policy violation in enforcing mode as soon as possible. You may use this program for holding your judgement of the request that violates policy in enforcing mode provided that you can login to the system and start "ccs-queryd" command for responding within timeout seconds.
-
-You need to enable "delayed enforcing mode" when you use this program.
-To enable "delayed enforcing mode", you need to either set "ALLOW_ENFORCE_GRACE=enabled" in /proc/ccs/profile using "ccs-setlevel" command or assign a profile with ALLOW_ENFORCE_GRACE=enabled to domains using "ccs-setprofile" or "ccs-editpolicy" commands.
 
 Examples:
 

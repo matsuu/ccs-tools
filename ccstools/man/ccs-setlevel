@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-setlevel 1.6.1
+ccs-setlevel 1.6.2
 
 Copyright (C) 2005-2008 NTT DATA CORPORATION.
 
@@ -23,9 +23,6 @@ Examples:
 
 # ccs-setlevel 2-TOMOYO_VERBOSE=enabled
  Turn on verbose mode for profile 2.
-
-# ccs-setlevel 3-ALLOW_ENFORCE_GRACE=enabled
- Turn on delayed enforcing mode for profile 3.
 
 EOF
 else

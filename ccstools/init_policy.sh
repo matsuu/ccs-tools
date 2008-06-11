@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 1.6.2-pre   2008/06/09
+# Version: 1.6.2-pre   2008/06/11
 #
 
 cd ${0%/*}
@@ -496,7 +496,6 @@ EOF
 0-MAX_GRANT_LOG=1024
 0-MAX_REJECT_LOG=1024
 0-TOMOYO_VERBOSE=enabled
-0-ALLOW_ENFORCE_GRACE=disabled
 0-SLEEP_PERIOD=0
 0-MAC_FOR_CAPABILITY::inet_tcp_create=disabled
 0-MAC_FOR_CAPABILITY::inet_tcp_listen=disabled
@@ -545,7 +544,6 @@ EOF
 1-MAX_GRANT_LOG=1024
 1-MAX_REJECT_LOG=1024
 1-TOMOYO_VERBOSE=disabled
-1-ALLOW_ENFORCE_GRACE=disabled
 1-SLEEP_PERIOD=0
 1-MAC_FOR_CAPABILITY::inet_tcp_create=learning
 1-MAC_FOR_CAPABILITY::inet_tcp_listen=learning
@@ -594,7 +592,6 @@ EOF
 2-MAX_GRANT_LOG=1024
 2-MAX_REJECT_LOG=1024
 2-TOMOYO_VERBOSE=enabled
-2-ALLOW_ENFORCE_GRACE=disabled
 2-SLEEP_PERIOD=0
 2-MAC_FOR_CAPABILITY::inet_tcp_create=permissive
 2-MAC_FOR_CAPABILITY::inet_tcp_listen=permissive
@@ -643,7 +640,6 @@ EOF
 3-MAX_GRANT_LOG=1024
 3-MAX_REJECT_LOG=1024
 3-TOMOYO_VERBOSE=enabled
-3-ALLOW_ENFORCE_GRACE=disabled
 3-SLEEP_PERIOD=0
 3-MAC_FOR_CAPABILITY::inet_tcp_create=enforcing
 3-MAC_FOR_CAPABILITY::inet_tcp_listen=enforcing

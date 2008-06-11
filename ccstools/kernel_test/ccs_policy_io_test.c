@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0   2008/04/01
+ * Version: 1.6.2-pre   2008/06/11
  *
  */
 #include "include.h"
@@ -120,7 +120,7 @@ static void StagePolicyIOTest(void) {
 	fd = open(policy_file, O_WRONLY);
 	for (i = 0; i < 3; i++) {
 		try_io("allow_read /tmp/abc", 1);
-		try_io("allow_read /tmp/abc\\*", 0);
+		try_io("allow_read /tmp/abc\\*", 1);
 		try_io("allow_read abc", 0);
 		try_io("allow_read /tmp/abc/", 0);
 		try_io("allow_read", 0);

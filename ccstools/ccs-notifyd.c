@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.2-pre   2008/06/10
+ * Version: 1.6.2-pre   2008/06/11
  *
  */
 #include <stdio.h>
@@ -30,8 +30,7 @@ int main(int argc, char *argv[]) {
 	if (argc != 3) {
 		printf("Usage: %s time-to-wait action-to-take\n\n", argv[0]);
 		printf("This program is used for notifying the first occurrence of policy violation in enforcing mode.\n"
-		       "The time-to-wait parameter is grace time in second before rejecting the request that caused policy violation "
-		       "when you are using ALLOW_ENFORCE_GRACE=enabled in the profile.\n"
+		       "The time-to-wait parameter is grace time in second before rejecting the request that caused policy violation.\n"
 		       "The action-to-take parameter is action you want to use for notification. "
 		       "This parameter is passed to system(), so escape appropriately as needed.\n\n");
 		printf("Examples:\n\n");
