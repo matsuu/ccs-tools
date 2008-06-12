@@ -8,6 +8,7 @@
 #
 
 cd ${0%/*}
+set -f
 export PATH=$PWD:/sbin:/bin:${PATH}
 
 PROFILE_TYPE="--full-profile"
@@ -50,8 +51,10 @@ make_exception() {
 	#
 	#if [ -e /sys/block/ ]
 	#then
+	#	set +f
 	#	for i in /sys/*
 	#	do
+	#		set -f
 	#		for j in `find $i | awk -F / ' { print NF-1 }'`
 	#		do
 	#			echo -n "file_pattern "$i; for k in `seq 3 $j`; do echo -n '/\*'; done; echo
@@ -114,20 +117,55 @@ make_exception() {
 	#
 	# Allow reading some data files.
 	#
-	for i in /etc/ld.so.cache /proc/meminfo /proc/sys/kernel/version /etc/localtime /usr/lib/gconv/gconv-modules.cache /usr/lib/locale/locale-archive /usr/share/locale/locale.alias
+	for i in /etc/ld.so.cache /proc/meminfo /proc/sys/kernel/version /etc/localtime /usr/lib/gconv/gconv-modules.cache
 	do
 		FILE=`realpath $i`
 		[ -n "$FILE" -a -r "$FILE" -a ! -L "$FILE" ] && echo 'allow_read '$FILE
 	done
-	[ -d /usr/share/locale/ ] && echo 'allow_read /usr/share/locale/\*/LC_MESSAGES/\*'
-	[ -d /usr/share/locale/ ] && echo 'allow_read /usr/share/locale/\*/LC_TIME/\*'
-	
+	set -f
+	for dir in `realpath -n /usr/share/` `realpath -n /usr/lib/`
+	  do
+	  if [ -d $dir ]; then
+        # Allow reading font files.
+	      for i in `find $dir -type d -name '*fonts*'`
+		do
+		for j in '/\*' '/\*/\*' '/\*/\*/\*' '/\*/\*/\*/\*' '/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*/\*'
+		  do
+		  /usr/sbin/ccs-pathmatch $i$j | grep -q / && echo 'allow_read '$i$j
+		done
+	      done
+        # Allow reading icon files.
+	      for i in `find $dir -type d -name '*icons*'`
+		do
+		for j in '/\*' '/\*/\*' '/\*/\*/\*' '/\*/\*/\*/\*' '/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*/\*'
+		  do
+		  /usr/sbin/ccs-pathmatch $i$j | grep -q / && echo 'allow_read '$i$j
+		done
+	      done
+        # Allow reading locale files.
+	      for i in `find $dir -type d -name 'locale'`
+		do
+		for j in '/\*' '/\*/\*' '/\*/\*/\*' '/\*/\*/\*/\*' '/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*/\*'
+		  do
+		  /usr/sbin/ccs-pathmatch $i$j | grep -q / && echo 'allow_read '$i$j
+		done
+	      done
+	      for i in `find $dir -type d -name 'locales'`
+		do
+		for j in '/\*' '/\*/\*' '/\*/\*/\*' '/\*/\*/\*/\*' '/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*/\*'
+		  do
+		  /usr/sbin/ccs-pathmatch $i$j | grep -q / && echo 'allow_read '$i$j
+		done
+	      done
+	  fi
+	done
+
 	#
 	# Allow reading information for current process.
 	#
-	for i in `find /proc/self/ -type f | grep -v '[0-9]'`
+	for i in `find /proc/self/ -type f`
 	do
-		echo 'allow_read '$i
+		echo 'allow_read '$i | sed -e 's@/[0-9]*/@/\\$/@g' -e 's@/[0-9]*$@/\\$@'
 	done
 	
 	#
@@ -142,8 +180,10 @@ make_exception() {
 	#
 	# Mark programs under /etc/init.d/ directory as initializer.
 	#
+	set +f
 	for FILE in `for i in /etc/init.d/*; do realpath $i; done | sort | uniq`
 	do
+		set -f
 		[ -n "$FILE" -a -f "$FILE" -a -x "$FILE" -a ! -L "$FILE" ] && echo "initialize_domain "$FILE
 	done
 	
