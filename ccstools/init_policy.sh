@@ -29,6 +29,16 @@ if ! realpath -n / > /dev/null; then
     exit 1
 fi
 
+if ! which which > /dev/null; then
+    echo "Can't execute 'which' command. Please install package containing 'which' command."
+    exit 1
+fi
+
+if ! find . > /dev/null; then
+    echo "Can't execute 'find' command. Please install package containing 'find' command."
+    exit 1
+fi
+
 make_exception() {
 	#
 	# Make /sbin/modprobe and /sbin/hotplug as initializers, for they can be called by untrusted programs.
@@ -79,12 +89,12 @@ make_exception() {
 	#
 	# Make patterns for man directory.
 	#
-	for i in `find /usr/share/man/ -type f | awk -F / ' { print NF }' | sort | uniq`
+	[ -d /usr/share/man/ ] && for i in `find /usr/share/man/ -type f | awk -F / ' { print NF }' | sort | uniq`
 	do
 		echo -n "file_pattern /usr/share/man"; for j in `seq 5 $i`; do echo -n '/\*'; done; echo
 	done
       
-	for i in `find /usr/X11R6/man/ -type f | awk -F / ' { print NF }' | sort | uniq`
+	[ -d /usr/X11R6/man/ ] && for i in `find /usr/X11R6/man/ -type f | awk -F / ' { print NF }' | sort | uniq`
 	do
 		echo -n "file_pattern /usr/X11R6/man"; for j in `seq 5 $i`; do echo -n '/\*'; done; echo
 	done
@@ -235,7 +245,7 @@ make_exception() {
 	#
 	# Make patterns for spamd(1).
 	#
-	SPAMD_PATH=`which spamd`
+	SPAMD_PATH=`which spamd 2> /dev/null`
 	if [ -n "$SPAMD_PATH" ]; then
 		if grep -qF '/tmp/spamassassin-$$' $SPAMD_PATH; then
 			echo 'file_pattern /tmp/spamassassin-\$/'
@@ -252,7 +262,7 @@ make_exception() {
 	#
 	# Make patterns for mail(1).
 	#
-	MAIL_PATH=`which mail`
+	MAIL_PATH=`which mail 2> /dev/null`
 	if [ -n "$MAIL_PATH" ]; then
 		grep -qF '/mail.XXXXXX'       $MAIL_PATH && echo 'file_pattern /tmp/mail.\?\?\?\?\?\?'
 		grep -qF '/mail.RsXXXXXXXXXX' $MAIL_PATH && echo 'file_pattern /tmp/mail.RsXXXX\?\?\?\?\?\?'
@@ -303,7 +313,7 @@ make_exception() {
 	#
 	# Make patterns for gpm(8).
 	#
-	GPM_PATH=`which gpm`
+	GPM_PATH=`which gpm 2> /dev/null`
 	[ -n "$GPM_PATH" ] && grep -qF '/gpmXXXXXX' $GPM_PATH && echo 'file_pattern /var/run/gpm\?\?\?\?\?\?'
 	
 	#
@@ -335,7 +345,7 @@ make_exception() {
 	#
 	# Make patterns for makewhatis(8).
 	#
-	MAKEWHATIS_PATH=`which makewhatis`
+	MAKEWHATIS_PATH=`which makewhatis 2> /dev/null`
 	if [ -n "$MAKEWHATIS_PATH" ]; then
 		if grep -qF '/tmp/makewhatisXXXXXX' $MAKEWHATIS_PATH; then
 			echo 'file_pattern /tmp/makewhatis\?\?\?\?\?\?/'
@@ -349,7 +359,7 @@ make_exception() {
 	#
 	# Make patterns for automount(8).
 	#
-	AUTOMOUNT_PATH=`which automount`
+	AUTOMOUNT_PATH=`which automount 2> /dev/null`
 	if [ -n "$AUTOMOUNT_PATH" ]; then
 		if grep -qF '/var/lock/autofs' $AUTOMOUNT_PATH; then
 			echo 'file_pattern /var/lock/autofs.\$'
@@ -360,7 +370,7 @@ make_exception() {
 	#
 	# Make patterns for logwatch(8).
 	#
-	LOGWATCH_PATH=`which logwatch`
+	LOGWATCH_PATH=`which logwatch 2> /dev/null`
 	if [ -n "$LOGWATCH_PATH" ]; then
 		if grep -qF '/var/cache/logwatch' $LOGWATCH_PATH; then
 			echo 'file_pattern /var/cache/logwatch/logwatch.XX\?\?\?\?\?\?/'
@@ -374,7 +384,7 @@ make_exception() {
 	#
 	# Make patterns for logrotate(8).
 	#
-	LOGROTATE_PATH=`which logrotate`
+	LOGROTATE_PATH=`which logrotate 2> /dev/null`
 	if [ -n "$LOGROTATE_PATH" ]; then
 		if grep -qF '/logrotate.XXXXXX' $LOGROTATE_PATH; then
 			echo 'file_pattern /tmp/logrotate.\?\?\?\?\?\?'
@@ -385,7 +395,7 @@ make_exception() {
 	#
 	# Make patterns for cardmgr(8).
 	#
-	CARDMGR_PATH=`which cardmgr`
+	CARDMGR_PATH=`which cardmgr 2> /dev/null`
 	if [ -n "$CARDMGR_PATH" ]; then
 		if grep -qF '%s/cm-%d-%d' $CARDMGR_PATH; then
 			echo 'file_pattern /var/lib/pcmcia/cm-\$-\$'
@@ -395,7 +405,7 @@ make_exception() {
 	#
 	# Make patterns for anacron(8).
 	#
-	ANACRON_PATH=`which anacron`
+	ANACRON_PATH=`which anacron 2> /dev/null`
 	if [ -n "$ANACRON_PATH" ]; then
 		echo 'file_pattern /tmp/file\?\?\?\?\?\?'
 	fi
@@ -448,7 +458,7 @@ make_exception() {
 	#
 	# Make /var/log/ directory not rewritable by default.
 	#
-	for i in `find /var/log/ -type f | awk -F / ' { print NF }' | sort | uniq`
+	[ -d /var/log/ ] && for i in `find /var/log/ -type f | awk -F / ' { print NF }' | sort | uniq`
 	do
 		echo -n "deny_rewrite /var/log"; for j in `seq 4 $i`; do echo -n '/\*'; done; echo
 	done
@@ -457,7 +467,7 @@ make_exception() {
 make_alias() {
 	for MNT in `df | awk ' { print $NF } ' | grep / | sort | uniq`
 	do
-		for SYMLINK in `find $MNT -xdev -type l`
+		[ -d $MNT ] && for SYMLINK in `find $MNT -xdev -type l`
 		do
 			
 			# Solve symbolic name.
