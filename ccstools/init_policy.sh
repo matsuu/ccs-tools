@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 1.6.2-pre   2008/06/11
+# Version: 1.6.2-pre   2008/06/12
 #
 
 cd ${0%/*}
@@ -114,11 +114,13 @@ make_exception() {
 	#
 	# Allow reading some data files.
 	#
-	for i in /etc/ld.so.cache /proc/meminfo /proc/sys/kernel/version /etc/localtime /usr/lib/gconv/gconv-modules.cache /usr/lib/locale/locale-archive /usr/share/locale/locale.alias /usr/share/locale/ja/LC_MESSAGES/coreutils.mo /usr/share/locale/ja/LC_MESSAGES/libc.mo
+	for i in /etc/ld.so.cache /proc/meminfo /proc/sys/kernel/version /etc/localtime /usr/lib/gconv/gconv-modules.cache /usr/lib/locale/locale-archive /usr/share/locale/locale.alias
 	do
 		FILE=`realpath $i`
 		[ -n "$FILE" -a -r "$FILE" -a ! -L "$FILE" ] && echo 'allow_read '$FILE
 	done
+	[ -d /usr/share/locale/ ] && echo 'allow_read /usr/share/locale/\*/LC_MESSAGES/\*'
+	[ -d /usr/share/locale/ ] && echo 'allow_read /usr/share/locale/\*/LC_TIME/\*'
 	
 	#
 	# Allow reading information for current process.
