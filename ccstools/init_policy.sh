@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 1.6.2-pre   2008/06/12
+# Version: 1.6.2-pre   2008/06/13
 #
 
 cd ${0%/*}
@@ -51,7 +51,7 @@ make_exception() {
 	#
 	# Make patterns for /proc/[number]/ and /proc/self/ directory.
 	#
-	for i in `find /proc/1/ /proc/self/ -type f`
+	for i in `find /proc/1/ /proc/self/ -type f 2> /dev/null`
 	do
 		echo "file_pattern "$i | sed -e 's@/[0-9]*/@/\\$/@g' -e 's@/[0-9]*$@/\\$@'
 	done | sort | uniq | grep -F '\'
@@ -173,7 +173,7 @@ make_exception() {
 	#
 	# Allow reading information for current process.
 	#
-	for i in `find /proc/self/ -type f`
+	for i in `find /proc/self/ -type f 2> /dev/null`
 	do
 		echo 'allow_read '$i | sed -e 's@/[0-9]*/@/\\$/@g' -e 's@/[0-9]*$@/\\$@'
 	done
@@ -465,7 +465,7 @@ make_exception() {
 }
 
 make_alias() {
-	for MNT in `df | awk ' { print $NF } ' | grep / | sort | uniq`
+	for MNT in `df 2> /dev/null | awk ' { print $NF } ' | grep / | sort | uniq`
 	do
 		[ -d $MNT ] && for SYMLINK in `find $MNT -xdev -type l`
 		do
