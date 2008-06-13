@@ -132,7 +132,7 @@ make_exception() {
 	#
 	# Allow reading some data files.
 	#
-	for i in /etc/ld.so.cache /proc/meminfo /proc/sys/kernel/version /etc/localtime /usr/lib/gconv/gconv-modules.cache /usr/share/locale/locale.alias /etc/locale.alias
+	for i in /etc/ld.so.cache /proc/meminfo /proc/sys/kernel/version /etc/localtime /usr/lib/gconv/gconv-modules.cache /usr/share/locale/locale.alias
 	do
 		FILE=`realpath $i`
 		[ -n "$FILE" -a -r "$FILE" -a ! -L "$FILE" ] && echo 'allow_read '$FILE
