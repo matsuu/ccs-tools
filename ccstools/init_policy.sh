@@ -29,6 +29,11 @@ if ! realpath -n / > /dev/null; then
     exit 1
 fi
 
+if ! pathmatch / > /dev/null; then
+    echo "Can't execute program. Please make sure you installed correct package."
+    exit 1
+fi
+
 if ! which which > /dev/null; then
     echo "Can't execute 'which' command. Please install package containing 'which' command."
     exit 1
@@ -127,7 +132,7 @@ make_exception() {
 	#
 	# Allow reading some data files.
 	#
-	for i in /etc/ld.so.cache /proc/meminfo /proc/sys/kernel/version /etc/localtime /usr/lib/gconv/gconv-modules.cache
+	for i in /etc/ld.so.cache /proc/meminfo /proc/sys/kernel/version /etc/localtime /usr/lib/gconv/gconv-modules.cache /usr/share/locale/locale.alias /etc/locale.alias
 	do
 		FILE=`realpath $i`
 		[ -n "$FILE" -a -r "$FILE" -a ! -L "$FILE" ] && echo 'allow_read '$FILE
@@ -141,7 +146,7 @@ make_exception() {
 		do
 		for j in '/\*' '/\*/\*' '/\*/\*/\*' '/\*/\*/\*/\*' '/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*/\*'
 		  do
-		  /usr/sbin/ccs-pathmatch $i$j | grep -q / && echo 'allow_read '$i$j
+		  pathmatch $i$j | grep -q / && echo 'allow_read '$i$j
 		done
 	      done
         # Allow reading icon files.
@@ -149,7 +154,7 @@ make_exception() {
 		do
 		for j in '/\*' '/\*/\*' '/\*/\*/\*' '/\*/\*/\*/\*' '/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*/\*'
 		  do
-		  /usr/sbin/ccs-pathmatch $i$j | grep -q / && echo 'allow_read '$i$j
+		  pathmatch $i$j | grep -q / && echo 'allow_read '$i$j
 		done
 	      done
         # Allow reading locale files.
@@ -157,14 +162,21 @@ make_exception() {
 		do
 		for j in '/\*' '/\*/\*' '/\*/\*/\*' '/\*/\*/\*/\*' '/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*/\*'
 		  do
-		  /usr/sbin/ccs-pathmatch $i$j | grep -q / && echo 'allow_read '$i$j
+		  pathmatch $i$j | grep -q / && echo 'allow_read '$i$j
 		done
 	      done
 	      for i in `find $dir -type d -name 'locales'`
 		do
 		for j in '/\*' '/\*/\*' '/\*/\*/\*' '/\*/\*/\*/\*' '/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*/\*'
 		  do
-		  /usr/sbin/ccs-pathmatch $i$j | grep -q / && echo 'allow_read '$i$j
+		  pathmatch $i$j | grep -q / && echo 'allow_read '$i$j
+		done
+	      done
+	      for i in `find $dir -type d -name 'locale-langpack'`
+		do
+		for j in '/\*' '/\*/\*' '/\*/\*/\*' '/\*/\*/\*/\*' '/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*' '/\*/\*/\*/\*/\*/\*/\*/\*/\*'
+		  do
+		  pathmatch $i$j | grep -q / && echo 'allow_read '$i$j
 		done
 	      done
 	  fi
@@ -176,7 +188,7 @@ make_exception() {
 	for i in `find /proc/self/ -type f 2> /dev/null`
 	do
 		echo 'allow_read '$i | sed -e 's@/[0-9]*/@/\\$/@g' -e 's@/[0-9]*$@/\\$@'
-	done
+	done | sort | uniq
 	
 	#
 	# Allow reading DLL files registered with ldconfig(8).
@@ -467,7 +479,7 @@ make_exception() {
 make_alias() {
 	for MNT in `df 2> /dev/null | awk ' { print $NF } ' | grep / | sort | uniq`
 	do
-		[ -d $MNT ] && for SYMLINK in `find $MNT -xdev -type l`
+		[ -d $MNT ] && for SYMLINK in `find $MNT -xdev -type l 2> /dev/null`
 		do
 			
 			# Solve symbolic name.
