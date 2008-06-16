@@ -66,17 +66,18 @@ make_exception() {
 	#
 	#if [ -e /sys/block/ ]
 	#then
-	#	set +f
-	#	for i in /sys/*
+	#    set +f
+	#    DIRS=`echo /sys/*`
+	#    set -f
+	#    for DIR in $DIRS
+	#    do
+	#	for i in `find $DIR | awk -F / ' { print NF-1 }'`
 	#	do
-	#		set -f
-	#		for j in `find $i | awk -F / ' { print NF-1 }'`
-	#		do
-	#			echo -n "file_pattern "$i; for k in `seq 3 $j`; do echo -n '/\*'; done; echo
-	#		done
-	#	done | grep -F '\' | sort | uniq
+	#	    echo -n "file_pattern "$DIR; for j in `seq 3 $i`; do echo -n '/\*'; done; echo
+	#	done
+	#    done | grep -F '\' | sort | uniq
 	#fi
-      
+	
 	#
 	# Make patterns for /dev/ directory.
 	#
@@ -202,23 +203,23 @@ make_exception() {
 	#
 	# Mark programs under /etc/init.d/ directory as initializer.
 	#
-	set +f
-	for FILE in `for i in /etc/init.d/*; do [ -L "$i" ] || realpath $i; done | sort | uniq`
-	do
-		set -f
-		[ -n "$FILE" -a -f "$FILE" -a -x "$FILE" -a ! -L "$FILE" ] && echo "initialize_domain "$FILE
-	done
+	DIR=`realpath /etc/init.d/`
+	if [ -n "$DIR" ]; then
+	    set +f
+	    FILES=`echo $DIR/*`
+	    set -f
+	    for FILE in $FILES
+	    do
+		[ -n "$FILE" -a -f "$FILE" -a -x "$FILE" ] && echo "initialize_domain "$FILE
+	    done
+	fi
 	
 	#
 	# Mark some programs that you want to assign short domainname as initializer.
 	#
-	# RHL9:  /sbin/cardmgr /sbin/klogd /sbin/mingetty /sbin/portmap /sbin/rpc.statd /sbin/syslogd /usr/bin/jserver /usr/bin/spamd /usr/sbin/anacron /usr/sbin/apmd /usr/sbin/atd /usr/sbin/crond /usr/sbin/dhcpd /usr/sbin/gpm /usr/sbin/httpd /usr/sbin/nmbd /usr/sbin/rpc.mountd /usr/sbin/rpc.rquotad /usr/sbin/sendmail.sendmail /usr/sbin/smbd /usr/sbin/sshd /usr/sbin/vsftpd /usr/sbin/xinetd
-	# FC3:   /sbin/cardmgr /sbin/klogd /sbin/mingetty /sbin/portmap /sbin/rpc.statd /sbin/syslogd /sbin/udevd /usr/X11R6/bin/xfs /usr/bin/dbus-daemon-1 /usr/bin/mDNSResponder /usr/bin/nifd /usr/sbin/acpid /usr/sbin/anacron /usr/sbin/atd /usr/sbin/cannaserver /usr/sbin/cpuspeed /usr/sbin/crond /usr/sbin/cupsd /usr/sbin/gpm /usr/sbin/hald /usr/sbin/htt /usr/sbin/nmbd /usr/sbin/rpc.idmapd /usr/sbin/rpc.mountd /usr/sbin/rpc.rquotad /usr/sbin/smartd /usr/sbin/smbd /usr/sbin/sshd /usr/sbin/xinetd
-	# Sarge: /sbin/getty /sbin/klogd /sbin/portmap /sbin/rpc.statd /sbin/syslogd /usr/sbin/afpd /usr/sbin/apache2 /usr/sbin/atalkd /usr/sbin/atd /usr/sbin/cron /usr/sbin/exim4 /usr/sbin/inetd /usr/sbin/lpd /usr/sbin/nmbd /usr/sbin/papd /usr/sbin/smbd /usr/sbin/sshd /usr/sbin/vmware-guestd
+	# You can add as you like to the list below.
 	#
-	# You can choose from the list above or add as you like to the list below.
-	#
-	for FILE in /sbin/getty /sbin/init /sbin/mingetty /sbin/udevd /usr/sbin/anacron /usr/sbin/apache2 /usr/sbin/atd /usr/sbin/cron /usr/sbin/crond /usr/sbin/httpd /usr/sbin/inetd /usr/sbin/logrotate /usr/sbin/smbd /usr/sbin/squid /usr/sbin/sshd /usr/sbin/vsftpd /usr/sbin/xinetd
+	for FILE in /sbin/cardmgr /sbin/getty /sbin/init /sbin/klogd /sbin/mingetty /sbin/portmap /sbin/rpc.statd /sbin/syslogd /sbin/udevd /usr/X11R6/bin/xfs /usr/bin/dbus-daemon-1 /usr/bin/jserver /usr/bin/mDNSResponder /usr/bin/nifd /usr/bin/spamd /usr/sbin/acpid /usr/sbin/afpd /usr/sbin/anacron /usr/sbin/apache2 /usr/sbin/apmd /usr/sbin/atalkd /usr/sbin/atd /usr/sbin/cannaserver /usr/sbin/cpuspeed /usr/sbin/cron /usr/sbin/crond /usr/sbin/cupsd /usr/sbin/dhcpd /usr/sbin/exim4 /usr/sbin/gpm /usr/sbin/hald /usr/sbin/htt /usr/sbin/httpd /usr/sbin/inetd /usr/sbin/logrotate /usr/sbin/lpd /usr/sbin/nmbd /usr/sbin/papd /usr/sbin/rpc.idmapd /usr/sbin/rpc.mountd /usr/sbin/rpc.rquotad /usr/sbin/sendmail.sendmail /usr/sbin/smartd /usr/sbin/smbd /usr/sbin/squid /usr/sbin/sshd /usr/sbin/vmware-guestd /usr/sbin/vsftpd /usr/sbin/xinetd
 	do
 		FILE=`realpath $FILE 2> /dev/null`
 		[ -n "$FILE" -a -f "$FILE" -a -x "$FILE" -a ! -L "$FILE" ] && echo 'initialize_domain '$FILE
