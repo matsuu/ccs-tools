@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 1.6.2-pre   2008/06/13
+# Version: 1.6.2-pre   2008/06/16
 #
 
 cd ${0%/*}
@@ -203,7 +203,7 @@ make_exception() {
 	# Mark programs under /etc/init.d/ directory as initializer.
 	#
 	set +f
-	for FILE in `for i in /etc/init.d/*; do realpath $i; done | sort | uniq`
+	for FILE in `for i in /etc/init.d/*; do [ -L "$i" ] || realpath $i; done | sort | uniq`
 	do
 		set -f
 		[ -n "$FILE" -a -f "$FILE" -a -x "$FILE" -a ! -L "$FILE" ] && echo "initialize_domain "$FILE
