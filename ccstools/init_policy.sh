@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 1.6.2-pre   2008/06/16
+# Version: 1.6.2-pre   2008/06/17
 #
 
 cd ${0%/*}
@@ -463,6 +463,13 @@ make_exception() {
 		echo 'file_pattern /dev/shm/sysconfig/tmp/if-eth0.\$'
 		echo 'file_pattern /dev/shm/sysconfig/tmp/if-eth0.\$.tmp'
 		echo 'file_pattern /var/run/nscd/db\?\?\?\?\?\?'
+	fi
+	
+	if [ -d /var/lib/init.d/ ]; then
+	    echo 'file_pattern /var/lib/init.d/mtime-test.\$'
+	    echo 'file_pattern /var/lib/init.d/exclusive/\*.\$'
+	    echo 'file_pattern /var/lib/init.d/depcache.\?\?\?\?\?\?\?'
+	    echo 'file_pattern /var/lib/init.d/treecache.\?\?\?\?\?\?\?'
 	fi
 	
 	echo 'file_pattern /tmp/ib\?\?\?\?\?\?'
