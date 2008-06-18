@@ -13,13 +13,18 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: ccs-queryd
+Usage: ccs-queryd [--no-check-update]
 
 This program detects policy violation in enforcing mode and displays the access request. You can tell the system whether the access request should be granted (or granted and policy should be appended to grant the access request) or rejected after you validate the access request.
 
 By running this program while updating packages, you can avoid errors due to insufficient permissions.
 
 Never grant access requests unconditionally. The cause of policy violation is not always updating packages, but may by malicious requests by attackers. If you grant access requests caused by malicious requests by attackers, the system gets intruded.
+
+Unless you give --no-check-update option, this program also detects pathname changes of globally readable files.
+This program asks you whether or not to append created pathnames which are registered in /etc/ld.so.cache to globally readable files, and asks you whether or not to remove deleted pathnames from globally readable files.
+
+By running this program without --no-check-update option, you can avoid errors like "unable to start applications because shared libraries are unreadable" when the pathnames of shared libraries accessed by general programs has changed.
 
 Examples:
 
@@ -30,10 +35,6 @@ Usage is available at http://tomoyo.sourceforge.jp/en/1.6.x/update.html
 EOF
 else
 cat << EOF | help2man -i - -N -s 8 -n "Handle TOMOYO Linux's delayed enforcing mode" $0 | gzip -9 > man8/ccs-queryd.8.gz
-[SEE ALSO]
-
- ccs-ld-watch (8)
-
 [NOTES]
 
  You need to register either path to this program ( /usr/lib/ccs/ccs-queryd ) or a domain for this program in /proc/ccs/manager before invoking this program.

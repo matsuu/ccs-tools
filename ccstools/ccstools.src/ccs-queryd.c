@@ -5,27 +5,136 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.2-pre   2008/06/06
+ * Version: 1.6.2-pre   2008/06/18
  *
  */
 #include "ccstools.h"
 
+static void do_check_update(FILE *fp_out) {
+	FILE *fp_in = fopen(proc_policy_exception_policy, "r");
+	char **pathnames = NULL;
+	int pathnames_len = 0;
+	char buffer[16384];
+	memset(buffer, 0, sizeof(buffer));
+	if (!fp_in) {
+		fprintf(stderr, "Can't open policy file.\n");
+		return;
+	}
+	while (fgets(buffer, sizeof(buffer) - 1, fp_in)) {
+		char *cp = strchr(buffer, '\n');
+		if (!cp) break;
+		*cp = '\0';
+		if (strncmp(buffer, KEYWORD_ALLOW_READ, KEYWORD_ALLOW_READ_LEN)) continue;
+		if (!decode(buffer + KEYWORD_ALLOW_READ_LEN, buffer)) continue;
+		pathnames = (char **) realloc(pathnames, sizeof(char *) * (pathnames_len + 1));
+		if (!pathnames) return;
+		pathnames[pathnames_len] = strdup(buffer);
+		if (!pathnames[pathnames_len]) return;
+		pathnames_len++;
+	}
+	fclose(fp_in);
+	while (1) {
+		char buffer[16384];
+		struct stat64 buf;
+		static time_t last_modified = 0;
+		int i;
+		fflush(fp_out);
+		sleep(1);
+		for (i = 0; i < pathnames_len; i++) {
+			int j;
+			if (stat64(pathnames[i], &buf) == 0) continue;
+			fprintf(fp_out, "-");
+			fprintf_encoded(fp_out, pathnames[i]);
+			fprintf(fp_out, "\n");
+			free(pathnames[i]);
+			pathnames_len--;
+			for (j = i; j < pathnames_len; j++) pathnames[j] = pathnames[j + 1];
+			i--;
+		}
+		if (stat64("/etc/ld.so.cache", &buf) || buf.st_mtime == last_modified) continue;
+		fp_in = popen("/sbin/ldconfig -NXp", "r");
+		if (!fp_in) continue;
+		last_modified = buf.st_mtime;
+		memset(buffer, 0, sizeof(buffer));
+		while (fgets(buffer, sizeof(buffer) - 1, fp_in)) {
+			char *cp = strchr(buffer, '\n');
+			char *real_pathname;
+			if (!cp) break;
+			*cp = '\0';
+			cp = strrchr(buffer, ' ');
+			if (!cp || *++cp != '/') continue;
+			if (stat64(cp, &buf)) continue;
+			if ((real_pathname = realpath(cp, NULL)) == NULL) continue;
+			for (i = 0; i < pathnames_len; i++) {
+				if (!strcmp(real_pathname, pathnames[i])) break;
+			}
+			if (i == pathnames_len) {
+				pathnames = (char **) realloc(pathnames, sizeof(char *) * (pathnames_len + 1));
+				if (!pathnames) return;
+				pathnames[pathnames_len] = strdup(real_pathname);
+				if (!pathnames[pathnames_len]) return;
+				pathnames_len++;
+				fprintf(fp_out, "+");
+				fprintf_encoded(fp_out, pathnames[i]);
+				fprintf(fp_out, "\n");
+			}
+			free(real_pathname);
+		}
+		pclose(fp_in);
+	}
+}
+
 extern int query_fd;
 extern char *initial_readline_data;
+
+static void handle_update(const int fd) {
+	static FILE *fp = NULL;
+	static char pathname[8192];
+	static int pathname_len = 0;
+	int c;
+	if (!fp) fp = fopen(proc_policy_exception_policy, "w");
+	if (!pathname_len) memset(pathname, 0, sizeof(pathname));
+	while (read(fd, pathname + pathname_len, 1) == 1 && pathname[pathname_len] != '\n' && pathname_len < sizeof(pathname) - 1) pathname_len++;
+	pathname[pathname_len] = '\0'; pathname_len = 0;
+	if (pathname[0] == '+') {
+		printw("The pathname %s was created. Append to globally readable file? ('Y'es/'N'o):", pathname + 1);
+	} else {
+		printw("The pathname %s was deleted. Delete from globally readable file? ('Y'es/'N'o):", pathname + 1);
+	}
+	refresh();
+	while (1) {
+		c = getch2();
+		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n') break;
+		write(query_fd, "\n", 1);
+	}
+	printw("%c\n", c); refresh();
+	if (c == 'Y' || c == 'y') {
+		if (pathname[0] == '-') fprintf(fp, KEYWORD_DELETE);
+		fprintf(fp, KEYWORD_ALLOW_READ "%s\n", pathname + 1);
+		fflush(fp);
+	}
+	printw("\n"); refresh();
+}
 
 int ccsqueryd_main(int argc, char *argv[]) {
 	const int domain_policy_fd = open(proc_policy_domain_policy, O_WRONLY);
 	static const int max_readline_history = 20;
 	static const char **readline_history = NULL;
 	static int readline_history_count = 0;
+	int check_update = 1;
+	int pipe_fd[2] = { EOF, EOF };
 	if (argc > 1) {
-		printf("Usage: %s\n\n", argv[0]);
-		printf("This program is used for granting access requests manually.\n");
-		printf("This program shows access requests that are about to rejected by the kernel's decision.\n");
-		printf("If you answer before the kernel's decision taken effect, your decision will take effect.\n");
-		printf("You can use this program to respond to accidental access requests triggered by non-routine tasks (such as restarting daemons after updating).\n");
-		printf("To terminate this program, use 'Ctrl-C'.\n");
-		return 0;
+		if (!strcmp(argv[1], "--no-check-update")) {
+			check_update = 0;
+		} else {
+			printf("Usage: %s [--no-check-update]\n\n", argv[0]);
+			printf("This program is used for granting access requests manually.\n");
+			printf("This program shows access requests that are about to rejected by the kernel's decision.\n");
+			printf("If you answer before the kernel's decision taken effect, your decision will take effect.\n");
+			printf("You can use this program to respond to accidental access requests triggered by non-routine tasks (such as restarting daemons after updating).\n");
+			printf("To terminate this program, use 'Ctrl-C'.\n");
+			return 0;
+		}
 	}
 	query_fd = open(proc_policy_query, O_RDWR);
 	if (query_fd == EOF) {
@@ -34,6 +143,21 @@ int ccsqueryd_main(int argc, char *argv[]) {
 	} else if (write(query_fd, "", 0) != 0) {
 		fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
 		return 1;
+	}
+	if (check_update) {
+		pipe(pipe_fd);
+		switch (fork()) {
+		case 0:
+			close(domain_policy_fd);
+			close(query_fd);
+			close(pipe_fd[0]);
+			do_check_update(fdopen(pipe_fd[1], "w"));
+			_exit(0);
+		case -1:
+			fprintf(stderr, "Can't fork().\n");
+			return 1;
+		}
+		close(pipe_fd[1]); pipe_fd[1] = EOF;
 	}
 	readline_history = malloc(max_readline_history * sizeof(const char *));
 	write(query_fd, "\n", 1);
@@ -57,7 +181,9 @@ int ccsqueryd_main(int argc, char *argv[]) {
 		// Wait for query.
 		FD_ZERO(&rfds);
 		FD_SET(query_fd, &rfds);
-		select(query_fd + 1, &rfds, NULL, NULL, NULL);
+		if (pipe_fd[0] != EOF) FD_SET(pipe_fd[0], &rfds);
+		select(query_fd > pipe_fd[0] ? query_fd + 1 : pipe_fd[0] + 1, &rfds, NULL, NULL, NULL);
+		if (pipe_fd[0] != EOF && FD_ISSET(pipe_fd[0], &rfds)) handle_update(pipe_fd[0]);
 		if (!FD_ISSET(query_fd, &rfds)) continue;
 		
 		// Read query.

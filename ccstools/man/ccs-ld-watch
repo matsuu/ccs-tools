@@ -36,6 +36,8 @@ cat << EOF | help2man -i - -N -s 8 -n "Update TOMOYO Linux's library's pathnames
 
  You need to register either path to this program ( /usr/lib/ccs/ld-watch ) or a domain for this program in /proc/ccs/manager before invoking this program.
 
+ This program is obsolete. You can run ccs-queryd instead of running this program.
+
 [AUTHORS]
 
  penguin-kernel _at_ I-love.SAKURA.ne.jp

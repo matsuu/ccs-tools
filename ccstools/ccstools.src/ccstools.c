@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.2-pre   2008/06/10
+ * Version: 1.6.2-pre   2008/06/18
  *
  */
 #include "ccstools.h"
@@ -148,6 +148,37 @@ void fprintf_encoded(FILE *fp, const char *pathname) {
 			fprintf(fp, "\\%c%c%c", (c >> 6) + '0', ((c >> 3) & 7) + '0', (c & 7) + '0'); 
 		}
 	}
+}
+
+int decode(const char *ascii, char *bin) {
+	char c, d, e;
+	while ((c = *bin++ = *ascii++) != '\0') {
+		if (c == '\\') {
+			c = *ascii++;
+			switch (c) {
+			case '\\':      /* "\\" */
+				continue;
+			case '0':       /* "\ooo" */
+			case '1':
+			case '2':
+			case '3':
+				if ((d = *ascii++) >= '0' && d <= '7' && (e = *ascii++) >= '0' && e <= '7') {
+					const unsigned char f =
+						(((unsigned char) (c - '0')) << 6) +
+						(((unsigned char) (d - '0')) << 3) +
+						(((unsigned char) (e - '0')));
+					if (f && (f <= ' ' || f >= 127)) {
+						*(bin - 1) = f;
+						continue; /* pattern is not \000 */
+					}
+				}
+			}
+			return 0;
+		} else if (c <= ' ' || c >= 127) {
+			return 0;
+		}
+	}
+	return 1;
 }
 
 void RemoveHeader(char *line, const int len) {
@@ -519,7 +550,7 @@ retry:
 	 * because it is dangerous to allow updating policies via unchecked argv[1].
 	 * You should use either "symbolic links with 'alias' directive" or "hard links".
 	 */
-	printf("ccstools version 1.6.2-pre build 2008/06/10\n");
+	printf("ccstools version 1.6.2-pre build 2008/06/18\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }

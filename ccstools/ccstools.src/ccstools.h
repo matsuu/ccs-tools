@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0   2008/04/01
+ * Version: 1.6.2-pre   2008/06/18
  *
  */
 
@@ -223,6 +223,7 @@ void NormalizeLine(unsigned char *line);
 int IsDomainDef(const unsigned char *domainname);
 int IsCorrectDomain(const unsigned char *domainname);
 void fprintf_encoded(FILE *fp, const char *pathname);
+int decode(const char *ascii, char *bin);
 void RemoveHeader(char *line, const int len);
 int IsCorrectPath(const char *filename, const int start_type, const int pattern_type, const int end_type);
 int FileMatchesToPattern(const char *filename, const char *filename_end, const char *pattern, const char *pattern_end);
