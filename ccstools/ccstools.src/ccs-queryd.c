@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.2-pre   2008/06/18
+ * Version: 1.6.2-pre   2008/06/19
  *
  */
 #include "ccstools.h"
@@ -87,6 +87,12 @@ static void do_check_update(FILE *fp_out) {
 extern int query_fd;
 extern char *initial_readline_data;
 
+#define GLOBALLY_READABLE_FILES_UPDATE_NONE 0
+#define GLOBALLY_READABLE_FILES_UPDATE_ASK  1
+#define GLOBALLY_READABLE_FILES_UPDATE_AUTO 2
+
+static int check_update = GLOBALLY_READABLE_FILES_UPDATE_AUTO;
+
 static void handle_update(const int fd) {
 	static FILE *fp = NULL;
 	static char pathname[8192];
@@ -96,6 +102,12 @@ static void handle_update(const int fd) {
 	if (!pathname_len) memset(pathname, 0, sizeof(pathname));
 	while (read(fd, pathname + pathname_len, 1) == 1 && pathname[pathname_len] != '\n' && pathname_len < sizeof(pathname) - 1) pathname_len++;
 	pathname[pathname_len] = '\0'; pathname_len = 0;
+	if (check_update == GLOBALLY_READABLE_FILES_UPDATE_AUTO) {
+		if (pathname[0] == '-') fprintf(fp, KEYWORD_DELETE);
+		fprintf(fp, KEYWORD_ALLOW_READ "%s\n", pathname + 1);
+		fflush(fp);
+		return;
+	}
 	if (pathname[0] == '+') {
 		printw("The pathname %s was created. Append to globally readable file? ('Y'es/'N'o):", pathname + 1);
 	} else {
@@ -121,21 +133,24 @@ int ccsqueryd_main(int argc, char *argv[]) {
 	static const int max_readline_history = 20;
 	static const char **readline_history = NULL;
 	static int readline_history_count = 0;
-	int check_update = 1;
 	int pipe_fd[2] = { EOF, EOF };
-	if (argc > 1) {
-		if (!strcmp(argv[1], "--no-check-update")) {
-			check_update = 0;
-		} else {
-			printf("Usage: %s [--no-check-update]\n\n", argv[0]);
-			printf("This program is used for granting access requests manually.\n");
-			printf("This program shows access requests that are about to rejected by the kernel's decision.\n");
-			printf("If you answer before the kernel's decision taken effect, your decision will take effect.\n");
-			printf("You can use this program to respond to accidental access requests triggered by non-routine tasks (such as restarting daemons after updating).\n");
-			printf("To terminate this program, use 'Ctrl-C'.\n");
-			return 0;
-		}
+	if (argc == 1) goto ok;
+	if (!strcmp(argv[1], "--no-update")) {
+		check_update = GLOBALLY_READABLE_FILES_UPDATE_NONE;
+		goto ok;
 	}
+	if (!strcmp(argv[1], "--ask-update")) {
+		check_update = GLOBALLY_READABLE_FILES_UPDATE_ASK;
+		goto ok;
+	}
+	printf("Usage: %s [--no-update|--ask-update]\n\n", argv[0]);
+	printf("This program is used for granting access requests manually.\n");
+	printf("This program shows access requests that are about to rejected by the kernel's decision.\n");
+	printf("If you answer before the kernel's decision taken effect, your decision will take effect.\n");
+	printf("You can use this program to respond to accidental access requests triggered by non-routine tasks (such as restarting daemons after updating).\n");
+	printf("To terminate this program, use 'Ctrl-C'.\n");
+	return 0;
+ ok:
 	query_fd = open(proc_policy_query, O_RDWR);
 	if (query_fd == EOF) {
 		fprintf(stderr, "You can't run this utility for this kernel.\n");

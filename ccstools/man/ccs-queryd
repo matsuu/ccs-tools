@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: ccs-queryd [--no-check-update]
+Usage: ccs-queryd [--no-update|--ask-update]
 
 This program detects policy violation in enforcing mode and displays the access request. You can tell the system whether the access request should be granted (or granted and policy should be appended to grant the access request) or rejected after you validate the access request.
 
@@ -21,10 +21,11 @@ By running this program while updating packages, you can avoid errors due to ins
 
 Never grant access requests unconditionally. The cause of policy violation is not always updating packages, but may by malicious requests by attackers. If you grant access requests caused by malicious requests by attackers, the system gets intruded.
 
-Unless you give --no-check-update option, this program also detects pathname changes of globally readable files.
-This program asks you whether or not to append created pathnames which are registered in /etc/ld.so.cache to globally readable files, and asks you whether or not to remove deleted pathnames from globally readable files.
+If you don't give --no-update option, this program also detects pathname changes of globally readable files.
+If you give --ask-update option, this program asks you whether or not to append created pathnames which are registered in /etc/ld.so.cache to globally readable files, and asks you whether or not to remove deleted pathnames from globally readable files.
+If you omit options, this program automatically appends created pathnames which are registered in /etc/ld.so.cache to globally readable files, and automatically removes deleted pathnames from globally readable files.
 
-By running this program without --no-check-update option, you can avoid errors like "unable to start applications because shared libraries are unreadable" when the pathnames of shared libraries accessed by general programs has changed.
+By running this program without --no-update option, you can avoid errors like "unable to start applications because shared libraries are unreadable" when the pathnames of shared libraries accessed by general programs has changed.
 
 Examples:
 
