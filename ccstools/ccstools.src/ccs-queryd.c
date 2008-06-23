@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.2-pre   2008/06/19
+ * Version: 1.6.2-pre   2008/06/23
  *
  */
 #include "ccstools.h"
@@ -106,13 +106,10 @@ static void handle_update(const int fd) {
 		if (pathname[0] == '-') fprintf(fp, KEYWORD_DELETE);
 		fprintf(fp, KEYWORD_ALLOW_READ "%s\n", pathname + 1);
 		fflush(fp);
+		printw("The pathname %s was %s globally readable file.\n", pathname + 1, (pathname[0] == '-') ? "deleted. Deleted from" : "created. Appended to");
 		return;
 	}
-	if (pathname[0] == '+') {
-		printw("The pathname %s was created. Append to globally readable file? ('Y'es/'N'o):", pathname + 1);
-	} else {
-		printw("The pathname %s was deleted. Delete from globally readable file? ('Y'es/'N'o):", pathname + 1);
-	}
+	printw("The pathname %s was %s globally readable file? ('Y'es/'N'o):", pathname + 1, (pathname[0] == '-') ? "deleted. Delete from" : "created. Append to");
 	refresh();
 	while (1) {
 		c = getch2();

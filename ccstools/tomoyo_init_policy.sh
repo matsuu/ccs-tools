@@ -432,6 +432,42 @@ make_exception() {
 	fi
 	
 	#
+	# Make patterns for postgresql.
+	#
+	if [ -d /var/lib/pgsql/data/ ]; then
+		echo 'file_pattern /var/lib/pgsql/data/base/\$/'
+		echo 'file_pattern /var/lib/pgsql/data/base/\$/\$'
+		echo 'file_pattern /var/lib/pgsql/data/base/global/pg_database.\$'
+		echo 'file_pattern /var/lib/pgsql/data/base/\$/pg_internal.init.\$'
+		echo 'file_pattern /var/lib/pgsql/data/global/pg_auth.\$'
+		echo 'file_pattern /var/lib/pgsql/data/global/pg_database.\$'
+		echo 'file_pattern /var/lib/pgsql/data/pg_xlog/xlogtemp.\$'
+	fi
+	if [ -d /var/lib/postgres/data/ ]; then
+		echo 'file_pattern /var/lib/postgres/data/base/\$/'
+		echo 'file_pattern /var/lib/postgres/data/base/\$/\$'
+		echo 'file_pattern /var/lib/postgres/data/global/\$'
+		echo 'file_pattern /var/lib/postgres/data/global/pgstat.tmp.\$'
+		echo 'file_pattern /var/lib/postgres/data/pg_clog/\$'
+		echo 'file_pattern /var/lib/postgres/data/pg_xlog/\$'
+	fi
+	if [ -d /var/lib/postgresql/ ]; then
+		echo 'file_pattern /var/lib/postgresql/\*/main/base/\$/'
+		echo 'file_pattern /var/lib/postgresql/\*/main/base/\$/\$'
+		echo 'file_pattern /var/lib/postgresql/\*/main/base/\$/pg_internal.init.\$'
+		echo 'file_pattern /var/lib/postgresql/\*/main/base/\$/PG_VERSION'
+		echo 'file_pattern /var/lib/postgresql/\*/main/global/\$'
+		echo 'file_pattern /var/lib/postgresql/\*/main/global/\$/pg_auth.\$'
+		echo 'file_pattern /var/lib/postgresql/\*/main/global/\$/pg_database.\$'
+		echo 'file_pattern /var/lib/postgresql/\*/main/pg_clog/\$'
+		echo 'file_pattern /var/lib/postgresql/\*/main/pg_multixact/members/\$'
+		echo 'file_pattern /var/lib/postgresql/\*/main/pg_multixact/offsets/\$'
+		echo 'file_pattern /var/lib/postgresql/\*/main/pg_subtrans/\$'
+		echo 'file_pattern /var/lib/postgresql/\*/main/pg_xlog/\$'
+		echo 'file_pattern /var/lib/postgresql/\*/main/pg_xlog/xlogtemp.\$'
+	fi
+	
+	#
 	# Miscellaneous patterns.
 	#
 	if grep -qF "Red Hat Linux" /etc/issue; then
