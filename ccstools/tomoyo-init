@@ -2,9 +2,9 @@
 #
 # Policy Loader.
 #
-# Copyright (C) 2005-2007  NTT DATA CORPORATION
+# Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 2.1.1 2007/12/05
+# Version: 2.2.0-pre 2008/06/23
 #
 # This program is executed automatically by kernel
 # when execution of /sbin/init is requested.
@@ -88,8 +88,7 @@ done
 if cd /etc/tomoyo/ 2> /dev/null; then
     CHDIR_OK=1
 else
-    echo "TOMOYO Linux: Policy directory doesn't exist."
-    PROFILE="ask"
+    PROFILE="disable"
 fi
 
 # Does selected profile exist?
@@ -154,9 +153,13 @@ if [ $TOMOYO_QUIET -eq 1 ]; then
     grep -F TOMOYO_VERBOSE $POLICY_DIR/profile | sed -e 's/[0-9]*$/0/' > $POLICY_DIR/profile
 fi
 
+# Do additional initialization.
+[ -x /etc/tomoyo/tomoyo-post-init ] && /etc/tomoyo/tomoyo-post-init
+
 [ -r $POLICY_DIR/domain_policy ] && awk ' BEGIN { domain=0; acl=0; } { if ( $1 == "<kernel>" ) domain++; else if ( $1 != "" && $1 != "use_profile") acl++; } END { print domain " domains. " acl " ACL entries."; } ' $POLICY_DIR/domain_policy
 
-awk ' BEGIN { shared_mem=0; private_mem=0; } { if ( $1 == "Shared:" ) shared_mem = $NF / 1024; else if ( $1 == "Private:" ) private_mem = $NF / 1024; } END { print shared_mem " KB shared. " private_mem " KB private."; } ' $POLICY_DIR/meminfo
+# Show memory usage.
+awk ' BEGIN { shared_mem=0; private_mem=0; } { if ( $1 == "Shared:" ) shared_mem = $2 / 1024; else if ( $1 == "Private:" ) private_mem = $2 / 1024; } END { print shared_mem " KB shared. " private_mem " KB private."; } ' $POLICY_DIR/meminfo
 
 # [ $SECURITY_UNMOUNT -eq 1 ] && umount -n /sys/kernel/security
 # [ $SYS_UNMOUNT -eq 1 ] && umount -n /sys
