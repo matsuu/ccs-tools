@@ -106,7 +106,8 @@ static void handle_update(const int fd) {
 		if (pathname[0] == '-') fprintf(fp, KEYWORD_DELETE);
 		fprintf(fp, KEYWORD_ALLOW_READ "%s\n", pathname + 1);
 		fflush(fp);
-		printw("The pathname %s was %s globally readable file.\n", pathname + 1, (pathname[0] == '-') ? "deleted. Deleted from" : "created. Appended to");
+		printw("The pathname %s was %s globally readable file.\n\n", pathname + 1, (pathname[0] == '-') ? "deleted. Deleted from" : "created. Appended to");
+		refresh();
 		return;
 	}
 	printw("The pathname %s was %s globally readable file? ('Y'es/'N'o):", pathname + 1, (pathname[0] == '-') ? "deleted. Delete from" : "created. Append to");
