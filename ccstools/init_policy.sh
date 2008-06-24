@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 1.6.2-pre   2008/06/23
+# Version: 1.6.2-pre   2008/06/24
 #
 
 cd ${0%/*}
@@ -437,10 +437,18 @@ make_exception() {
 	if [ -d /var/lib/pgsql/data/ ]; then
 		echo 'file_pattern /var/lib/pgsql/data/base/\$/'
 		echo 'file_pattern /var/lib/pgsql/data/base/\$/\$'
+		echo 'file_pattern /var/lib/pgsql/data/base/\$/PG_VERSION'
 		echo 'file_pattern /var/lib/pgsql/data/base/global/pg_database.\$'
 		echo 'file_pattern /var/lib/pgsql/data/base/\$/pg_internal.init.\$'
+		echo 'file_pattern /var/lib/pgsql/data/base/\$/pg_internal.init'
+		echo 'file_pattern /var/lib/pgsql/data/global/\$'
 		echo 'file_pattern /var/lib/pgsql/data/global/pg_auth.\$'
 		echo 'file_pattern /var/lib/pgsql/data/global/pg_database.\$'
+		echo 'file_pattern /var/lib/pgsql/data/pg_clog/\X'
+		echo 'file_pattern /var/lib/pgsql/data/pg_multixact/members/\X'
+		echo 'file_pattern /var/lib/pgsql/data/pg_multixact/offsets/\X'
+		echo 'file_pattern /var/lib/pgsql/data/pg_subtrans/\X'
+		echo 'file_pattern /var/lib/pgsql/data/pg_xlog/\X'
 		echo 'file_pattern /var/lib/pgsql/data/pg_xlog/xlogtemp.\$'
 	fi
 	if [ -d /var/lib/postgres/data/ ]; then
@@ -448,8 +456,8 @@ make_exception() {
 		echo 'file_pattern /var/lib/postgres/data/base/\$/\$'
 		echo 'file_pattern /var/lib/postgres/data/global/\$'
 		echo 'file_pattern /var/lib/postgres/data/global/pgstat.tmp.\$'
-		echo 'file_pattern /var/lib/postgres/data/pg_clog/\$'
-		echo 'file_pattern /var/lib/postgres/data/pg_xlog/\$'
+		echo 'file_pattern /var/lib/postgres/data/pg_clog/\X'
+		echo 'file_pattern /var/lib/postgres/data/pg_xlog/\X'
 	fi
 	if [ -d /var/lib/postgresql/ ]; then
 		echo 'file_pattern /var/lib/postgresql/\*/main/base/\$/'
@@ -459,11 +467,11 @@ make_exception() {
 		echo 'file_pattern /var/lib/postgresql/\*/main/global/\$'
 		echo 'file_pattern /var/lib/postgresql/\*/main/global/\$/pg_auth.\$'
 		echo 'file_pattern /var/lib/postgresql/\*/main/global/\$/pg_database.\$'
-		echo 'file_pattern /var/lib/postgresql/\*/main/pg_clog/\$'
-		echo 'file_pattern /var/lib/postgresql/\*/main/pg_multixact/members/\$'
-		echo 'file_pattern /var/lib/postgresql/\*/main/pg_multixact/offsets/\$'
-		echo 'file_pattern /var/lib/postgresql/\*/main/pg_subtrans/\$'
-		echo 'file_pattern /var/lib/postgresql/\*/main/pg_xlog/\$'
+		echo 'file_pattern /var/lib/postgresql/\*/main/pg_clog/\X'
+		echo 'file_pattern /var/lib/postgresql/\*/main/pg_multixact/members/\X'
+		echo 'file_pattern /var/lib/postgresql/\*/main/pg_multixact/offsets/\X'
+		echo 'file_pattern /var/lib/postgresql/\*/main/pg_subtrans/\X'
+		echo 'file_pattern /var/lib/postgresql/\*/main/pg_xlog/\X'
 		echo 'file_pattern /var/lib/postgresql/\*/main/pg_xlog/xlogtemp.\$'
 	fi
 	
@@ -510,7 +518,14 @@ make_exception() {
 	
 	echo 'file_pattern /tmp/ib\?\?\?\?\?\?'
 	echo 'file_pattern /tmp/PerlIO_\?\?\?\?\?\?'
-
+	[ -d /var/run/hald/ ] && echo 'file_pattern /var/run/hald/acl-list.\?\?\?\?\?\?'
+	if [ -d /usr/share/zoneinfo/ ]; then
+		echo 'file_pattern /usr/share/zoneinfo/\*'
+		echo 'file_pattern /usr/share/zoneinfo/\*/\*'
+		echo 'file_pattern /usr/share/zoneinfo/\*/\*/\*'
+		echo 'file_pattern /usr/share/zoneinfo/\*/\*/\*/\*'
+	fi
+	
 	#
 	# Make /var/log/ directory not rewritable by default.
 	#
