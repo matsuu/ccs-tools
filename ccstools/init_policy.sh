@@ -434,13 +434,14 @@ make_exception() {
 	#
 	# Make patterns for postgresql.
 	#
-	if [ -d /var/lib/pgsql/data/ ]; then
+	if [ -d /var/lib/pgsql/ ]; then
 		echo 'file_pattern /var/lib/pgsql/data/base/\$/'
 		echo 'file_pattern /var/lib/pgsql/data/base/\$/\$'
-		echo 'file_pattern /var/lib/pgsql/data/base/\$/PG_VERSION'
 		echo 'file_pattern /var/lib/pgsql/data/base/global/pg_database.\$'
 		echo 'file_pattern /var/lib/pgsql/data/base/\$/pg_internal.init.\$'
 		echo 'file_pattern /var/lib/pgsql/data/base/\$/pg_internal.init'
+		echo 'file_pattern /var/lib/pgsql/data/base/pgsql_tmp/pgsql_tmp\*'
+		echo 'file_pattern /var/lib/pgsql/data/base/\$/PG_VERSION'
 		echo 'file_pattern /var/lib/pgsql/data/global/\$'
 		echo 'file_pattern /var/lib/pgsql/data/global/pg_auth.\$'
 		echo 'file_pattern /var/lib/pgsql/data/global/pg_database.\$'
@@ -448,10 +449,12 @@ make_exception() {
 		echo 'file_pattern /var/lib/pgsql/data/pg_multixact/members/\X'
 		echo 'file_pattern /var/lib/pgsql/data/pg_multixact/offsets/\X'
 		echo 'file_pattern /var/lib/pgsql/data/pg_subtrans/\X'
+		echo 'file_pattern /var/lib/pgsql/data/pg_tblspc/\$'
+		echo 'file_pattern /var/lib/pgsql/data/pg_twophase/\X'
 		echo 'file_pattern /var/lib/pgsql/data/pg_xlog/\X'
 		echo 'file_pattern /var/lib/pgsql/data/pg_xlog/xlogtemp.\$'
 	fi
-	if [ -d /var/lib/postgres/data/ ]; then
+	if [ -d /var/lib/postgres/ ]; then
 		echo 'file_pattern /var/lib/postgres/data/base/\$/'
 		echo 'file_pattern /var/lib/postgres/data/base/\$/\$'
 		echo 'file_pattern /var/lib/postgres/data/global/\$'
