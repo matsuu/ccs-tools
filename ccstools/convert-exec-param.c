@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.2-pre   2008/06/09
+ * Version: 1.6.2-pre   2008/06/25
  *
  */
 #include <stdio.h>
@@ -20,6 +20,7 @@ int main(int argc, char *argv[]) {
 		char *cp1, *cp2;
 		
 		// Find header line.
+		i = getc(stdin); if (i) ungetc(i, stdin);
 		if (!fgets(buffer[0], sizeof(buffer[0]) - 1, stdin)) break;
 		line++;
 		if (!strchr(buffer[0], '\n')) goto out;
@@ -46,10 +47,12 @@ int main(int argc, char *argv[]) {
 		
 		// Get domainname.
 		line++;
+		i = getc(stdin); if (i) ungetc(i, stdin);
 		if (!fgets(buffer[1], sizeof(buffer[1]) - 1, stdin) || !strchr(buffer[1], '\n')) goto out;
 		
 		// Get "allow_execute " line.
 		line++;
+		i = getc(stdin); if (i) ungetc(i, stdin);
 		if (!fgets(buffer[2], sizeof(buffer[2]) - 1, stdin) ||
 		    (cp1 = strchr(buffer[2], '\n')) == NULL) goto out;
 		*cp1-- = '\0';
