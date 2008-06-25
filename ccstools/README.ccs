@@ -1,7 +1,7 @@
 About this package:
 
 This package contains userland programs
-for TOMOYO Linux version 1.6.1 .
+for TOMOYO Linux version 1.6.2 .
 This package is released under the GPLv2.
 
 http://tomoyo.sourceforge.jp/
@@ -329,3 +329,28 @@ Version 1.6.1 2008/05/10   Minor update release.
 
     init_policy.sh:
       Check /usr/lib for symbolic link.
+
+Version 1.6.2 2008/06/25   Usability enhancement release.
+
+  The following programs were updated.
+
+    ccs-init:
+      Don't wait for user's input if /etc/ccs/ doesn't exist.
+
+    init_policy.sh:
+      Add some files under /usr/share/ to globally readable files.
+      Don't make patterns for /sys/ .
+      Fix some bugs.
+
+    ccs-queryd:
+      Show more information regarding pending requests.
+      Merge functionality of ld-watch .
+
+    ccs-notifyd:
+      Show more information regarding pending requests.
+
+  The following program was added.
+
+    convert-exec-param:
+      Generate "allow_execute" entry which considers argv[] values
+      from access logs.
