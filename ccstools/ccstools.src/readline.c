@@ -3,9 +3,9 @@
  *
  * TOMOYO Linux's utilities.
  *
- * Copyright (C) 2005-2007  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.5.0   2007/09/20
+ * Version: 1.6.2+   2008/07/07
  *
  */
 #include "ccstools.h"
@@ -15,7 +15,7 @@ static int getch0(void) {
 	int c;
 again:
 	c = getch();
-	if (c == 127) c = KEY_BACKSPACE;
+	if (c == 127 || c == 8) c = KEY_BACKSPACE;
 	//syslog(LOG_INFO, "getch0='%c' (%d)\n", c, c);
 	if (c == '\r' || c == '\n') {
 		if (enter_key == EOF) enter_key = c;
