@@ -23,7 +23,7 @@ install: all
 	cp -af --remove-destination $(MISC_FILES) $(INSTALLDIR)/usr/lib/ccs/misc/
 	cp -af --remove-destination README.ccs COPYING.ccs $(INSTALLDIR)/usr/lib/ccs/
 	chown -R root:root ccs-init tomoyo-init $(INSTALLDIR)/usr/lib/ccs/
-	chmod 4755 $(INSTALLDIR)/usr/lib/ccs/misc/proxy $(INSTALLDIR)/usr/lib/ccs/misc/force-logout
+	chmod 4755 $(INSTALLDIR)/usr/lib/ccs/misc/force-logout
 	chmod 700 ccs-init tomoyo-init
 	cp -af --remove-destination ccs-init tomoyo-init $(INSTALLDIR)/sbin/
 	mkdir -p $(INSTALLDIR)/usr/share/man/man8/

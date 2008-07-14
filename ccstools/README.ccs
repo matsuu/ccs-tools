@@ -354,3 +354,14 @@ Version 1.6.2 2008/06/25   Usability enhancement release.
     convert-exec-param:
       Generate "allow_execute" entry which considers argv[] values
       from access logs.
+
+Version 1.6.3 2008/??/??   Bug fix release.
+
+  The following programs were updated.
+
+    editpolicy:
+      Treat ASCII code's BS character as ncurses code's BS character.
+
+    proxy:
+      Dropped suid-root since /usr/lib/ccs/ is globally accessible
+      since 1.6.2 .

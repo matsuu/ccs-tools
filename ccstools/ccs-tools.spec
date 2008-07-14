@@ -38,11 +38,14 @@ rm -rf $RPM_BUILD_ROOT
 /usr/lib/ccs/
 /usr/sbin/
 /usr/share/man/
-%attr(4755,root,root) /usr/lib/ccs/misc/proxy
 %attr(4755,root,root) /usr/lib/ccs/misc/force-logout
 %config(noreplace) /usr/lib/ccs/ccstools.conf
 
 %changelog
+* Wed Jul ?? 2008 1.6.3-1
+- Bug fix release.
+- Dropped suid-root from /usr/lib/ccs/misc/proxy because /usr/lib/ccs/ is 0755.
+
 * Wed Jun 25 2008 1.6.2-1
 - Minor update release.
 - Change permission of /usr/lib/ccs/ to 0755
