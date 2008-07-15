@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-tomoyo_init_policy.sh 1.6.2
+tomoyo_init_policy.sh 1.6.3
 
 Copyright (C) 2005-2008 NTT DATA CORPORATION.
 
