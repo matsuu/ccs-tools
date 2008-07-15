@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.2   2008/06/25
+ * Version: 1.6.3   2008/07/15
  *
  */
 #include "ccstools.h"
@@ -550,7 +550,7 @@ retry:
 	 * because it is dangerous to allow updating policies via unchecked argv[1].
 	 * You should use either "symbolic links with 'alias' directive" or "hard links".
 	 */
-	printf("ccstools version 1.6.2 build 2008/06/25\n");
+	printf("ccstools version 1.6.3 build 2008/07/15\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }

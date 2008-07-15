@@ -1,7 +1,7 @@
 About this package:
 
 This package contains userland programs
-for TOMOYO Linux version 1.6.2 .
+for TOMOYO Linux version 1.6.3 .
 This package is released under the GPLv2.
 
 http://tomoyo.sourceforge.jp/
@@ -355,7 +355,7 @@ Version 1.6.2 2008/06/25   Usability enhancement release.
       Generate "allow_execute" entry which considers argv[] values
       from access logs.
 
-Version 1.6.3 2008/??/??   Bug fix release.
+Version 1.6.3 2008/07/15   Bug fix release.
 
   The following programs were updated.
 
