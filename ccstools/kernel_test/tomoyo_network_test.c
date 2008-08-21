@@ -3,9 +3,9 @@
  *
  * Testing program for fs/tomoyo_network.c
  *
- * Copyright (C) 2005-2007  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.5.0   2007/09/20
+ * Version: 1.6.4-pre   2008/08/21
  *
  */
 #include "include.h"
@@ -56,6 +56,15 @@ static void ShowResult3(int result) {
 	} else {
 		if (result != EOF) printf("OK\n");
 		else printf("%s\n", strerror(errno));
+	}
+}
+
+static void ShowResult4(int result) {
+	if (result == EOF) {
+		if (errno == EDESTADDRREQ) printf("OK: Destination address required.\n");
+		else printf("BUG!: %s\n", strerror(errno));
+	} else {
+		printf("BUG!(%d)\n", result);
 	}
 }
 
@@ -147,17 +156,17 @@ static void StageNetworkTest(void) {
 
 		snprintf(cbuffer, sizeof(cbuffer) - 1, "Client: Sending UDP 127.0.0.1 %d using send()", ntohs(saddr.sin_port));
 		SetEnforce(1); ShowPrompt(cbuffer);
-		ShowResult(send(fd2, "", 1, 0));
+		ShowResult4(send(fd2, "", 1, 0));
 		SetEnforce(0); ShowPrompt(cbuffer);
-		ShowResult(send(fd2, "", 1, 0));
+		ShowResult4(send(fd2, "", 1, 0));
 		
 		/* write() -> read() */
 
 		snprintf(cbuffer, sizeof(cbuffer) - 1, "Client: Sending UDP 127.0.0.1 %d using write()", ntohs(saddr.sin_port));
 		SetEnforce(1); ShowPrompt(cbuffer);
-		ShowResult(write(fd2, "", 1));
+		ShowResult4(write(fd2, "", 1));
 		SetEnforce(0); ShowPrompt(cbuffer);
-		ShowResult(write(fd2, "", 1));
+		ShowResult4(write(fd2, "", 1));
 		
 		/* connect() */
 

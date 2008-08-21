@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.1   2008/05/10
+ * Version: 1.6.4-pre   2008/08/21
  *
  */
 #include "include.h"
@@ -68,6 +68,15 @@ static void show_result(int result, char should_success) {
 	}
 }
 
+static void show_result2(int result) {
+	printf("%s : ", policy);
+	if (result == EOF) {
+		if (errno == ECONNABORTED) printf("OK: Software caused connection abort.\n");
+		else printf("BUG: %s\n", strerror(errno));
+	} else {
+		printf("BUG\n");
+	}
+}
 
 static void StageNetworkTest(void) {
 	int i;
@@ -116,7 +125,7 @@ static void StageNetworkTest(void) {
 		snprintf(buffer, sizeof(buffer) - 1, "allow_network TCP accept 127.0.0.1 %u-%u", ntohs(caddr.sin_port) - 1, ntohs(caddr.sin_port) + 1);
 		errno = 0;
 		fd3 = accept(fd1, (struct sockaddr *) &caddr, &size);
-		show_result(fd3, 0);
+		show_result2(fd3);
 		if (fd3 != EOF) close(fd3);
 
 		close(fd2);
@@ -186,7 +195,7 @@ static void StageNetworkTest(void) {
 		snprintf(buffer, sizeof(buffer) - 1, "allow_network TCP accept 0:0:0:0:0:0:0:1 %u-%u", ntohs(caddr.sin6_port) - 1, ntohs(caddr.sin6_port) + 1);
 		errno = 0;
 		fd3 = accept(fd1, (struct sockaddr *) &caddr, &size);
-		show_result(fd3, 0);
+		show_result2(fd3);
 		if (fd3 != EOF) close(fd3);
 
 		close(fd2);

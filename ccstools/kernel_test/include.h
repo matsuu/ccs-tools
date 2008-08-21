@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.2   2008/06/25
+ * Version: 1.6.4-pre   2008/08/21
  *
  */
 #include <errno.h>
@@ -134,7 +134,7 @@ static void ClearStatus(void) {
 		}
 		write(status_fd, "=0\n", 3);
 	}
-	write(status_fd, buffer, strlen(buffer));
+	write(status_fd, "255-SLEEP_PERIOD=1\n", 19);
 	fclose(fp);
 }
 
