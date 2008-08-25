@@ -13,9 +13,11 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: ccs-savepolicy [s][e][d][a][f]
+Usage: ccs-savepolicy [-][s][e][d][a][f][p][m]
 
 This program saves TOMOYO Linux's policy from kernel into files.
+
+ -     Write policy to stdout. Specify only one of "sedpm" option when you use this option.
 
  s     Save system_policy. ( /etc/ccs/system_policy.conf )
 
@@ -24,6 +26,10 @@ This program saves TOMOYO Linux's policy from kernel into files.
  d     Save domain_policy. ( /etc/ccs/domain_policy.conf )
 
  a     Save system_policy, exception_policy and domain_policy. This is default.
+
+ p     Save profile. ( /etc/ccs/profile.conf )
+
+ m     Save manager. ( /etc/ccs/manager.conf )
 
  f     Forcefully save even if the on-memory policy and the on-disk policy are identical.
 
