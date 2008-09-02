@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-tomoyo-init 1.6.3
+tomoyo-init 1.6.4
 
 Copyright (C) 2005-2008 NTT DATA CORPORATION.
 

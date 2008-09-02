@@ -1,7 +1,7 @@
 About this package:
 
 This package contains userland programs
-for TOMOYO Linux version 1.6.3 .
+for TOMOYO Linux version 1.6.4 .
 This package is released under the GPLv2.
 
 http://tomoyo.sourceforge.jp/
@@ -365,3 +365,9 @@ Version 1.6.3 2008/07/15   Bug fix release.
     proxy:
       Dropped suid-root since /usr/lib/ccs/ is globally accessible
       since 1.6.2 .
+
+Version 1.6.4 2008/09/03   Bug fix release.
+
+  No changes for tools.
+
+  Only programs for testing kernel were updated.

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4-pre   2008/08/21
+ * Version: 1.6.4   2008/09/03
  *
  */
 #include <errno.h>
