@@ -42,7 +42,7 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) /usr/lib/ccs/ccstools.conf
 
 %changelog
-* Wed Sep 3 2008 1.6.4-1
+* Wed Sep 03 2008 1.6.4-1
 - Minor update release.
 
 * Tue Jul 15 2008 1.6.3-1
