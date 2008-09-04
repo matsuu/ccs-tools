@@ -1606,12 +1606,43 @@ static void try_optimize(const int current) {
 	get();
 	for (index = 0; index < list_item_count[current_screen]; index++) {
 		const char *cp = generic_acl_list[index];
+		int d_len;
 		if (index == current) continue;
 		if (generic_acl_list_selected[index]) continue;
-		if (strncmp(cp, directive, directive_len)) continue;
-		memmove(shared_buffer, cp, shared_buffer_len - 1);
+		if (directive_index == 5 || directive_index == 10) {
+			/* Source starts with "6 " or "allow_read/write " */
+			if (!strncmp(cp, directive_list[5], directive_list_len[5])) {
+				d_len = directive_list_len[5]; /* Dest starts with "6 " */
+			} else if (!strncmp(cp, directive_list[10], directive_list_len[10])) {
+				d_len = directive_list_len[10]; /* Dest starts with "allow_read/write " */
+			} else if (!strncmp(cp, directive_list[1], directive_list_len[1])) {
+				d_len = directive_list_len[1]; /* Dest starts with "2 " */
+			} else if (!strncmp(cp, directive_list[3], directive_list_len[3])) {
+				d_len = directive_list_len[3]; /* Dest starts with "4 " */
+			} else if (!strncmp(cp, directive_list[8], directive_list_len[8])) {
+				d_len = directive_list_len[8]; /* Dest starts with "allow_read " */
+			} else if (!strncmp(cp, directive_list[9], directive_list_len[9])) {
+				d_len = directive_list_len[9]; /* Dest starts with "allow_write " */
+			} else {
+				continue; /* Source and dest start with same directive. */
+			}
+		} else if (directive_index == 1 && !strncmp(cp, directive_list[9], directive_list_len[9])) {
+			d_len = directive_list_len[9]; /* Source starts with "2 " and dest starts with "allow_write " */
+		} else if (directive_index == 3 && !strncmp(cp, directive_list[8], directive_list_len[8])) {
+			d_len = directive_list_len[8]; /* Source starts with "4 " and dest starts with "allow_read " */
+		} else if (directive_index == 9 && !strncmp(cp, directive_list[1], directive_list_len[1])) {
+			d_len = directive_list_len[1]; /* Source starts with "allow_write " and dest starts with "2 " */
+		} else if (directive_index == 8 && !strncmp(cp, directive_list[3], directive_list_len[3])) {
+			d_len = directive_list_len[3]; /* Source starts with "allow_read " and dest starts with "4 " */
+		} else if (!strncmp(cp, directive, directive_len)) {
+			d_len = directive_len; /* Source and dest start with same directive. */
+		} else {
+			continue; /* Source and dest start with different directive. */
+		}
+		strncpy(shared_buffer, cp, shared_buffer_len);
+		if (!memchr(shared_buffer, '\0', shared_buffer_len)) continue; /* Line too long. */
 		
-		split_acl(shared_buffer + directive_len, &darg1, &darg2, &darg3);
+		split_acl(shared_buffer + d_len, &darg1, &darg2, &darg3);
 	
 		/* Compare condition part. */
 		if (pathcmp(&sarg3, &darg3)) continue;
