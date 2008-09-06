@@ -2676,7 +2676,7 @@ Index: ccstools.src/editpolicy.c
  
  static const int header_lines = 3;
  static int body_lines = 0;
-@@ -1230,516 +2059,794 @@
+@@ -1230,516 +2059,768 @@
  static int max_eat_col[MAXSCREEN];
  static int eat_col = 0;
  static int max_col = 0;
@@ -2694,6 +2694,115 @@ Index: ccstools.src/editpolicy.c
  }
 - 
 -static void ShowList(void) {
++
++static int show_domain_line(int i, int index)
++{
++	int tmp_col = 0;
++	const struct domain_initializer_entry *domain_initializer;
++	const struct domain_keeper_entry *domain_keeper;
++	const char *sp;
++	const char *cp;
++	const int number = domain_list[index].number;
++	int redirect_index;
++	if (number >= 0)
++		mvprintw(header_lines + i, 0,
++			 "%c%4d:%3u %c%c%c ",
++			 domain_list_selected[index] ? '&' : ' ',
++			 number, domain_list[index].profile,
++			 is_keeper_domain(index) ? '#' : ' ',
++			 is_initializer_target(index) ? '*' : ' ',
++			 is_domain_unreachable(index) ? '!' : ' ');
++	else
++		mvprintw(header_lines + i, 0, "              ");
++	tmp_col += 14;
++	sp = domain_name(index);
++	while ((cp = strchr(sp, ' ')) != NULL) {
++		printw("%s", eat("    "));
++		tmp_col += 4;
++		sp = cp + 1;
++	}
++	if (is_deleted_domain(index)) {
++		printw("%s", eat("( "));
++		tmp_col += 2;
++	}
++	printw("%s", eat(sp));
++	tmp_col += strlen(sp);
++	if (is_deleted_domain(index)) {
++		printw("%s", eat(" )"));
++		tmp_col += 2;
++	}
++	domain_initializer = domain_list[index].domain_initializer;
++	if (!domain_initializer)
++		goto not_domain_initializer;
++	get();
++	memset(shared_buffer, 0, shared_buffer_len);
++	if (domain_initializer->domainname)
++		snprintf(shared_buffer, shared_buffer_len - 1,
++			 " ( " KEYWORD_INITIALIZE_DOMAIN "%s from %s )",
++			 domain_initializer->program->name,
++			 domain_initializer->domainname->name);
++	else
++		snprintf(shared_buffer, shared_buffer_len - 1,
++			 " ( " KEYWORD_INITIALIZE_DOMAIN "%s )",
++			 domain_initializer->program->name);
++	printw("%s", eat(shared_buffer));
++	tmp_col += strlen(shared_buffer);
++	put();
++	goto done;
++not_domain_initializer:
++	domain_keeper = domain_list[index].domain_keeper;
++	if (!domain_keeper)
++		goto not_domain_keeper;
++	get();
++	memset(shared_buffer, 0, shared_buffer_len);
++	if (domain_keeper->program)
++		snprintf(shared_buffer, shared_buffer_len - 1,
++			 " ( " KEYWORD_KEEP_DOMAIN "%s from %s )",
++			 domain_keeper->program->name,
++			 domain_keeper->domainname->name);
++	else
++		snprintf(shared_buffer, shared_buffer_len - 1,
++			 " ( " KEYWORD_KEEP_DOMAIN "%s )",
++			 domain_keeper->domainname->name);
++	printw("%s", eat(shared_buffer));
++	tmp_col += strlen(shared_buffer);
++	put();
++	goto done;
++not_domain_keeper:
++	if (!is_initializer_source(index))
++		goto done;
++	get();
++	memset(shared_buffer, 0, shared_buffer_len);
++	snprintf(shared_buffer, shared_buffer_len - 1, ROOT_NAME "%s",
++		 strrchr(domain_name(index), ' '));
++	redirect_index = find_domain(shared_buffer, 0, 0);
++	if (redirect_index >= 0)
++		snprintf(shared_buffer, shared_buffer_len - 1, " ( -> %d )",
++			 domain_list[redirect_index].number);
++	else
++		snprintf(shared_buffer, shared_buffer_len - 1,
++			 " ( -> Not Found )");
++	printw("%s", eat(shared_buffer));
++	tmp_col += strlen(shared_buffer);
++	put();
++done:
++	return tmp_col;
++}
++
++static int show_acl_line(int i, int index, int list_indent)
++{
++	u8 directive = generic_acl_list[index].directive;
++	const char *cp1 = directives[directive].alias;
++	const char *cp2 = generic_acl_list[index].operand;
++	int len = list_indent - directives[directive].alias_len;
++	mvprintw(header_lines + i, 0, "%c%4d: %s ",
++		 generic_acl_list[index].selected ? '&' : ' ',
++		 index, eat(cp1));
++	while (len-- > 0)
++		printw("%s", eat(" "));
++	printw("%s", eat(cp2));
++	return strlen(cp1) + strlen(cp2) + 8 + list_indent;
++}
 +
 +static void show_list(void)
 +{
@@ -2751,7 +2860,6 @@ Index: ccstools.src/editpolicy.c
 +		editpolicy_attr_change(A_REVERSE, OFF); /* add color */
  		put();
  	}
-+
 +	if (current_screen != SCREEN_DOMAIN_LIST) {
 +		list_indent = 0;
 +		for (i = 0; i < list_item_count[current_screen]; i++) {
@@ -2761,15 +2869,10 @@ Index: ccstools.src/editpolicy.c
 +				list_indent = len;
 +		}
 +	}
-+
  	for (i = 0; i < body_lines; i++) {
-+		u8 directive;
-+		const char *cp1;
-+		const char *cp2;
-+		int len;
  		const int index = offset + i;
  		eat_col = max_eat_col[current_screen];
- 		tmp_col = 0;
+-		tmp_col = 0;
 -		if (index >= list_item_count[current_screen]) break;
 -		if (current_screen == SCREEN_DOMAIN_LIST) {
 -			const struct domain_initializer_entry *domain_initializer;
@@ -2812,113 +2915,13 @@ Index: ccstools.src/editpolicy.c
 -		} else {
 -			const char *cp = generic_acl_list[index];
 -			mvprintw(header_lines + i, 0, "%c%4d: %s", generic_acl_list_selected[index] ? '&' : ' ', index, eat(cp)); tmp_col += strlen(cp) + 7;
+-		}
 +		if (index >= list_item_count[current_screen])
 +			break;
-+		if (current_screen != SCREEN_DOMAIN_LIST)
-+			goto not_domain_list;
-+		const struct domain_initializer_entry *domain_initializer;
-+		const struct domain_keeper_entry *domain_keeper;
-+		const char *sp, *cp;
-+		const int number = domain_list[index].number;
-+		int redirect_index;
-+		if (number >= 0)
-+			mvprintw(header_lines + i, 0,
-+				 "%c%4d:%3u %c%c%c ",
-+				 domain_list_selected[index] ? '&' : ' ',
-+				 number, domain_list[index].profile,
-+				 is_keeper_domain(index) ? '#' : ' ',
-+				 is_initializer_target(index) ? '*' : ' ',
-+				 is_domain_unreachable(index) ? '!' : ' ');
++		if (current_screen == SCREEN_DOMAIN_LIST)
++			tmp_col = show_domain_line(i, index);
 +		else
-+			mvprintw(header_lines + i, 0, "              ");
-+		tmp_col += 14;
-+		sp = domain_name(index);
-+		while ((cp = strchr(sp, ' ')) != NULL) {
-+			printw("%s", eat("    "));
-+			tmp_col += 4;
-+			sp = cp + 1;
- 		}
-+		if (is_deleted_domain(index)) {
-+			printw("%s", eat("( "));
-+			tmp_col += 2;
-+		}
-+		printw("%s", eat(sp));
-+		tmp_col += strlen(sp);
-+		if (is_deleted_domain(index)) {
-+			printw("%s", eat(" )"));
-+			tmp_col += 2;
-+		}
-+		domain_initializer = domain_list[index].domain_initializer;
-+		if (!domain_initializer)
-+			goto not_domain_initializer;
-+		get();
-+		memset(shared_buffer, 0, shared_buffer_len);
-+		if (domain_initializer->domainname)
-+			snprintf(shared_buffer,
-+				 shared_buffer_len - 1,
-+				 " ( " KEYWORD_INITIALIZE_DOMAIN "%s from %s )",
-+				 domain_initializer->program->name,
-+				 domain_initializer->domainname->name);
-+		else
-+			snprintf(shared_buffer,
-+				 shared_buffer_len - 1,
-+				 " ( " KEYWORD_INITIALIZE_DOMAIN "%s )",
-+				 domain_initializer->program->name);
-+		printw("%s", eat(shared_buffer));
-+		tmp_col += strlen(shared_buffer);
-+		put();
-+		goto done;
-+not_domain_initializer:
-+		domain_keeper = domain_list[index].domain_keeper;
-+		if (!domain_keeper)
-+			goto not_domain_keeper;
-+		get();
-+		memset(shared_buffer, 0, shared_buffer_len);
-+		if (domain_keeper->program)
-+			snprintf(shared_buffer, shared_buffer_len - 1,
-+				 " ( " KEYWORD_KEEP_DOMAIN "%s from %s )",
-+				 domain_keeper->program->name,
-+				 domain_keeper->domainname->name);
-+		else
-+			snprintf(shared_buffer, shared_buffer_len - 1,
-+				 " ( " KEYWORD_KEEP_DOMAIN "%s )",
-+				 domain_keeper->domainname->name);
-+		printw("%s", eat(shared_buffer));
-+		tmp_col += strlen(shared_buffer);
-+		put();
-+		goto done;
-+not_domain_keeper:
-+		if (!is_initializer_source(index))
-+			goto done;
-+		get();
-+		memset(shared_buffer, 0, shared_buffer_len);
-+		snprintf(shared_buffer, shared_buffer_len - 1, ROOT_NAME "%s",
-+			 strrchr(domain_name(index), ' '));
-+		redirect_index = find_domain(shared_buffer, 0, 0);
-+		if (redirect_index >= 0)
-+			snprintf(shared_buffer, shared_buffer_len - 1,
-+				 " ( -> %d )",
-+				 domain_list[redirect_index].number);
-+		else
-+			snprintf(shared_buffer, shared_buffer_len - 1,
-+				 " ( -> Not Found )");
-+		printw("%s", eat(shared_buffer));
-+		tmp_col += strlen(shared_buffer);
-+		put();
-+		goto done;
-+not_domain_list:
-+		directive = generic_acl_list[index].directive;
-+		cp1 = directives[directive].alias;
-+		cp2 = generic_acl_list[index].operand;
-+		len = list_indent - directives[directive].alias_len;
-+		mvprintw(header_lines + i, 0, "%c%4d: %s ",
-+			 generic_acl_list[index].selected ? '&' : ' ',
-+			 index, eat(cp1));
-+		while (len-- > 0)
-+			printw("%s", eat(" "));
-+		printw("%s", eat(cp2));
-+		tmp_col += strlen(cp1) + strlen(cp2) + 8 + list_indent;
-+done:
++			tmp_col = show_acl_line(i, index, list_indent);
  		clrtoeol();
  		tmp_col -= window_width;
 -		if (tmp_col  > max_col) max_col = tmp_col;
@@ -3363,12 +3366,6 @@ Index: ccstools.src/editpolicy.c
 -static int string_acl_compare(const void *a, const void *b) {
 -	const char *a0 = * (char **) a;
 -	const char *b0 = * (char **) b;
--	int i;
--	if (sort_type == 0) return strcmp(a0, b0);
--	for (i = 0; i < max_optimize_directive_index; i++) {
--		if (strncmp(a0, directive_list[i], directive_list_len[i])) continue;
--		a0 += directive_list_len[i];
--		break;
 +static int generic_acl_compare(const void *a, const void *b)
 +{
 +	const struct generic_acl *a0 = (struct generic_acl *) a;
@@ -3387,21 +3384,57 @@ Index: ccstools.src/editpolicy.c
 +		if (ret)
 +			return ret;
 +		return strcmp(a1, b1);
++	}
++}
++
++static _Bool compare_path(struct path_info *sarg, struct path_info *darg,
++			  u8 directive)
++{
+ 	int i;
+-	if (sort_type == 0) return strcmp(a0, b0);
+-	for (i = 0; i < max_optimize_directive_index; i++) {
+-		if (strncmp(a0, directive_list[i], directive_list_len[i])) continue;
+-		a0 += directive_list_len[i];
+-		break;
++	struct path_group_entry *group;
++	u8 may_use_pattern = !darg->is_patterned
++		&& (directive != DIRECTIVE_1)
++		&& (directive != DIRECTIVE_3)
++		&& (directive != DIRECTIVE_5)
++		&& (directive != DIRECTIVE_7)
++		&& (directive != DIRECTIVE_ALLOW_EXECUTE);
++	if (!pathcmp(sarg, darg))
++		return 1;
++	if (darg->name[0] == '@')
++		return 0;
++	if (sarg->name[0] != '@') {
++		/* Pathname component. */
++		return may_use_pattern && path_matches_pattern(darg, sarg);
  	}
 -	for (i = 0; i < max_optimize_directive_index; i++) {
 -		if (strncmp(b0, directive_list[i], directive_list_len[i])) continue;
 -		b0 += directive_list_len[i];
 -		break;
--	}
++	/* path_group component. */
++	group = find_path_group(sarg->name + 1);
++	if (!group)
++		return 0;
++	for (i = 0; i < group->member_name_len; i++) {
++		const struct path_info *member_name;
++		member_name = group->member_name[i];
++		if (!pathcmp(member_name, darg))
++			return 1;
++		if (may_use_pattern && path_matches_pattern(darg, member_name))
++			return 1;
+ 	}
 -	i = strcmp(a0, b0);
 -	if (i == 0) i = strcmp(* (char **) a, * (char **) b);
 -	return i;
++	return 0;
  }
  
 -static void try_optimize(const int current) {
-+static void try_optimize(const int current)
-+{
- 	char *cp;
+-	char *cp;
 -	const char *directive;
 -	int directive_index, directive_len, index;
 -	struct path_info sarg1, sarg2, sarg3;
@@ -3410,13 +3443,48 @@ Index: ccstools.src/editpolicy.c
 -	cp = generic_acl_list[current];
 -	for (directive_index = 0; directive_index < max_optimize_directive_index; directive_index++) {
 -		if (strncmp(cp, directive_list[directive_index], directive_list_len[directive_index]) == 0) break;
--	}
++static _Bool compare_address(struct path_info *sarg, struct path_info *darg)
++{
++	int i;
++	struct ip_address_entry sentry;
++	struct ip_address_entry dentry;
++	struct address_group_entry *group;
++	if (parse_ip(darg->name, &dentry))
++		return 0;
++	if (sarg->name[0] != '@') {
++		/* IP address component. */
++		if (parse_ip(sarg->name, &sentry))
++			return 0;
++		if (sentry.is_ipv6 != dentry.is_ipv6 ||
++		    memcmp(dentry.min, sentry.min, 16) < 0 ||
++		    memcmp(sentry.max, dentry.max, 16) < 0)
++			return 0;
+ 	}
 -	if (directive_index == max_optimize_directive_index) return;
 -	cp = strdup(cp);
 -	if (!cp) return;
 -	
 -	directive = directive_list[directive_index];
 -	directive_len = directive_list_len[directive_index];
++	/* IP address group component. */
++	group = find_address_group(sarg->name + 1);
++	if (!group)
++		return 0;
++	for (i = 0; i < group->member_name_len; i++) {
++		struct ip_address_entry *sentry = &group->member_name[i];
++		if (sentry->is_ipv6 == dentry.is_ipv6
++		    && memcmp(sentry->min, dentry.min, 16) <= 0
++		    && memcmp(dentry.max, sentry->max, 16) <= 0)
++			return 1;
++	}
++	return 0;
++}
+ 
+-	split_acl(cp + directive_len, &sarg1, &sarg2, &sarg3);
+-	
++static void try_optimize(const int current)
++{
++	char *cp;
 +	u8 s_index;
 +	int index;
 +	struct path_info sarg1;
@@ -3433,9 +3501,7 @@ Index: ccstools.src/editpolicy.c
 +	cp = strdup(generic_acl_list[current].operand);
 +	if (!cp)
 +		return;
- 
--	split_acl(cp + directive_len, &sarg1, &sarg2, &sarg3);
--	
++
 +	split_acl(cp, &sarg1, &sarg2, &sarg3);
 +
  	get();
@@ -3554,13 +3620,9 @@ Index: ccstools.src/editpolicy.c
 -					/* Pathname component. */
 -					if (!may_use_pattern || !PathMatchesToPattern(&darg1, &sarg1)) continue;
 -				}
+-			}
+-		} else if (directive_index == 24) {
 +		switch (d_index) {
-+			int i;
-+			u8 may_use_pattern;
-+			struct path_group_entry *p_group;
-+			struct address_group_entry *a_group;
-+			struct ip_address_entry sentry;
-+			struct ip_address_entry dentry;
 +		case DIRECTIVE_1:
 +		case DIRECTIVE_2:
 +		case DIRECTIVE_3:
@@ -3585,49 +3647,16 @@ Index: ccstools.src/editpolicy.c
 +		case DIRECTIVE_ALLOW_LINK:
 +		case DIRECTIVE_ALLOW_RENAME:
 +		case DIRECTIVE_ALLOW_REWRITE:
-+			if (!pathcmp(&sarg1, &darg1))
-+				break;
-+			may_use_pattern = !darg1.is_patterned
-+				&& (d_index != DIRECTIVE_1)
-+				&& (d_index != DIRECTIVE_3)
-+				&& (d_index != DIRECTIVE_5)
-+				&& (d_index != DIRECTIVE_7)
-+				&& (d_index != DIRECTIVE_ALLOW_EXECUTE);
-+			if (darg1.name[0] == '@')
-+				continue;
-+			if (sarg1.name[0] != '@')
-+				goto not_path_group1;
-+			/* path_group component. */
-+			p_group = find_path_group(sarg1.name + 1);
-+			if (!p_group)
-+				continue;
-+			for (i = 0; i < p_group->member_name_len; i++) {
-+				const struct path_info *member_name;
-+				member_name = p_group->member_name[i];
-+				if (!pathcmp(member_name, &darg1))
-+					break;
-+				if (may_use_pattern &&
-+				    path_matches_pattern(&darg1,
-+							 member_name))
-+					break;
- 			}
--		} else if (directive_index == 24) {
-+			if (i == p_group->member_name_len)
++			if (!compare_path(&sarg1, &darg1, d_index))
 +				continue;
 +			break;
-+not_path_group1:
++		case DIRECTIVE_ALLOW_ARGV0:
  			/* Pathname component. */
 -			if (pathcmp(&sarg1, &darg1)) {
 -				/* allow_argv0 doesn't support path_group. */
 -				if (darg1.name[0] == '@' || darg1.is_patterned || !PathMatchesToPattern(&darg1, &sarg1)) continue;
 -			}
 -		} else if (directive_index == 25) {
-+			if (!may_use_pattern ||
-+			    !path_matches_pattern(&darg1, &sarg1))
-+				continue;
-+			break;
-+		case DIRECTIVE_ALLOW_ARGV0:
-+			/* Pathname component. */
 +			if (!pathcmp(&sarg1, &darg1))
 +				break;
 +			/* allow_argv0 doesn't support path_group. */
@@ -3656,6 +3685,8 @@ Index: ccstools.src/editpolicy.c
 -				struct ip_address_entry sentry;
 -				if (parse_ip(sarg1.name, &sentry)) continue;
 -				if (sentry.is_ipv6 != dentry.is_ipv6 || memcmp(dentry.min, sentry.min, 16) < 0 || memcmp(sentry.max, dentry.max, 16) < 0) continue;
+-			}
+-		} else {
 +			if (strcmp(sarg1.name, darg1.name))
 +				continue;
 +			break;
@@ -3667,33 +3698,7 @@ Index: ccstools.src/editpolicy.c
 +		case DIRECTIVE_ALLOW_NETWORK_TCP_ACCEPT:
 +		case DIRECTIVE_ALLOW_NETWORK_RAW_BIND:
 +		case DIRECTIVE_ALLOW_NETWORK_RAW_CONNECT:
-+			if (parse_ip(darg1.name, &dentry))
-+				continue;
-+			if (sarg1.name[0] != '@')
-+				goto not_address_group1;
-+			/* IP address group component. */
-+			a_group = find_address_group(sarg1.name + 1);
-+			if (!a_group)
-+				continue;
-+			for (i = 0; i < a_group->member_name_len; i++) {
-+				struct ip_address_entry *sentry
-+					= &a_group->member_name[i];
-+				if (sentry->is_ipv6 == dentry.is_ipv6
-+				    && memcmp(sentry->min, dentry.min, 16) <= 0
-+				    && memcmp(dentry.max, sentry->max, 16) <= 0)
-+					break;
- 			}
--		} else {
-+			if (i == a_group->member_name_len)
-+				continue;
-+			break;
-+not_address_group1:
-+			/* IP address component. */
-+			if (parse_ip(sarg1.name, &sentry))
-+				continue;
-+			if (sentry.is_ipv6 != dentry.is_ipv6 ||
-+			    memcmp(dentry.min, sentry.min, 16) < 0 ||
-+			    memcmp(sentry.max, dentry.max, 16) < 0)
++			if (!compare_address(&sarg1, &darg1))
 +				continue;
 +			break;
 +		case DIRECTIVE_ALLOW_ENV:
@@ -3734,45 +3739,17 @@ Index: ccstools.src/editpolicy.c
 -					/* Pathname component. */
 -					if (!may_use_pattern || !PathMatchesToPattern(&darg2, &sarg2)) continue;
 -				}
+-			}
+-		} else if (directive_index == 24) {
 +		switch (d_index) {
 +			char c;
-+			int i;
-+			u8 may_use_pattern;
-+			struct path_group_entry *p_group;
 +			unsigned int smin;
 +			unsigned int smax;
 +			unsigned int dmin;
 +			unsigned int dmax;
 +		case DIRECTIVE_ALLOW_LINK:
 +		case DIRECTIVE_ALLOW_RENAME:
-+			if (!pathcmp(&sarg2, &darg2))
-+				break;
-+			may_use_pattern = !darg2.is_patterned;
-+			if (darg2.name[0] == '@')
-+				continue;
-+			if (sarg2.name[0] != '@')
-+				goto not_path_group2;
-+			/* path_group component. */
-+			p_group = find_path_group(sarg2.name + 1);
-+			if (!p_group)
-+				continue;
-+			for (i = 0; i < p_group->member_name_len; i++) {
-+				const struct path_info *member_name
-+					= p_group->member_name[i];
-+				if (!pathcmp(member_name, &darg2))
-+					break;
-+				if (may_use_pattern &&
-+				    path_matches_pattern(&darg2, member_name))
-+					break;
- 			}
--		} else if (directive_index == 24) {
-+			if (i == p_group->member_name_len)
-+				continue;
-+			break;
-+not_path_group2:
-+			/* Pathname component. */
-+			if (!may_use_pattern ||
-+			    !path_matches_pattern(&darg2, &sarg2))
++			if (!compare_path(&sarg2, &darg2, d_index))
 +				continue;
 +			break;
 +		case DIRECTIVE_ALLOW_ARGV0:
@@ -3812,7 +3789,7 @@ Index: ccstools.src/editpolicy.c
  			switch (sscanf(sarg2.name, "%u-%u", &smin, &smax)) {
  			case 1:
  				smax = smin;
-@@ -1756,19 +2863,23 @@
+@@ -1756,32 +2837,279 @@
  			default:
  				continue;
  			}
@@ -3837,26 +3814,276 @@ Index: ccstools.src/editpolicy.c
  }
  
 -static int GenericListLoop(void) {
+-	static char *last_error = NULL;
+-	static const int max_readline_history = 20;
+-	static const char **readline_history = NULL;
+-	static int readline_history_count = 0;
+-	static char *search_buffer[MAXSCREEN];
++static void delete_entry(int current)
++{
++	int c;
++	move(1, 0);
++	editpolicy_color_change(DISP_ERR, ON);	/* add color */
++	if (current_screen == SCREEN_DOMAIN_LIST) {
++		c = count(domain_list_selected, domain_list_count);
++		if (!c)
++			c = select_item(current);
++		if (!c)
++			printw("Select domain using Space key first.");
++		else
++			printw("Delete selected domain%s? ('Y'es/'N'o)",
++			       c > 1 ? "s" : "");
++	} else {
++		c = count2(generic_acl_list, generic_acl_list_count);
++		if (!c)
++			c = select_item(current);
++		if (!c)
++			printw("Select entry using Space key first.");
++		else
++			printw("Delete selected entr%s? ('Y'es/'N'o)",
++			       c > 1 ? "ies" : "y");
++	}
++	editpolicy_color_change(DISP_ERR, OFF);	/* add color */
++	clrtoeol();
++	refresh();
++	if (!c)
++		return;
++	do {
++		c = getch2();
++	} while (!(c == 'Y' || c == 'y' || c == 'N' || c == 'n' || c == EOF));
++	resize_window();
++	if (c != 'Y' && c != 'y') {
++		show_list();
++		return;
++	}
++	if (current_screen == SCREEN_DOMAIN_LIST) {
++		int index;
++		FILE *fp = open_write(DOMAIN_POLICY_FILE);
++		if (!fp)
++			return;
++		for (index = 1; index < domain_list_count; index++) {
++			if (!domain_list_selected[index])
++				continue;
++			fprintf(fp, "delete %s\n", domain_name(index));
++		}
++		fclose(fp);
++	} else {
++		int index;
++		FILE *fp = open_write(policy_file);
++		if (!fp)
++			return;
++		if (current_screen == SCREEN_ACL_LIST)
++			fprintf(fp, "select %s\n", current_domain);
++		for (index = 0; index < generic_acl_list_count; index++) {
++			u8 directive;
++			if (!generic_acl_list[index].selected)
++				continue;
++			directive = generic_acl_list[index].directive;
++			fprintf(fp, "delete %s %s\n",
++				directives[directive].original,
++				generic_acl_list[index].operand);
++		}
++		fclose(fp);
++	}
++}
++
++struct readline_data {
++	const char **history;
++	int count;
++	int max;
++	char *last_error;
++	char *search_buffer[MAXSCREEN];
++};
++
++static void add_entry(struct readline_data *rl)
++{
++	char *line;
++	editpolicy_attr_change(A_BOLD, ON);  /* add color */
++	line = simple_readline(window_height - 1, 0, "Enter new entry> ",
++			       rl->history, rl->count,
++			       8192, 8);
++	editpolicy_attr_change(A_BOLD, OFF); /* add color */
++	if (!line || !*line)
++		goto out;
++	rl->count = simple_add_history(line, rl->history, rl->count, rl->max);
++	if (current_screen == SCREEN_DOMAIN_LIST && !IsCorrectDomain(line)) {
++		const int len = strlen(line) + 128;
++		rl->last_error = realloc(rl->last_error, len);
++		if (!rl->last_error)
++			OutOfMemory();
++		memset(rl->last_error, 0, len);
++		snprintf(rl->last_error, len - 1,
++			 "%s is an invalid domainname.", line);
++	} else {
++		u8 directive;
++		FILE *fp = open_write(policy_file);
++		if (!fp)
++			goto out;
++		if (current_screen == SCREEN_ACL_LIST)
++			fprintf(fp, "select %s\n", current_domain);
++		directive = find_directive(0, line);
++		if (directive != (u8) EOF)
++			fprintf(fp, "%s ", directives[directive].original);
++		fprintf(fp, "%s\n", line);
++		fclose(fp);
++	}
++ out:
++	free(line);
++}
++
++static void find_entry(int input, int forward, int current,
++		       struct readline_data *rl)
++{
++	int index;
++	char *line;
++	if (current == EOF)
++		return;
++	editpolicy_attr_change(A_BOLD, ON);  /* add color */
++	if (!input)
++		goto start_search;
++	line = simple_readline(window_height - 1, 0, "Search> ",
++			       rl->history, rl->count, 4000, 8);
++	editpolicy_attr_change(A_BOLD, OFF); /* add color */
++	if (!line || !*line)
++		goto out;
++	rl->count = simple_add_history(line, rl->history, rl->count, rl->max);
++	free(rl->search_buffer[current_screen]);
++	rl->search_buffer[current_screen] = line;
++	line = NULL;
++start_search:
++	if (!forward)
++		goto backward_search;
++	if (input)
++		index = 0;
++	else
++		index = current + 1;
++	for (; index < list_item_count[current_screen]; index++) {
++		const char *cp;
++		if (current_screen == SCREEN_DOMAIN_LIST)
++			cp = get_last_name(index);
++		else
++			cp = generic_acl_list[index].operand;
++		if (!strstr(cp, rl->search_buffer[current_screen]))
++			continue;
++		set_cursor_pos(index);
++		break;
++	}
++	goto out;
++ backward_search:
++	for (index = current - 1; index >= 0; index--) {
++		const char *cp;
++		if (current_screen == SCREEN_DOMAIN_LIST)
++			cp = get_last_name(index);
++		else
++			cp = generic_acl_list[index].operand;
++		if (!strstr(cp, rl->search_buffer[current_screen]))
++			continue;
++		set_cursor_pos(index);
++		break;
++	}
++ out:
++	free(line);
++	show_list();
++}
++
++static void set_profile(int current)
++{
++	int index;
++	FILE *fp;
++	char *line;
++	if (current_screen != SCREEN_DOMAIN_LIST)
++		return;
++	if (!count(domain_list_selected, domain_list_count) &&
++	    !select_item(current)) {
++		mvprintw(1, 0, "Select domain using Space key first.");
++		clrtoeol();
++		refresh();
++		return;
++	}
++	editpolicy_attr_change(A_BOLD, ON);  /* add color */
++	line = simple_readline(window_height - 1, 0, "Enter profile number> ",
++			       NULL, 0, 8, 1);
++	editpolicy_attr_change(A_BOLD, OFF); /* add color */
++	if (!line || !*line)
++		goto out;
++	fp = open_write(DOMAIN_POLICY_FILE);
++	if (!fp)
++		goto out;
++	for (index = 0; index < domain_list_count; index++) {
++		if (!domain_list_selected[index])
++			continue;
++		fprintf(fp, "select %s\n" KEYWORD_USE_PROFILE "%s\n",
++			domain_name(index), line);
++	}
++	fclose(fp);
++out:
++	free(line);
++}
++
++static void show_command_key(void)
++{
++	int c;
++	clear();
++	printw("Commands available for this screen are:\n\n"
++	       "Q/q        Quit this editor.\n"
++	       "R/r        Refresh to the latest information.\n"
++	       "F/f        Find first.\n"
++	       "N/n        Find next.\n"
++	       "P/p        Find previous.\n"
++	       "Tab        Switch to next screen.\n"
++	       "Insert     Copy an entry at the cursor position to history "
++	       "buffer.\n"
++	       "Space      Invert selection state of an entry at the cursor "
++	       "position.\n"
++	       "C/c        Copy selection state of an entry at the cursor "
++	       "position to all entries below the cursor position.\n");
++	if (current_screen != SCREEN_DOMAIN_LIST)
++		goto not_domain_list;
++	printw("A/a        Add a new domain.\n"
++	       "Enter      Edit ACLs of a domain at the cursor position.\n"
++	       "D/d        Delete selected domains.\n"
++	       "S/s        Set profile number of selected domains.\n");
++	goto wait_key;
++not_domain_list:
++	printw("A/a        Add a new entry.\n"
++	       "D/d        Delete selected entries.\n");
++	if (current_screen != SCREEN_ACL_LIST)
++		goto wait_key;
++	printw("O/o        Set selection state to other entries included in "
++	       "an entry at the cursor position.\n");
++	printw("@          Switch sort type.\n");
++wait_key:
++	printw("Arrow-keys and PageUp/PageDown/Home/End keys "
++	       "for scroll.\n\n"
++	       "Press '?' to escape from this help.\n");
++	refresh();
++	while (1) {
++		c = getch2();
++		if (c == '?' || c == EOF)
++			break;
++	}
++}
++
 +static int generic_list_loop(void)
 +{
- 	static char *last_error = NULL;
- 	static const int max_readline_history = 20;
- 	static const char **readline_history = NULL;
-@@ -1778,9 +2889,11 @@
++	static struct readline_data rl;
+ 	static int saved_current_y[MAXSCREEN];
  	static int saved_current_item_index[MAXSCREEN];
  	static int first = 1;
  	if (first) {
 -		readline_history = malloc(max_readline_history * sizeof(const char *));
-+		readline_history = malloc(max_readline_history *
-+					  sizeof(const char *));
++		memset(&rl, 0, sizeof(rl));
++		rl.max = 20;
++		rl.history = malloc(rl.count * sizeof(const char *));
  		memset(saved_current_y, 0, sizeof(saved_current_y));
 -		memset(saved_current_item_index, 0, sizeof(saved_current_item_index));
+-		memset(search_buffer, 0, sizeof(search_buffer));
 +		memset(saved_current_item_index, 0,
 +		       sizeof(saved_current_item_index));
- 		memset(search_buffer, 0, sizeof(search_buffer));
  		first = 0;
  	}
-@@ -1795,252 +2908,360 @@
+ 	if (current_screen == SCREEN_SYSTEM_LIST) {
+@@ -1795,252 +3123,168 @@
  		list_caption = "Domain Policy";
  	} else {
  		policy_file = DOMAIN_POLICY_FILE;
@@ -3882,17 +4109,18 @@ Index: ccstools.src/editpolicy.c
  	}
 - start2:
 -	ShowList();
-+start2:
-+	show_list();
- 	if (last_error && current_screen == SCREEN_DOMAIN_LIST) {
+-	if (last_error && current_screen == SCREEN_DOMAIN_LIST) {
 -		mvprintw(1, 0, "ERROR: %s", last_error); clrtoeol(); refresh();
 -		free(last_error); last_error = NULL;
 -	}	
-+		mvprintw(1, 0, "ERROR: %s", last_error);
++start2:
++	show_list();
++	if (rl.last_error && current_screen == SCREEN_DOMAIN_LIST) {
++		mvprintw(1, 0, "ERROR: %s", rl.last_error);
 +		clrtoeol();
 +		refresh();
-+		free(last_error);
-+		last_error = NULL;
++		free(rl.last_error);
++		rl.last_error = NULL;
 +	}
  	while (1) {
 -		const int current = GetCurrent();
@@ -3926,10 +4154,7 @@ Index: ccstools.src/editpolicy.c
 +			continue; /* Ignore invalid key. */
 +		switch (c) {
 +			int index;
-+			char *line;
-+			const char *cline;
-+			int d;
-+			FILE *fp;
++			const char *line;
  		case KEY_RESIZE:
 -			ResizeWindow();
 -			ShowList();
@@ -4018,38 +4243,8 @@ Index: ccstools.src/editpolicy.c
 -				}
 -				free(line);
 -				ShowList();
-+			if (current == EOF)
-+				break;
-+input_path:
-+			editpolicy_attr_change(A_BOLD, ON); /* add color */
-+			line = simple_readline(window_height - 1, 0,
-+					       "Search> ", readline_history,
-+					       readline_history_count, 4000, 8);
-+			editpolicy_attr_change(A_BOLD, OFF); /* add color */
-+			if (!line || !*line)
-+				goto out1;
-+			readline_history_count
-+				= simple_add_history(line, readline_history,
-+						     readline_history_count,
-+						     max_readline_history);
-+			free(search_buffer[current_screen]);
-+			search_buffer[current_screen] = line;
-+			line = NULL;
-+			for (index = 0; index < list_item_count[current_screen];
-+			     index++) {
-+				const char *cp;
-+				if (current_screen == SCREEN_DOMAIN_LIST)
-+					cp = get_last_name(index);
-+				else
-+					cp = generic_acl_list[index].operand;
-+				if (!strstr(cp, search_buffer[current_screen]))
-+					continue;
-+				set_cursor_pos(index);
-+				break;
- 			}
-+out1:
-+			free(line);
-+			show_list();
+-			}
++			find_entry(1, 1, current, &rl);
  			break;
  		case 'p':
  		case 'P':
@@ -4063,22 +4258,11 @@ Index: ccstools.src/editpolicy.c
 -					ShowList();
 -					break;
 -				}
-+			if (current == EOF)
-+				break;
-+			if (!search_buffer[current_screen])
-+				goto input_path;
-+			for (index = current - 1; index >= 0; index--) {
-+				const char *cp;
-+				if (current_screen == SCREEN_DOMAIN_LIST)
-+					cp = get_last_name(index);
-+				else
-+					cp = generic_acl_list[index].operand;
-+				if (!strstr(cp, search_buffer[current_screen]))
-+					continue;
-+				set_cursor_pos(index);
-+				show_list();
-+				break;
- 			}
+-			}
++			if (!rl.search_buffer[current_screen])
++				find_entry(1, 0, current, &rl);
++			else
++				find_entry(0, 0, current, &rl);
  			break;
  		case 'n':
  		case 'N':
@@ -4092,23 +4276,11 @@ Index: ccstools.src/editpolicy.c
 -					ShowList();
 -					break;
 -				}
-+			if (current == EOF)
-+				break;
-+			if (!search_buffer[current_screen])
-+				goto input_path;
-+			for (index = current + 1;
-+			     index < list_item_count[current_screen]; index++) {
-+				const char *cp;
-+				if (current_screen == SCREEN_DOMAIN_LIST)
-+					cp = get_last_name(index);
-+				else
-+					cp = generic_acl_list[index].operand;
-+				if (!strstr(cp, search_buffer[current_screen]))
-+					continue;
-+				set_cursor_pos(index);
-+				show_list();
-+				break;
- 			}
+-			}
++			if (!rl.search_buffer[current_screen])
++				find_entry(1, 1, current, &rl);
++			else
++				find_entry(0, 1, current, &rl);
  			break;
  		case 'd':
  		case 'D':
@@ -4122,54 +4294,7 @@ Index: ccstools.src/editpolicy.c
 -				} else {
 -					if ((c = count(generic_acl_list_selected, generic_acl_list_count)) == 0 && (c = SelectItem(current)) == 0) printw("Select entry using Space key first.");
 -					else printw("Delete selected entr%s? ('Y'es/'N'o)", c > 1 ? "ies" : "y");
-+			move(1, 0);
-+			editpolicy_color_change(DISP_ERR, ON);	/* add color */
-+			if (current_screen != SCREEN_DOMAIN_LIST)
-+				goto not_domain_list;
-+			d = count(domain_list_selected, domain_list_count);
-+			if (!d)
-+				d = select_item(current);
-+			if (!d)
-+				printw("Select domain using Space key first.");
-+			else
-+				printw("Delete selected domain%s? ('Y'es/'N'o)",
-+				       d > 1 ? "s" : "");
-+			goto d_end;
-+not_domain_list:
-+			d = count2(generic_acl_list, generic_acl_list_count);
-+			if (!d)
-+				d = select_item(current);
-+			if (!d)
-+				printw("Select entry using Space key first.");
-+			else
-+				printw("Delete selected entr%s? ('Y'es/'N'o)",
-+				       d > 1 ? "ies" : "y");
-+d_end:
-+			editpolicy_color_change(DISP_ERR, OFF);	/* add color */
-+			clrtoeol();
-+			refresh();
-+			if (!d)
-+				break;
-+			do {
-+				d = getch2();
-+			} while (!(d == 'Y' || d == 'y' ||
-+				   d == 'N' || d == 'n' || d == EOF));
-+			resize_window();
-+			if (d != 'Y' && d != 'y') {
-+				show_list();
-+				break;
-+			}
-+			if (current_screen == SCREEN_DOMAIN_LIST) {
-+				FILE *fp = open_write(DOMAIN_POLICY_FILE);
-+				if (!fp)
-+					goto start;
-+				for (index = 1; index < domain_list_count;
-+				     index++) {
-+					if (!domain_list_selected[index])
-+						continue;
-+					fprintf(fp, "delete %s\n",
-+						domain_name(index));
- 				}
+-				}
 -				colorChange(DISP_ERR, OFF);	// add color
 -				clrtoeol();
 -				refresh();
@@ -4198,29 +4323,12 @@ Index: ccstools.src/editpolicy.c
 -							fclose(fp);
 -						}
 -					}
-+				fclose(fp);
-+			} else {
-+				FILE *fp = open_write(policy_file);
-+				if (!fp)
- 					goto start;
-+				if (current_screen == SCREEN_ACL_LIST)
-+					fprintf(fp, "select %s\n",
-+						current_domain);
-+				for (index = 0; index < generic_acl_list_count;
-+				     index++) {
-+					u8 d;
-+					const char *cp;
-+					if (!generic_acl_list[index].selected)
-+						continue;
-+					d = generic_acl_list[index].directive;
-+					cp = generic_acl_list[index].operand;
-+					fprintf(fp, "delete %s %s\n",
-+						directives[d].original, cp);
- 				}
+-					goto start;
+-				}
 -				ShowList();
-+				fclose(fp);
- 			}
+-			}
 -			break;
++			delete_entry(current);
 +			goto start;
  		case 'a':
  		case 'A':
@@ -4246,45 +4354,9 @@ Index: ccstools.src/editpolicy.c
 -				}
 -				free(line);
 -				goto start;
-+			editpolicy_attr_change(A_BOLD, ON);  /* add color */
-+			line = simple_readline(window_height - 1, 0,
-+					       "Enter new entry> ",
-+					       readline_history,
-+					       readline_history_count, 8192, 8);
-+			editpolicy_attr_change(A_BOLD, OFF); /* add color */
-+			if (!line || !*line)
-+				goto out2;
-+			readline_history_count
-+				= simple_add_history(line, readline_history,
-+						     readline_history_count,
-+						     max_readline_history);
-+			if (current_screen == SCREEN_DOMAIN_LIST &&
-+			    !IsCorrectDomain(line)) {
-+				const int len = strlen(line) + 128;
-+				last_error = realloc(last_error, len);
-+				if (!last_error)
-+					OutOfMemory();
-+				memset(last_error, 0, len);
-+				snprintf(last_error, len - 1,
-+					 "%s is an invalid domainname.", line);
-+			} else {
-+				u8 d;
-+				FILE *fp = open_write(policy_file);
-+				if (!fp)
-+					goto out1;
-+				if (current_screen == SCREEN_ACL_LIST)
-+					fprintf(fp, "select %s\n",
-+						current_domain);
-+				d = find_directive(0, line);
-+				if (d != (u8) EOF)
-+					fprintf(fp, "%s ",
-+						directives[d].original);
-+				fprintf(fp, "%s\n", line);
-+				fclose(fp);
- 			}
+-			}
 -			break;
-+out2:
-+			free(line);
++			add_entry(&rl);
 +			goto start;
  		case '\r':
  		case '\n':
@@ -4359,36 +4431,9 @@ Index: ccstools.src/editpolicy.c
 -					free(line);
 -					goto start;
 -				}
-+			if (current_screen != SCREEN_DOMAIN_LIST)
-+				break;
-+			if (!count(domain_list_selected, domain_list_count) &&
-+			    !select_item(current)) {
-+				mvprintw(1, 0, "Select domain "
-+					 "using Space key first.");
-+				clrtoeol();
-+				refresh();
-+				break;
- 			}
+-			}
 -			break;
-+			editpolicy_attr_change(A_BOLD, ON);  /* add color */
-+			line = simple_readline(window_height - 1, 0,
-+					       "Enter profile number> ", NULL,
-+					       0, 8, 1);
-+			editpolicy_attr_change(A_BOLD, OFF); /* add color */
-+			if (!line || !*line)
-+				goto out3;
-+			fp = open_write(DOMAIN_POLICY_FILE);
-+			if (!fp)
-+				goto out3;
-+			for (index = 0; index < domain_list_count; index++) {
-+				if (!domain_list_selected[index])
-+					continue;
-+				fprintf(fp, "select %s\n" KEYWORD_USE_PROFILE
-+					"%s\n", domain_name(index), line);
-+			}
-+			fclose(fp);
-+out3:
-+			free(line);
++			set_profile(current);
 +			goto start;
  		case 'r':
  		case 'R':
@@ -4402,7 +4447,7 @@ Index: ccstools.src/editpolicy.c
  			goto start2;
  		case KEY_RIGHT:
  			max_eat_col[current_screen]++;
-@@ -2052,63 +3273,93 @@
+@@ -2052,63 +3296,49 @@
  			max_eat_col[current_screen] = max_col;
  			goto start2;
  		case KEY_IC:
@@ -4410,13 +4455,11 @@ Index: ccstools.src/editpolicy.c
 +			if (current == EOF)
 +				break;
 +			if (current_screen == SCREEN_DOMAIN_LIST)
-+				cline = domain_name(current);
++				line = domain_name(current);
 +			else
-+				cline = generic_acl_list[current].operand;
-+			readline_history_count
-+				= simple_add_history(cline, readline_history,
-+						     readline_history_count,
-+						     max_readline_history);
++				line = generic_acl_list[current].operand;
++			rl.count = simple_add_history(line, rl.history,
++						      rl.count, rl.max);
  			break;
  		case 'o':
  		case 'O':
@@ -4461,50 +4504,9 @@ Index: ccstools.src/editpolicy.c
 -					   "Press '?' to escape from this help.\n"); refresh();
 -				while ((c = getch2()) != '?' && c != EOF);
 -				goto start;
-+			clear();
-+			printw("Commands available for this screen are:\n\n"
-+			       "Q/q        Quit this editor.\n"
-+			       "R/r        Refresh to the latest information.\n"
-+			       "F/f        Find first.\n"
-+			       "N/n        Find next.\n"
-+			       "P/p        Find previous.\n"
-+			       "Tab        Switch to next screen.\n"
-+			       "Insert     Copy an entry at the cursor position"
-+			       " to history buffer.\n"
-+			       "Space      Invert selection state of an entry "
-+			       "at the cursor position.\n"
-+			       "C/c        Copy selection state of an entry at "
-+			       "the cursor position to all entries below the "
-+			       "cursor position.\n");
-+			if (current_screen != SCREEN_DOMAIN_LIST)
-+				goto not_domain_list2;
-+			printw("A/a        Add a new domain.\n"
-+			       "Enter      Edit ACLs of a domain at the cursor "
-+			       "position.\n"
-+			       "D/d        Delete selected domains.\n"
-+			       "S/s        Set profile number of selected "
-+			       "domains.\n");
-+			goto wait_key;
-+not_domain_list2:
-+			printw("A/a        Add a new entry.\n"
-+			       "D/d        Delete selected entries.\n");
-+			if (current_screen != SCREEN_ACL_LIST)
-+				goto wait_key;
-+			printw("O/o        Set selection state to other entries"
-+			       " included in an entry at the cursor position."
-+			       "\n");
-+			printw("@          Switch sort type.\n");
-+wait_key:
-+			printw("Arrow-keys and PageUp/PageDown/Home/End keys "
-+			       "for scroll.\n\n"
-+			       "Press '?' to escape from this help.\n");
-+			refresh();
-+			while (1) {
-+				d = getch2();
-+				if (d == '?' || d == EOF)
-+					break;
- 			}
+-			}
 -			break;
++			show_command_key();
 +			goto start;
  		}
  	}
@@ -4535,7 +4537,7 @@ Index: ccstools.src/editpolicy.c
  			char cmsg_buf[CMSG_SPACE(sizeof(int))];
  			struct cmsghdr *cmsg = (struct cmsghdr *) cmsg_buf;
  			memset(&msg, 0, sizeof(msg));
-@@ -2123,8 +3374,9 @@
+@@ -2123,8 +3353,9 @@
  				cmsg->cmsg_level == SOL_SOCKET &&
  				cmsg->cmsg_type == SCM_RIGHTS &&
  				cmsg->cmsg_len == CMSG_LEN(sizeof(int))) {
@@ -4547,7 +4549,7 @@ Index: ccstools.src/editpolicy.c
  					close(fd);
  					continue;
  				}
-@@ -2132,98 +3384,144 @@
+@@ -2132,98 +3363,144 @@
  				break;
  			}
  		}
@@ -4781,7 +4783,7 @@ Index: ccstools.src/editpolicy.c
  		fclose(fp);
  	}
  	put();
-@@ -2232,15 +3530,19 @@
+@@ -2232,15 +3509,19 @@
  
  static void init_keyword_map(void);
  
@@ -4805,7 +4807,7 @@ Index: ccstools.src/editpolicy.c
  		else {
  			printf("Usage: %s [s|e|d]\n", argv[0]);
  			return 1;
-@@ -2249,14 +3551,18 @@
+@@ -2249,14 +3530,18 @@
  	init_keyword_map();
  	{
  		char *cp = strrchr(argv[0], '/');
@@ -4828,7 +4830,7 @@ Index: ccstools.src/editpolicy.c
  			return 1;
  		}
  		if (socketpair(PF_UNIX, SOCK_STREAM, 0, fd)) {
-@@ -2276,42 +3582,65 @@
+@@ -2276,42 +3561,65 @@
  		close(fd[1]);
  		persistent_fd = fd[0];
  		{
@@ -4910,7 +4912,7 @@ Index: ccstools.src/editpolicy.c
  	cbreak();
  	noecho();
  	nonl();
-@@ -2320,53 +3649,85 @@
+@@ -2320,53 +3628,85 @@
  	getmaxyx(stdscr, window_height, window_width);
  	while (current_screen < MAXSCREEN) {
  		if (!offline_mode) {
@@ -5019,7 +5021,7 @@ Index: ccstools.src/editpolicy.c
  		}
  	}
  	return 0;
-@@ -2374,77 +3735,71 @@
+@@ -2374,77 +3714,71 @@
  
  /* keyword mapping */
  
@@ -5246,3 +5248,119 @@ Index: ccstools.src/ccstools.c
  	fprintf(stderr, "Function %s not implemented.\n", argv0);
  	return 1;
  }
+Index: ccs-init
+===================================================================
+--- ccs-init	(リビジョン 1537)
++++ ccs-init	(作業コピー)
+@@ -111,10 +111,15 @@
+ 
+ # Load policy.
+ if [ $CHDIR_OK -eq 1 ]; then
++    [ -r manager.base ] && cat manager.base > /proc/ccs/manager
+     [ -r manager.conf ] && cat manager.conf > /proc/ccs/manager
++    [ -r system_policy.base -a -w /proc/ccs/system_policy ] && cat system_policy.base > /proc/ccs/system_policy
+     [ -r system_policy.conf -a -w /proc/ccs/system_policy ] && cat system_policy.conf > /proc/ccs/system_policy
++    [ -r exception_policy.base -a -w /proc/ccs/exception_policy ] && cat exception_policy.base > /proc/ccs/exception_policy
+     [ -r exception_policy.conf -a -w /proc/ccs/exception_policy ] && cat exception_policy.conf > /proc/ccs/exception_policy
++    [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.base -a -w /proc/ccs/domain_policy ] && cat domain_policy.base > /proc/ccs/domain_policy
+     [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.conf -a -w /proc/ccs/domain_policy ] && cat domain_policy.conf > /proc/ccs/domain_policy
++    [ -r profile.base ] && cat profile.base > /proc/ccs/profile
+     if [ "x$PROFILE" = "xdefault" ]; then
+ 	[ -r profile.conf ] && cat profile.conf > /proc/ccs/profile
+     elif [ "x$PROFILE" != "xdisable" ]; then
+Index: diff.txt
+===================================================================
+--- diff.txt	(リビジョン 1541)
++++ diff.txt	(作業コピー)
+@@ -5246,3 +5246,71 @@
+  	fprintf(stderr, "Function %s not implemented.\n", argv0);
+  	return 1;
+  }
++Index: ccs-init
++===================================================================
++--- ccs-init	(リビジョン 1537)
+++++ ccs-init	(作業コピー)
++@@ -111,10 +111,15 @@
++ 
++ # Load policy.
++ if [ $CHDIR_OK -eq 1 ]; then
+++    [ -r manager.base ] && cat manager.base > /proc/ccs/manager
++     [ -r manager.conf ] && cat manager.conf > /proc/ccs/manager
+++    [ -r system_policy.base -a -w /proc/ccs/system_policy ] && cat system_policy.base > /proc/ccs/system_policy
++     [ -r system_policy.conf -a -w /proc/ccs/system_policy ] && cat system_policy.conf > /proc/ccs/system_policy
+++    [ -r exception_policy.base -a -w /proc/ccs/exception_policy ] && cat exception_policy.base > /proc/ccs/exception_policy
++     [ -r exception_policy.conf -a -w /proc/ccs/exception_policy ] && cat exception_policy.conf > /proc/ccs/exception_policy
+++    [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.base -a -w /proc/ccs/domain_policy ] && cat domain_policy.base > /proc/ccs/domain_policy
++     [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.conf -a -w /proc/ccs/domain_policy ] && cat domain_policy.conf > /proc/ccs/domain_policy
+++    [ -r profile.base ] && cat profile.base > /proc/ccs/profile
++     if [ "x$PROFILE" = "xdefault" ]; then
++ 	[ -r profile.conf ] && cat profile.conf > /proc/ccs/profile
++     elif [ "x$PROFILE" != "xdisable" ]; then
++Index: diff.txt
++===================================================================
++--- diff.txt	(リビジョン 1541)
+++++ diff.txt	(作業コピー)
++@@ -5246,3 +5246,23 @@
++  	fprintf(stderr, "Function %s not implemented.\n", argv0);
++  	return 1;
++  }
+++Index: ccs-init
+++===================================================================
+++--- ccs-init	(リビジョン 1537)
++++++ ccs-init	(作業コピー)
+++@@ -111,10 +111,15 @@
+++ 
+++ # Load policy.
+++ if [ $CHDIR_OK -eq 1 ]; then
++++    [ -r manager.base ] && cat manager.base > /proc/ccs/manager
+++     [ -r manager.conf ] && cat manager.conf > /proc/ccs/manager
++++    [ -r system_policy.base -a -w /proc/ccs/system_policy ] && cat system_policy.base > /proc/ccs/system_policy
+++     [ -r system_policy.conf -a -w /proc/ccs/system_policy ] && cat system_policy.conf > /proc/ccs/system_policy
++++    [ -r exception_policy.base -a -w /proc/ccs/exception_policy ] && cat exception_policy.base > /proc/ccs/exception_policy
+++     [ -r exception_policy.conf -a -w /proc/ccs/exception_policy ] && cat exception_policy.conf > /proc/ccs/exception_policy
++++    [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.base -a -w /proc/ccs/domain_policy ] && cat domain_policy.base > /proc/ccs/domain_policy
+++     [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.conf -a -w /proc/ccs/domain_policy ] && cat domain_policy.conf > /proc/ccs/domain_policy
++++    [ -r profile.base ] && cat profile.base > /proc/ccs/profile
+++     if [ "x$PROFILE" = "xdefault" ]; then
+++ 	[ -r profile.conf ] && cat profile.conf > /proc/ccs/profile
+++     elif [ "x$PROFILE" != "xdisable" ]; then
++Index: tomoyo-init
++===================================================================
++--- tomoyo-init	(リビジョン 1537)
+++++ tomoyo-init	(作業コピー)
++@@ -131,10 +131,15 @@
++ 
++ # Load policy.
++ if [ $CHDIR_OK -eq 1 ]; then
+++    [ -r manager.base ] && cat manager.base > $POLICY_DIR/manager
++     [ -r manager.conf ] && cat manager.conf > $POLICY_DIR/manager
+++    [ -r system_policy.base -a -w $POLICY_DIR/system_policy ] && cat system_policy.base > $POLICY_DIR/system_policy
++     [ -r system_policy.conf -a -w $POLICY_DIR/system_policy ] && cat system_policy.conf > $POLICY_DIR/system_policy
+++    [ -r exception_policy.base -a -w $POLICY_DIR/exception_policy ] && cat exception_policy.base > $POLICY_DIR/exception_policy
++     [ -r exception_policy.conf -a -w $POLICY_DIR/exception_policy ] && cat exception_policy.conf > $POLICY_DIR/exception_policy
+++    [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.base -a -w $POLICY_DIR/domain_policy ] && cat domain_policy.base > $POLICY_DIR/domain_policy
++     [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.conf -a -w $POLICY_DIR/domain_policy ] && cat domain_policy.conf > $POLICY_DIR/domain_policy
+++    [ -r profile.base ] && cat profile.base > $POLICY_DIR/profile
++     if [ "x$PROFILE" = "xdefault" ]; then
++ 	[ -r profile.conf ] && cat profile.conf > $POLICY_DIR/profile
++     elif [ "x$PROFILE" != "xdisable" ]; then
+Index: tomoyo-init
+===================================================================
+--- tomoyo-init	(リビジョン 1537)
++++ tomoyo-init	(作業コピー)
+@@ -131,10 +131,15 @@
+ 
+ # Load policy.
+ if [ $CHDIR_OK -eq 1 ]; then
++    [ -r manager.base ] && cat manager.base > $POLICY_DIR/manager
+     [ -r manager.conf ] && cat manager.conf > $POLICY_DIR/manager
++    [ -r system_policy.base -a -w $POLICY_DIR/system_policy ] && cat system_policy.base > $POLICY_DIR/system_policy
+     [ -r system_policy.conf -a -w $POLICY_DIR/system_policy ] && cat system_policy.conf > $POLICY_DIR/system_policy
++    [ -r exception_policy.base -a -w $POLICY_DIR/exception_policy ] && cat exception_policy.base > $POLICY_DIR/exception_policy
+     [ -r exception_policy.conf -a -w $POLICY_DIR/exception_policy ] && cat exception_policy.conf > $POLICY_DIR/exception_policy
++    [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.base -a -w $POLICY_DIR/domain_policy ] && cat domain_policy.base > $POLICY_DIR/domain_policy
+     [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.conf -a -w $POLICY_DIR/domain_policy ] && cat domain_policy.conf > $POLICY_DIR/domain_policy
++    [ -r profile.base ] && cat profile.base > $POLICY_DIR/profile
+     if [ "x$PROFILE" = "xdefault" ]; then
+ 	[ -r profile.conf ] && cat profile.conf > $POLICY_DIR/profile
+     elif [ "x$PROFILE" != "xdisable" ]; then
