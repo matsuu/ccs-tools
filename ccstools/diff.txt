@@ -7,11 +7,30 @@ Index: ccstools.src/ccstools.h
   * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.6.2   2008/06/25
-+ * Version: 1.6.4+   2008/09/06
++ * Version: 1.6.4+   2008/09/07
   *
   */
  
-@@ -100,7 +100,8 @@
+@@ -14,6 +14,7 @@
+ #define _FILE_OFFSET_BITS 64
+ #define _LARGEFILE_SOURCE
+ #define _LARGEFILE64_SOURCE
++#define s8 __s8
+ #define u8 __u8
+ #define u16 __u16
+ #define u32 __u32
+@@ -39,6 +40,10 @@
+ #include <time.h>
+ #include <unistd.h>
+ 
++#define bool _Bool
++#define true     1
++#define false    0
++
+ #define SYSTEM_POLICY_FILE    "system_policy"
+ #define EXCEPTION_POLICY_FILE "exception_policy"
+ #define DOMAIN_POLICY_FILE    "domain_policy"
+@@ -100,7 +105,8 @@
  #define KEYWORD_FILE_PATTERN             "file_pattern "
  #define KEYWORD_FILE_PATTERN_LEN         (sizeof(KEYWORD_FILE_PATTERN) - 1)
  #define KEYWORD_MAC_FOR_CAPABILITY       "MAC_FOR_CAPABILITY::"
@@ -21,7 +40,7 @@ Index: ccstools.src/ccstools.h
  #define KEYWORD_SELECT                   "select "
  #define KEYWORD_SELECT_LEN               (sizeof(KEYWORD_SELECT) - 1)
  #define KEYWORD_UNDELETE                 "undelete "
-@@ -116,10 +117,15 @@
+@@ -116,10 +122,15 @@
  #define KEYWORD_ADDRESS_GROUP            "address_group "
  #define KEYWORD_ADDRESS_GROUP_LEN        (sizeof(KEYWORD_ADDRESS_GROUP) - 1)
  #define KEYWORD_NO_INITIALIZE_DOMAIN     "no_" KEYWORD_INITIALIZE_DOMAIN
@@ -38,7 +57,7 @@ Index: ccstools.src/ccstools.h
  #define CCS_AUDITD_MAX_FILES             2
  #define SAVENAME_MAX_HASH                256
  #define PAGE_SIZE                        4096
-@@ -195,17 +201,19 @@
+@@ -195,17 +206,19 @@
  
  struct domain_info {
  	const struct path_info *domainname;
@@ -66,20 +85,34 @@ Index: ccstools.src/ccstools.h
  };
  
  struct task_entry {
-@@ -225,34 +233,60 @@
+@@ -218,41 +231,71 @@
+ 
+ /***** PROTOTYPES DEFINITION START *****/
+ 
+-void OutOfMemory(void);
+-void NormalizeLine(unsigned char *line);
+-int IsDomainDef(const unsigned char *domainname);
+-int IsCorrectDomain(const unsigned char *domainname);
++void out_of_memory(void);
++void normalize_line(unsigned char *line);
++bool is_domain_def(const unsigned char *domainname);
++bool is_correct_domain(const unsigned char *domainname);
  void fprintf_encoded(FILE *fp, const char *pathname);
  int decode(const char *ascii, char *bin);
- void RemoveHeader(char *line, const int len);
+-void RemoveHeader(char *line, const int len);
 -int IsCorrectPath(const char *filename, const int start_type, const int pattern_type, const int end_type);
 -int FileMatchesToPattern(const char *filename, const char *filename_end, const char *pattern, const char *pattern_end);
-+int IsCorrectPath(const char *filename, const int start_type,
-+		  const int pattern_type, const int end_type);
-+int FileMatchesToPattern(const char *filename, const char *filename_end,
-+			 const char *pattern, const char *pattern_end);
++void remove_header(char *line, const int len);
++bool is_correct_path(const char *filename, const s8 start_type,
++		     const s8 pattern_type, const s8 end_type);
++bool file_matches_pattern(const char *filename, const char *filename_end,
++			  const char *pattern, const char *pattern_end);
  int string_compare(const void *a, const void *b);
  int pathcmp(const struct path_info *a, const struct path_info *b);
  void fill_path_info(struct path_info *ptr);
- const struct path_info *SaveName(const char *name);
+-const struct path_info *SaveName(const char *name);
++const struct path_info *savename(const char *name);
++bool str_starts(char *str, const const char *begin);
  
 -extern char *shared_buffer;
 +int sortpolicy_main(int argc, char *argv[]);
@@ -101,7 +134,8 @@ Index: ccstools.src/ccstools.h
 +char *shared_buffer;
  void get(void);
  void put(void);
- int freadline(FILE *fp);
+-int freadline(FILE *fp);
++bool freadline(FILE *fp);
  
 -char *simple_readline(const int start_y, const int start_x, const char *prompt, const char *history[], const int history_count, const int max_length, const int scroll_width);
 -int simple_add_history(const char *buffer, const char **history, const int history_count, const int max_history);
@@ -113,6 +147,9 @@ Index: ccstools.src/ccstools.h
  int getch2(void);
  
 -extern const char *proc_policy_dir,
++int query_fd;
++char *initial_readline_data;
++
 +const char *proc_policy_dir,
  	*disk_policy_dir,
  	*proc_policy_domain_policy,
@@ -133,30 +170,717 @@ Index: ccstools.src/ccstools.h
  	*proc_policy_query,
  	*proc_policy_grant_log,
  	*proc_policy_reject_log,
+Index: ccstools.src/ccs-queryd.c
+===================================================================
+--- ccstools.src/ccs-queryd.c	(リビジョン 1537)
++++ ccstools.src/ccs-queryd.c	(作業コピー)
+@@ -5,12 +5,13 @@
+  *
+  * Copyright (C) 2005-2008  NTT DATA CORPORATION
+  *
+- * Version: 1.6.2   2008/06/25
++ * Version: 1.6.4+   2008/09/07
+  *
+  */
+ #include "ccstools.h"
+ 
+-static void do_check_update(FILE *fp_out) {
++static void do_check_update(FILE *fp_out)
++{
+ 	FILE *fp_in = fopen(proc_policy_exception_policy, "r");
+ 	char **pathnames = NULL;
+ 	int pathnames_len = 0;
+@@ -22,14 +23,20 @@
+ 	}
+ 	while (fgets(buffer, sizeof(buffer) - 1, fp_in)) {
+ 		char *cp = strchr(buffer, '\n');
+-		if (!cp) break;
++		if (!cp)
++			break;
+ 		*cp = '\0';
+-		if (strncmp(buffer, KEYWORD_ALLOW_READ, KEYWORD_ALLOW_READ_LEN)) continue;
+-		if (!decode(buffer + KEYWORD_ALLOW_READ_LEN, buffer)) continue;
+-		pathnames = (char **) realloc(pathnames, sizeof(char *) * (pathnames_len + 1));
+-		if (!pathnames) return;
++		if (!str_starts(buffer, KEYWORD_ALLOW_READ))
++			continue;
++		if (!decode(buffer, buffer))
++			continue;
++		pathnames = realloc(pathnames, sizeof(char *) *
++				    (pathnames_len + 1));
++		if (!pathnames)
++			return;
+ 		pathnames[pathnames_len] = strdup(buffer);
+-		if (!pathnames[pathnames_len]) return;
++		if (!pathnames[pathnames_len])
++			return;
+ 		pathnames_len++;
+ 	}
+ 	fclose(fp_in);
+@@ -42,38 +49,53 @@
+ 		sleep(1);
+ 		for (i = 0; i < pathnames_len; i++) {
+ 			int j;
+-			if (stat64(pathnames[i], &buf) == 0) continue;
++			if (!stat64(pathnames[i], &buf))
++				continue;
+ 			fprintf(fp_out, "-");
+ 			fprintf_encoded(fp_out, pathnames[i]);
+ 			fprintf(fp_out, "\n");
+ 			free(pathnames[i]);
+ 			pathnames_len--;
+-			for (j = i; j < pathnames_len; j++) pathnames[j] = pathnames[j + 1];
++			for (j = i; j < pathnames_len; j++)
++				pathnames[j] = pathnames[j + 1];
+ 			i--;
+ 		}
+-		if (stat64("/etc/ld.so.cache", &buf) || buf.st_mtime == last_modified) continue;
++		if (stat64("/etc/ld.so.cache", &buf) ||
++		    buf.st_mtime == last_modified)
++			continue;
+ 		fp_in = popen("/sbin/ldconfig -NXp", "r");
+-		if (!fp_in) continue;
++		if (!fp_in)
++			continue;
+ 		last_modified = buf.st_mtime;
+ 		memset(buffer, 0, sizeof(buffer));
+ 		while (fgets(buffer, sizeof(buffer) - 1, fp_in)) {
+ 			char *cp = strchr(buffer, '\n');
+ 			char *real_pathname;
+-			if (!cp) break;
++			if (!cp)
++				break;
+ 			*cp = '\0';
+ 			cp = strrchr(buffer, ' ');
+-			if (!cp || *++cp != '/') continue;
+-			if (stat64(cp, &buf)) continue;
+-			if ((real_pathname = realpath(cp, NULL)) == NULL) continue;
++			if (!cp || *++cp != '/')
++				continue;
++			if (stat64(cp, &buf))
++				continue;
++			real_pathname = realpath(cp, NULL);
++			if (!real_pathname)
++				continue;
+ 			for (i = 0; i < pathnames_len; i++) {
+-				if (!strcmp(real_pathname, pathnames[i])) break;
++				if (!strcmp(real_pathname, pathnames[i]))
++					break;
+ 			}
+ 			if (i == pathnames_len) {
+-				pathnames = (char **) realloc(pathnames, sizeof(char *) * (pathnames_len + 1));
+-				if (!pathnames) return;
+-				pathnames[pathnames_len] = strdup(real_pathname);
+-				if (!pathnames[pathnames_len]) return;
+-				pathnames_len++;
++				char *cp;
++				pathnames = realloc(pathnames, sizeof(char *) *
++						    (pathnames_len + 1));
++				if (!pathnames)
++					return;
++				cp = strdup(real_pathname);
++				if (!cp)
++					return;
++				pathnames[pathnames_len++] = cp;
+ 				fprintf(fp_out, "+");
+ 				fprintf_encoded(fp_out, pathnames[i]);
+ 				fprintf(fp_out, "\n");
+@@ -84,55 +106,276 @@
+ 	}
+ }
+ 
+-extern int query_fd;
+-extern char *initial_readline_data;
+-
+ #define GLOBALLY_READABLE_FILES_UPDATE_NONE 0
+ #define GLOBALLY_READABLE_FILES_UPDATE_ASK  1
+ #define GLOBALLY_READABLE_FILES_UPDATE_AUTO 2
+ 
+ static int check_update = GLOBALLY_READABLE_FILES_UPDATE_AUTO;
+ 
+-static void handle_update(const int fd) {
++static void handle_update(const int fd)
++{
+ 	static FILE *fp = NULL;
+ 	static char pathname[8192];
+ 	static int pathname_len = 0;
+ 	int c;
+-	if (!fp) fp = fopen(proc_policy_exception_policy, "w");
+-	if (!pathname_len) memset(pathname, 0, sizeof(pathname));
+-	while (read(fd, pathname + pathname_len, 1) == 1 && pathname[pathname_len] != '\n' && pathname_len < sizeof(pathname) - 1) pathname_len++;
+-	pathname[pathname_len] = '\0'; pathname_len = 0;
++	if (!fp)
++		fp = fopen(proc_policy_exception_policy, "w");
++	if (!pathname_len)
++		memset(pathname, 0, sizeof(pathname));
++	while (read(fd, pathname + pathname_len, 1) == 1 &&
++	       pathname[pathname_len] != '\n' &&
++	       pathname_len < sizeof(pathname) - 1)
++		pathname_len++;
++	pathname[pathname_len] = '\0';
++	pathname_len = 0;
+ 	if (check_update == GLOBALLY_READABLE_FILES_UPDATE_AUTO) {
+-		if (pathname[0] == '-') fprintf(fp, KEYWORD_DELETE);
++		if (pathname[0] == '-')
++			fprintf(fp, KEYWORD_DELETE);
+ 		fprintf(fp, KEYWORD_ALLOW_READ "%s\n", pathname + 1);
+ 		fflush(fp);
+-		printw("The pathname %s was %s globally readable file.\n\n", pathname + 1, (pathname[0] == '-') ? "deleted. Deleted from" : "created. Appended to");
++		printw("The pathname %s was %s globally readable file.\n\n",
++		       pathname + 1, (pathname[0] == '-') ?
++		       "deleted. Deleted from" : "created. Appended to");
+ 		refresh();
+ 		return;
+ 	}
+-	printw("The pathname %s was %s globally readable file? ('Y'es/'N'o):", pathname + 1, (pathname[0] == '-') ? "deleted. Delete from" : "created. Append to");
++	printw("The pathname %s was %s globally readable file? ('Y'es/'N'o):",
++	       pathname + 1, (pathname[0] == '-') ?
++	       "deleted. Delete from" : "created. Append to");
+ 	refresh();
+ 	while (1) {
+ 		c = getch2();
+-		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n') break;
++		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
++			break;
+ 		write(query_fd, "\n", 1);
+ 	}
+-	printw("%c\n", c); refresh();
++	printw("%c\n", c);
++	refresh();
+ 	if (c == 'Y' || c == 'y') {
+-		if (pathname[0] == '-') fprintf(fp, KEYWORD_DELETE);
++		if (pathname[0] == '-')
++			fprintf(fp, KEYWORD_DELETE);
+ 		fprintf(fp, KEYWORD_ALLOW_READ "%s\n", pathname + 1);
+ 		fflush(fp);
+ 	}
++	printw("\n");
++	refresh();
++}
++
++static int domain_policy_fd = EOF;
++static const int max_readline_history = 20;
++static const char **readline_history = NULL;
++static int readline_history_count = 0;
++static const int buffer_len = 32768;
++static char *buffer = NULL;
++
++static bool handle_query_new_format(unsigned int serial)
++{
++	int c = 0;
++	int y;
++	int x;
++	char *line = NULL;
++	static unsigned int prev_pid = 0;
++	unsigned int pid;
++	time_t stamp;
++	char *cp = strstr(buffer, " pid=");
++	if (!cp || sscanf(cp + 5, "%u", &pid) != 1) {
++		printw("ERROR: Unsupported query.\n");
++		return false;
++	}
++	cp = strchr(buffer, '\0');
++	if (*(cp - 1) != '\n') {
++		printw("ERROR: Unsupported query.\n");
++		return false;
++	}
++	*(cp - 1) = '\0';
++	if (pid != prev_pid) {
++		if (prev_pid)
++			printw("----------------------------------------\n");
++		prev_pid = pid;
++	}
++	if (sscanf(buffer, "#timestamp=%lu", &stamp) == 1) {
++		cp = strchr(buffer, ' ');
++		if (!cp) {
++			struct tm *tm = localtime(&stamp);
++			printw("#%04d-%02d-%02d %02d:%02d:%02d#",
++			       tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
++			       tm->tm_hour, tm->tm_min, tm->tm_sec);
++			memmove(buffer, cp, strlen(cp) + 1);
++		}
++	}
++	printw("%s\n", buffer);
++	/* Is this domain query? */
++	if (strstr(buffer, "\n#"))
++		goto not_domain_query;
++	printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o):");
++	refresh();
++	while (1) {
++		c = getch2();
++		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
++		    c == 'A' || c == 'a')
++			break;
++		write(query_fd, "\n", 1);
++	}
++	printw("%c\n", c);
++	refresh();
++
++	/* Append to domain policy. */
++	if (c != 'A' || c != 'a')
++		goto not_append;
++	getyx(stdscr, y, x);
++	cp = strrchr(buffer, '\n');
++	if (!cp)
++		return false;
++	*cp++ = '\0';
++	initial_readline_data = cp;
++	readline_history_count = simple_add_history(cp, readline_history,
++						    readline_history_count,
++						    max_readline_history);
++	line = simple_readline(y, 0, "Enter new entry> ", readline_history,
++			       readline_history_count, 4000, 8);
++	scrollok(stdscr, 1);
++	printw("\n");
++	refresh();
++	if (!line || !*line) {
++		printw("None added.\n");
++		goto not_append;
++	}
++	readline_history_count = simple_add_history(line, readline_history,
++						    readline_history_count,
++						    max_readline_history);
++	write(domain_policy_fd, buffer, strlen(buffer));
++	write(domain_policy_fd, "\n", 1);
++	write(domain_policy_fd, line, strlen(line));
++	write(domain_policy_fd, "\n", 1);
++	printw("Added '%s'.\n", line);
++not_append:
++	refresh();
++	free(line);
++write_answer:
++	/* Write answer. */
++	snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial,
++		 c == 'Y' || c == 'y' || c == 'A' || c == 'a' ? 1 : 2);
++	write(query_fd, buffer, strlen(buffer));
++	printw("\n");
++	refresh();
++	return true;
++not_domain_query:
++	printw("Allow? ('Y'es/'N'o):");
++	refresh();
++	while (1) {
++		c = getch2();
++		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
++			break;
++		write(query_fd, "\n", 1);
++	}
++	printw("%c\n", c);
++	refresh();
++	goto write_answer;
++}
++
++static bool handle_query_old_format(unsigned int serial)
++{
++	int c = 0;
++	int y;
++	int x;
++	char *cp;
++	char *line = NULL;
++	static char *prev_buffer = NULL;
++	if (!prev_buffer) {
++		prev_buffer = malloc(buffer_len);
++		if (!prev_buffer)
++			return false;
++		memset(prev_buffer, 0, buffer_len);
++	}
++	/* Is this domain query? */
++	if (strncmp(buffer, "<kernel>", 8))
++		goto not_domain_query;
++	if (buffer[8] != '\0' && buffer[8] != ' ')
++		goto not_domain_query;
++	cp = strchr(buffer, '\n');
++	if (!cp)
++		goto not_domain_query;
++
++	/* Check for same domain. */
++	*cp++ = '\0';
++	if (strcmp(buffer, prev_buffer)) {
++		printw("----------------------------------------\n");
++		memmove(prev_buffer, buffer, strlen(buffer) + 1);
++	}
++	printw("%s\n", buffer);
++	printw("%s", cp);
++	printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o):");
++	refresh();
++	while (1) {
++		c = getch2();
++		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
++		    c == 'A' || c == 'a')
++			break;
++		write(query_fd, "\n", 1);
++	}
++	printw("%c\n", c);
++	refresh();
++
++	/* Append to domain policy. */
++	if (c != 'A' && c != 'a')
++		goto not_append;
++
++	getyx(stdscr, y, x);
++	line = strchr(cp, '\n');
++	if (!line)
++		*line = '\0';
++	initial_readline_data = cp;
++	readline_history_count = simple_add_history(cp, readline_history,
++						    readline_history_count,
++						    max_readline_history);
++	line = simple_readline(y, 0, "Enter new entry> ", readline_history,
++			       readline_history_count, 4000, 8);
++	scrollok(stdscr, 1);
+ 	printw("\n"); refresh();
++	if (!line || !*line) {
++		printw("None added.\n");
++		goto not_append;
++	}
++	readline_history_count = simple_add_history(line, readline_history,
++						    readline_history_count,
++						    max_readline_history);
++	write(domain_policy_fd, buffer, strlen(buffer));
++	write(domain_policy_fd, "\n", 1);
++	write(domain_policy_fd, line, strlen(line));
++	write(domain_policy_fd, "\n", 1);
++	printw("Added '%s'.\n", line);
++not_append:
++	free(line);
++write_answer:
++	refresh();
++	printw("\n");
++	/* Write answer. */
++	snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial,
++		 c == 'Y' || c == 'y' || c == 'A' || c == 'a' ? 1 : 2);
++	write(query_fd, buffer, strlen(buffer));
++	return true;
++not_domain_query:
++	printw("----------------------------------------\n");
++	prev_buffer[0] = '\0';
++	printw("%s", buffer);
++	printw("Allow? ('Y'es/'N'o):");
++	refresh();
++	while (1) {
++		c = getch2();
++		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
++			break;
++		write(query_fd, "\n", 1);
++	}
++	printw("%c\n", c);
++	goto write_answer;
+ }
+ 
+-int ccsqueryd_main(int argc, char *argv[]) {
+-	const int domain_policy_fd = open(proc_policy_domain_policy, O_WRONLY);
+-	static const int max_readline_history = 20;
+-	static const char **readline_history = NULL;
+-	static int readline_history_count = 0;
++int ccsqueryd_main(int argc, char *argv[])
++{
++	domain_policy_fd = open(proc_policy_domain_policy, O_WRONLY);
+ 	int pipe_fd[2] = { EOF, EOF };
+-	if (argc == 1) goto ok;
++	if (argc == 1)
++		goto ok;
+ 	if (!strcmp(argv[1], "--no-update")) {
+ 		check_update = GLOBALLY_READABLE_FILES_UPDATE_NONE;
+ 		goto ok;
+@@ -143,18 +386,24 @@
+ 	}
+ 	printf("Usage: %s [--no-update|--ask-update]\n\n", argv[0]);
+ 	printf("This program is used for granting access requests manually.\n");
+-	printf("This program shows access requests that are about to rejected by the kernel's decision.\n");
+-	printf("If you answer before the kernel's decision taken effect, your decision will take effect.\n");
+-	printf("You can use this program to respond to accidental access requests triggered by non-routine tasks (such as restarting daemons after updating).\n");
++	printf("This program shows access requests that are about to rejected "
++	       "by the kernel's decision.\n");
++	printf("If you answer before the kernel's decision taken effect, your "
++	       "decision will take effect.\n");
++	printf("You can use this program to respond to accidental access "
++	       "requests triggered by non-routine tasks (such as restarting "
++	       "daemons after updating).\n");
+ 	printf("To terminate this program, use 'Ctrl-C'.\n");
+ 	return 0;
+  ok:
+ 	query_fd = open(proc_policy_query, O_RDWR);
+ 	if (query_fd == EOF) {
+-		fprintf(stderr, "You can't run this utility for this kernel.\n");
++		fprintf(stderr,
++			"You can't run this utility for this kernel.\n");
+ 		return 1;
+ 	} else if (write(query_fd, "", 0) != 0) {
+-		fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
++		fprintf(stderr, "You need to register this program to %s to "
++			"run this program.\n", proc_policy_manager);
+ 		return 1;
+ 	}
+ 	if (check_update) {
+@@ -170,7 +419,8 @@
+ 			fprintf(stderr, "Can't fork().\n");
+ 			return 1;
+ 		}
+-		close(pipe_fd[1]); pipe_fd[1] = EOF;
++		close(pipe_fd[1]);
++		pipe_fd[1] = EOF;
+ 	}
+ 	readline_history = malloc(max_readline_history * sizeof(const char *));
+ 	write(query_fd, "\n", 1);
+@@ -180,35 +430,46 @@
+ 	nonl();
+ 	intrflush(stdscr, FALSE);
+ 	keypad(stdscr, TRUE);
+-	clear(); refresh();
++	clear();
++	refresh();
+ 	scrollok(stdscr, 1);
+ 	while (1) {
+ 		static int first = 1;
+ 		static unsigned int prev_serial = 0;
+-		static const int buffer_len = 32768;
+-		static char *buffer = NULL, *prev_buffer = NULL;
+ 		fd_set rfds;
+ 		unsigned int serial;
+ 		char *cp;
+-		if (!buffer && (buffer = malloc(buffer_len)) == NULL) break;
+-		// Wait for query.
++		if (!buffer) {
++			buffer = malloc(buffer_len);
++			if (!buffer)
++				break;
++		}
++		/* Wait for query. */
+ 		FD_ZERO(&rfds);
+ 		FD_SET(query_fd, &rfds);
+-		if (pipe_fd[0] != EOF) FD_SET(pipe_fd[0], &rfds);
+-		select(query_fd > pipe_fd[0] ? query_fd + 1 : pipe_fd[0] + 1, &rfds, NULL, NULL, NULL);
+-		if (pipe_fd[0] != EOF && FD_ISSET(pipe_fd[0], &rfds)) handle_update(pipe_fd[0]);
+-		if (!FD_ISSET(query_fd, &rfds)) continue;
+-		
+-		// Read query.
++		if (pipe_fd[0] != EOF)
++			FD_SET(pipe_fd[0], &rfds);
++		select(query_fd > pipe_fd[0] ? query_fd + 1 : pipe_fd[0] + 1,
++		       &rfds, NULL, NULL, NULL);
++		if (pipe_fd[0] != EOF && FD_ISSET(pipe_fd[0], &rfds))
++			handle_update(pipe_fd[0]);
++		if (!FD_ISSET(query_fd, &rfds))
++			continue;
++
++		/* Read query. */
+ 		memset(buffer, 0, buffer_len);
+-		if (read(query_fd, buffer, buffer_len - 1) <= 0) continue;
+-		if ((cp = strchr(buffer, '\n')) == NULL) continue;
++		if (read(query_fd, buffer, buffer_len - 1) <= 0)
++			continue;
++		cp = strchr(buffer, '\n');
++		if (!cp)
++			continue;
+ 		*cp = '\0';
+-		
+-		// Get query number.
+-		if (sscanf(buffer, "Q%u", &serial) != 1) continue;
++
++		/* Get query number. */
++		if (sscanf(buffer, "Q%u", &serial) != 1)
++			continue;
+ 		memmove(buffer, cp + 1, strlen(cp + 1) + 1);
+-		
++
+ 		if (!first && prev_serial == serial) {
+ 			sleep(1);
+ 			write(query_fd, "\n", 1);
+@@ -217,161 +478,14 @@
+ 		first = 0;
+ 		prev_serial = serial;
+ 		timeout(1000);
+-		if (strncmp(buffer, "#timestamp=", 11) == 0) {
+-			/* New format. */
+-			static unsigned int prev_pid = 0;
+-			unsigned int pid;
+-			time_t stamp;
+-			char *cp = strstr(buffer, " pid=");
+-			if (!cp || sscanf(cp + 5, "%u", &pid) != 1) {
+-				printw("ERROR: Unsupported query.\n");
+-				break;
+-			}
+-			cp = strchr(buffer, '\0');
+-			if (*(cp - 1) != '\n') {
+-				printw("ERROR: Unsupported query.\n");
+-				break;
+-			}
+-			*(cp - 1) = '\0';
+-			if (pid != prev_pid) {
+-				if (prev_pid) printw("----------------------------------------\n");
+-				prev_pid = pid;
+-			}
+-			if (sscanf(buffer, "#timestamp=%lu", &stamp) == 1 && (cp = strchr(buffer, ' ')) != NULL) {
+-				struct tm *tm = localtime(&stamp);
+-				printw("#%04d-%02d-%02d %02d:%02d:%02d#", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+-				memmove(buffer, cp, strlen(cp) + 1);
+-			}
+-			printw("%s\n", buffer);
+-			// Is this domain query?
+-			if (!strstr(buffer, "\n#")) {
+-				int c = 0;
+-				printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o):"); refresh();
+-				while (1) {
+-					c = getch2();
+-					if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' || c == 'A' || c == 'a') break;
+-					write(query_fd, "\n", 1);
+-				}
+-				printw("%c\n", c); refresh();
+-				
+-				// Append to domain policy.
+-				if (c == 'A' || c == 'a') {
+-					int y, x;
+-					char *line;
+-					getyx(stdscr, y, x);
+-					cp = strrchr(buffer, '\n');
+-					if (!cp)
+-						break;
+-					*cp++ = '\0';
+-					initial_readline_data = cp;
+-					readline_history_count = simple_add_history(cp, readline_history, readline_history_count, max_readline_history);
+-					line = simple_readline(y, 0, "Enter new entry> ", readline_history, readline_history_count, 4000, 8);
+-					scrollok(stdscr, 1);
+-					printw("\n"); refresh();
+-					if (line && *line) {
+-						readline_history_count = simple_add_history(line, readline_history, readline_history_count, max_readline_history);
+-						write(domain_policy_fd, buffer, strlen(buffer));
+-						write(domain_policy_fd, "\n", 1);
+-						write(domain_policy_fd, line, strlen(line));
+-						write(domain_policy_fd, "\n", 1);
+-						printw("Added '%s'.\n", line);
+-					} else {
+-						printw("None added.\n", line);
+-					}
+-					refresh();
+-					free(line);
+-				}
+-
+-				// Write answer.
+-				snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial, c == 'Y' || c == 'y' || c == 'A' || c == 'a' ? 1 : 2);
+-				write(query_fd, buffer, strlen(buffer));
+-			} else {
+-				int c;
+-				printw("Allow? ('Y'es/'N'o):"); refresh();
+-				while (1) {
+-					c = getch2();
+-					if (c == 'Y' || c == 'y' || c == 'N' || c == 'n') break;
+-					write(query_fd, "\n", 1);
+-				}
+-				printw("%c\n", c); refresh();
+-				
+-				// Write answer.
+-				snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial, c == 'Y' || c == 'y' ? 1 : 2);
+-				write(query_fd, buffer, strlen(buffer));
+-			}
+-			printw("\n"); refresh();
+-			continue;
+-		}
+-		
+-		if (!prev_buffer) {
+-			if ((prev_buffer = malloc(buffer_len)) == NULL) break;
+-			memset(prev_buffer, 0, buffer_len);
+-		}
+-		// Is this domain query?
+-		if (strncmp(buffer, "<kernel>", 8) == 0 && (buffer[8] == '\0' || buffer[8] == ' ') && (cp = strchr(buffer, '\n')) != NULL) {
+-			int c = 0;
+-			// Check for same domain.
+-			*cp++ = '\0';
+-			if (strcmp(buffer, prev_buffer)) {
+-				printw("----------------------------------------\n");
+-				memmove(prev_buffer, buffer, strlen(buffer) + 1);
+-			}
+-			printw("%s\n", buffer);
+-			printw("%s", cp);
+-			printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o):"); refresh();
+-			while (1) {
+-				c = getch2();
+-				if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' || c == 'A' || c == 'a') break;
+-				write(query_fd, "\n", 1);
+-			}
+-			printw("%c\n", c); refresh();
+-			
+-			// Append to domain policy.
+-			if (c == 'A' || c == 'a') {
+-				int y, x;
+-				char *line;
+-				getyx(stdscr, y, x);
+-				if ((line = strchr(cp, '\n')) != NULL) *line = '\0';
+-				initial_readline_data = cp;
+-				readline_history_count = simple_add_history(cp, readline_history, readline_history_count, max_readline_history);
+-				line = simple_readline(y, 0, "Enter new entry> ", readline_history, readline_history_count, 4000, 8);
+-				scrollok(stdscr, 1);
+-				printw("\n"); refresh();
+-				if (line && *line) {
+-					readline_history_count = simple_add_history(line, readline_history, readline_history_count, max_readline_history);
+-					write(domain_policy_fd, buffer, strlen(buffer));
+-					write(domain_policy_fd, "\n", 1);
+-					write(domain_policy_fd, line, strlen(line));
+-					write(domain_policy_fd, "\n", 1);
+-					printw("Added '%s'.\n", line);
+-				} else {
+-					printw("None added.\n", line);
+-				}
+-				refresh();
+-				free(line);
+-			}
+-
+-			// Write answer.
+-			snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial, c == 'Y' || c == 'y' || c == 'A' || c == 'a' ? 1 : 2);
+-			write(query_fd, buffer, strlen(buffer));
++		if (!strncmp(buffer, "#timestamp=", 11)) {
++			if (handle_query_new_format(serial))
++				continue;
+ 		} else {
+-			int c;
+-			printw("----------------------------------------\n");
+-			prev_buffer[0] = '\0';
+-			printw("%s", buffer);
+-			printw("Allow? ('Y'es/'N'o):"); refresh();
+-			while (1) {
+-				c = getch2();
+-				if (c == 'Y' || c == 'y' || c == 'N' || c == 'n') break;
+-				write(query_fd, "\n", 1);
+-			}
+-			printw("%c\n", c); refresh();
+-			
+-			// Write answer.
+-			snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial, c == 'Y' || c == 'y' ? 1 : 2);
+-			write(query_fd, buffer, strlen(buffer));
++			if (handle_query_old_format(serial))
++				continue;
+ 		}
+-		printw("\n"); refresh();
++		break;
+ 	}
+ 	endwin();
+ 	return 0;
+Index: ccstools.src/readline.c
+===================================================================
+--- ccstools.src/readline.c	(リビジョン 1537)
++++ ccstools.src/readline.c	(作業コピー)
+@@ -200,6 +200,6 @@
+ 		}
+ 	}
+ 	if (buffer_len == -1) return NULL;
+-	NormalizeLine(buffer);
++	normalize_line(buffer);
+ 	return strdup(buffer);
+ }
 Index: ccstools.src/editpolicy.c
 ===================================================================
 --- ccstools.src/editpolicy.c	(リビジョン 1537)
 +++ ccstools.src/editpolicy.c	(作業コピー)
-@@ -5,63 +5,85 @@
+@@ -5,63 +5,76 @@
   *
   * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.6.4+   2008/09/04
-+ * Version: 1.6.4+   2008/09/06
++ * Version: 1.6.4+   2008/09/07
   *
   */
  #include "ccstools.h"
  
 -/// add color start
-+static int str_starts(char *str, const const char *begin)
-+{
-+	const int len = strlen(begin);
-+	if (strncmp(str, begin, len))
-+		return 0;
-+	memmove(str, str + len, strlen(str + len) + 1);
-+	return 1;
-+}
-+
 +/* add color start */
  #ifdef COLOR_ON
  #define OFF 0
@@ -234,8 +958,8 @@ Index: ccstools.src/editpolicy.c
 +		if (!cp)
 +			continue;
  		*cp++ = '\0';
- 		NormalizeLine(shared_buffer);
- 		NormalizeLine(cp);
+-		NormalizeLine(shared_buffer);
+-		NormalizeLine(cp);
 -		if (!*shared_buffer || !*cp) continue;
 -		for (i = 0; color_env[i].name != NULL; i++) {
 -			short fore, back;
@@ -245,6 +969,8 @@ Index: ccstools.src/editpolicy.c
 -			back = (*cp) - '0';		// background color
 -			if (fore < 0 || fore > 7 ||
 -			    back < 0 || back > 7) break;
++		normalize_line(shared_buffer);
++		normalize_line(cp);
 +		if (!*shared_buffer || !*cp)
 +			continue;
 +		for (i = 0; color_env[i].name; i++) {
@@ -261,7 +987,7 @@ Index: ccstools.src/editpolicy.c
  			color_env[i].fore = fore;
  			color_env[i].back = back;
  			break;
-@@ -69,16 +91,17 @@
+@@ -69,16 +82,17 @@
  	}
  	put();
  	fclose(fp);
@@ -283,7 +1009,7 @@ Index: ccstools.src/editpolicy.c
  	static int save_color = NORMAL;
  	if (flg == ON)
  		save_color = getattrs(stdscr);
-@@ -86,49 +109,80 @@
+@@ -86,49 +100,80 @@
  		attrset(save_color);
  }
  
@@ -390,7 +1116,7 @@ Index: ccstools.src/editpolicy.c
  	struct domain_info *tmp_list = domain_list;
  	int tmp_list_count = domain_list_count;
  	domain_list = shadow_domain_list;
-@@ -137,70 +191,91 @@
+@@ -137,70 +182,91 @@
  	shadow_domain_list_count = tmp_list_count;
  }
  
@@ -429,9 +1155,9 @@ Index: ccstools.src/editpolicy.c
 -	if ((cp = SaveName(entry)) == NULL) OutOfMemory();
 +	if (!entry || !*entry)
 +		return -EINVAL;
-+	cp = SaveName(entry);
++	cp = savename(entry);
 +	if (!cp)
-+		OutOfMemory();
++		out_of_memory();
  
  	acl_ptr = domain_list[index].string_ptr;
  	acl_count = domain_list[index].string_count;
@@ -441,7 +1167,7 @@ Index: ccstools.src/editpolicy.c
  	for (i = 0; i < acl_count; i++) {
 -		// Faster comparison, for they are SaveName'd.
 -		if (cp == acl_ptr[i]) return 0;
-+		/* Faster comparison, for they are SaveName'd. */
++		/* Faster comparison, for they are savename'd. */
 +		if (cp == acl_ptr[i])
 +			return 0;
  	}
@@ -450,7 +1176,7 @@ Index: ccstools.src/editpolicy.c
 +	acl_ptr = realloc(acl_ptr, (acl_count + 1)
 +			  * sizeof(const struct path_info *));
 +	if (!acl_ptr)
-+		OutOfMemory();
++		out_of_memory();
  	acl_ptr[acl_count++] = cp;
  	domain_list[index].string_ptr = acl_ptr;
  	domain_list[index].string_count = acl_count;
@@ -474,9 +1200,9 @@ Index: ccstools.src/editpolicy.c
 -	if ((cp = SaveName(entry)) == NULL) OutOfMemory();
 +	if (!entry || !*entry)
 +		return -EINVAL;
-+	cp = SaveName(entry);
++	cp = savename(entry);
 +	if (!cp)
-+		OutOfMemory();
++		out_of_memory();
  
  	acl_ptr = domain_list[index].string_ptr;
  	acl_count = domain_list[index].string_count;
@@ -484,7 +1210,7 @@ Index: ccstools.src/editpolicy.c
  	for (i = 0; i < acl_count; i++) {
 -		// Faster comparison, for they are SaveName'd.
 -		if (cp != acl_ptr[i]) continue;
-+		/* Faster comparison, for they are SaveName'd. */
++		/* Faster comparison, for they are savename'd. */
 +		if (cp != acl_ptr[i])
 +			continue;
  		domain_list[index].string_count--;
@@ -502,7 +1228,7 @@ Index: ccstools.src/editpolicy.c
  	int index;
  	for (index = 0; index < domain_list_count; index++) {
  		free(domain_list[index].string_ptr);
-@@ -212,70 +287,97 @@
+@@ -212,70 +278,97 @@
  	domain_list_count = 0;
  }
  
@@ -545,7 +1271,7 @@ Index: ccstools.src/editpolicy.c
 +	int index = find_domain(domainname, is_dis, is_dd);
 +	if (index >= 0)
 +		goto found;
-+	if (!IsCorrectDomain(domainname)) {
++	if (!is_correct_domain(domainname)) {
 +		fprintf(stderr, "%s: Invalid domainname '%s'\n",
 +			__func__, domainname);
 +		return EOF;
@@ -553,11 +1279,11 @@ Index: ccstools.src/editpolicy.c
 +	domain_list = realloc(domain_list, (domain_list_count + 1) *
 +			      sizeof(struct domain_info));
 +	if (!domain_list)
-+		OutOfMemory();
++		out_of_memory();
 +	memset(&domain_list[domain_list_count], 0, sizeof(struct domain_info));
-+	saved_domainname = SaveName(domainname);
++	saved_domainname = savename(domainname);
 +	if (!saved_domainname)
-+		OutOfMemory();
++		out_of_memory();
 +	domain_list[domain_list_count].domainname = saved_domainname;
 +	domain_list[domain_list_count].is_dis = is_dis;
 +	domain_list[domain_list_count].is_dd = is_dd;
@@ -630,7 +1356,7 @@ Index: ccstools.src/editpolicy.c
  			write(fd, "\n", 1);
  		}
  		write(fd, "\n", 1);
-@@ -283,31 +385,38 @@
+@@ -283,31 +376,38 @@
  	return 0;
  }
  
@@ -681,7 +1407,7 @@ Index: ccstools.src/editpolicy.c
  			fprintf(stderr, "Can't open %s\n", filename);
  			return;
  		}
-@@ -315,82 +424,299 @@
+@@ -315,82 +415,299 @@
  	index = EOF;
  	get();
  	while (freadline(fp)) {
@@ -690,7 +1416,7 @@ Index: ccstools.src/editpolicy.c
 -		} else if (index >= 0 && shared_buffer[0]) {
 -			AddStringEntry(shared_buffer, index);
 -		}
-+		if (IsDomainDef(shared_buffer))
++		if (is_domain_def(shared_buffer))
 +			index = find_or_assign_new_domain(shared_buffer, 0, 0);
 +		else if (index >= 0 && shared_buffer[0])
 +			add_string_entry(shared_buffer, index);
@@ -914,10 +1640,10 @@ Index: ccstools.src/editpolicy.c
 +			base_list = realloc(base_list, sizeof(char *) *
 +					    (base_list_len + 1));
 +			if (!base_list)
-+				OutOfMemory();
++				out_of_memory();
 +			cp = strdup(shared_buffer);
 +			if (!cp)
-+				OutOfMemory();
++				out_of_memory();
 +			base_list[base_list_len++] = cp;
  		}
 -		if (shared_buffer[0]) fprintf(file_fp, "%s\n", shared_buffer);
@@ -931,10 +1657,10 @@ Index: ccstools.src/editpolicy.c
 +		original_list = realloc(original_list, sizeof(char *) *
 +					(original_list_len + 1));
 +		if (!original_list)
-+			OutOfMemory();
++			out_of_memory();
 +		cp = strdup(shared_buffer);
 +		if (!cp)
-+			OutOfMemory();
++			out_of_memory();
 +		original_list[original_list_len++] = cp;
 +	}
  	put();
@@ -1019,7 +1745,7 @@ Index: ccstools.src/editpolicy.c
  	int remount_root = 0;
  	char filename[1024];
  	int write_to_stdout = 0;
-@@ -403,13 +729,18 @@
+@@ -403,13 +720,18 @@
  	time_t now = time(NULL);
  	struct tm *tm = localtime(&now);
  	memset(filename, 0, sizeof(filename));
@@ -1041,7 +1767,7 @@ Index: ccstools.src/editpolicy.c
  	} else {
  		int i;
  		for (i = 1; i < argc; i++) {
-@@ -422,27 +753,26 @@
+@@ -422,27 +744,26 @@
  			char *p = strchr(ptr, 'p');
  			char *m = strchr(ptr, 'm');
  			char *i = strchr(ptr, '-');
@@ -1089,7 +1815,7 @@ Index: ccstools.src/editpolicy.c
  		}
  	}
  	if (chdir(disk_policy_dir)) {
-@@ -450,26 +780,53 @@
+@@ -450,26 +771,53 @@
  		return 1;
  	}
  	if (access(".", W_OK) == EOF) {
@@ -1157,7 +1883,7 @@ Index: ccstools.src/editpolicy.c
  				unlink(filename);
  			} else {
  				unlink("system_policy.conf");
-@@ -477,11 +834,18 @@
+@@ -477,11 +825,18 @@
  			}
  		}
  	}
@@ -1180,7 +1906,7 @@ Index: ccstools.src/editpolicy.c
  				unlink(filename);
  			} else {
  				unlink("exception_policy.conf");
-@@ -489,11 +853,18 @@
+@@ -489,11 +844,18 @@
  			}
  		}
  	}
@@ -1203,7 +1929,7 @@ Index: ccstools.src/editpolicy.c
  				unlink(filename);
  			} else {
  				unlink("domain_policy.conf");
-@@ -501,54 +872,93 @@
+@@ -501,54 +863,93 @@
  			}
  		}
  	}
@@ -1313,7 +2039,7 @@ Index: ccstools.src/editpolicy.c
  	int new_index;
  	int old_index;
  	struct path_info reserved;
-@@ -559,42 +969,61 @@
+@@ -559,42 +960,61 @@
  	}
  	reserved.name = "";
  	fill_path_info(&reserved);
@@ -1398,7 +2124,7 @@ Index: ccstools.src/editpolicy.c
  	int read_from_stdin = 0;
  	int load_profile = 0;
  	int load_manager = 0;
-@@ -603,7 +1032,8 @@
+@@ -603,7 +1023,8 @@
  	int load_domain_policy = 0;
  	int refresh_policy = 0;
  	if (access(proc_policy_dir, F_OK)) {
@@ -1408,7 +2134,7 @@ Index: ccstools.src/editpolicy.c
  		return 0;
  	}
  	if (argc == 1) {
-@@ -620,27 +1050,26 @@
+@@ -620,27 +1041,26 @@
  			char *p = strchr(ptr, 'p');
  			char *m = strchr(ptr, 'm');
  			char *i = strchr(ptr, '-');
@@ -1456,7 +2182,7 @@ Index: ccstools.src/editpolicy.c
  		}
  	}
  	if (chdir(disk_policy_dir)) {
-@@ -648,106 +1077,318 @@
+@@ -648,106 +1068,318 @@
  		return 1;
  	}
  
@@ -1808,7 +2534,7 @@ Index: ccstools.src/editpolicy.c
  	memset(&msg, 0, sizeof(msg));
  	msg.msg_iov = &iov;
  	msg.msg_iovlen = 1;
-@@ -755,13 +1396,15 @@
+@@ -755,13 +1387,15 @@
  	msg.msg_controllen = sizeof(cmsg_buf);
  	cmsg->cmsg_level = SOL_SOCKET;
  	cmsg->cmsg_type = SCM_RIGHTS;
@@ -1826,7 +2552,7 @@ Index: ccstools.src/editpolicy.c
  	if (offline_mode) {
  		char request[1024];
  		int fd[2];
-@@ -770,20 +1413,26 @@
+@@ -770,20 +1404,26 @@
  			fprintf(stderr, "socketpair()\n");
  			exit(1);
  		}
@@ -1859,7 +2585,7 @@ Index: ccstools.src/editpolicy.c
  	if (offline_mode) {
  		char request[1024];
  		int fd[2];
-@@ -791,172 +1440,245 @@
+@@ -791,172 +1431,245 @@
  			fprintf(stderr, "socketpair()\n");
  			exit(1);
  		}
@@ -1915,7 +2641,7 @@ Index: ccstools.src/editpolicy.c
 -					if ((generic_acl_list = (char **) realloc(generic_acl_list, (generic_acl_list_count + 1) * sizeof(char *))) == NULL
 -					    || (generic_acl_list[generic_acl_list_count++] = strdup(map_perm_keyword(1, shared_buffer))) == NULL) OutOfMemory();
 -				}
-+			if (IsDomainDef(shared_buffer)) {
++			if (is_domain_def(shared_buffer)) {
 +				flag = !strcmp(shared_buffer, current_domain);
 +				continue;
  			}
@@ -1945,10 +2671,10 @@ Index: ccstools.src/editpolicy.c
 +					   (generic_acl_list_count + 1) *
 +					   sizeof(struct generic_acl));
 +		if (!generic_acl_list)
-+			OutOfMemory();
++			out_of_memory();
 +		cp = strdup(shared_buffer);
 +		if (!cp)
-+			OutOfMemory();
++			out_of_memory();
 +		generic_acl_list[generic_acl_list_count].directive = directive;
 +		generic_acl_list[generic_acl_list_count].selected = 0;
 +		generic_acl_list[generic_acl_list_count++].operand = cp;
@@ -1970,14 +2696,14 @@ Index: ccstools.src/editpolicy.c
  	struct domain_initializer_entry *ptr;
  	int is_last_name = 0;
 -	if (!IsCorrectPath(program, 1, 0, -1)) return -EINVAL;
-+	if (!IsCorrectPath(program, 1, 0, -1))
++	if (!is_correct_path(program, 1, 0, -1))
 +		return -EINVAL;
  	if (domainname) {
 -		if (IsCorrectPath(domainname, 1, -1, -1)) {
-+		if (IsCorrectPath(domainname, 1, -1, -1))
++		if (is_correct_path(domainname, 1, -1, -1))
  			is_last_name = 1;
 -		} else if (!IsCorrectDomain(domainname)) {
-+		else if (!IsCorrectDomain(domainname))
++		else if (!is_correct_domain(domainname))
  			return -EINVAL;
 -		}
  	}
@@ -1986,19 +2712,19 @@ Index: ccstools.src/editpolicy.c
 +		     (domain_initializer_list_len + 1) *
 +		     sizeof(struct domain_initializer_entry));
 +	if (!vp)
-+		OutOfMemory();
++		out_of_memory();
 +	domain_initializer_list = vp;
  	ptr = &domain_initializer_list[domain_initializer_list_len++];
  	memset(ptr, 0, sizeof(struct domain_initializer_entry));
 -	if ((ptr->program = SaveName(program)) == NULL) OutOfMemory();
 -	if (domainname && (ptr->domainname = SaveName(domainname)) == NULL) OutOfMemory();
-+	ptr->program = SaveName(program);
++	ptr->program = savename(program);
 +	if (!ptr->program)
-+		OutOfMemory();
++		out_of_memory();
 +	if (domainname) {
-+		ptr->domainname = SaveName(domainname);
++		ptr->domainname = savename(domainname);
 +		if (!ptr->domainname)
-+			OutOfMemory();
++			out_of_memory();
 +	}
  	ptr->is_not = is_not;
  	ptr->is_last_name = is_last_name;
@@ -2026,32 +2752,32 @@ Index: ccstools.src/editpolicy.c
  	struct domain_keeper_entry *ptr;
  	int is_last_name = 0;
 -	if (IsCorrectPath(domainname, 1, -1, -1)) {
-+	if (IsCorrectPath(domainname, 1, -1, -1))
++	if (is_correct_path(domainname, 1, -1, -1))
  		is_last_name = 1;
 -	} else if (!IsCorrectDomain(domainname)) {
-+	else if (!IsCorrectDomain(domainname))
++	else if (!is_correct_domain(domainname))
  		return -EINVAL;
 -	}
 -	if (program && !IsCorrectPath(program, 1, 0, -1)) return -EINVAL;
 -	if ((domain_keeper_list = (struct domain_keeper_entry *) realloc(domain_keeper_list, (domain_keeper_list_len + 1) * sizeof(struct domain_keeper_entry))) == NULL) OutOfMemory();
-+	if (program && !IsCorrectPath(program, 1, 0, -1))
++	if (program && !is_correct_path(program, 1, 0, -1))
 +		return -EINVAL;
 +	domain_keeper_list = realloc(domain_keeper_list,
 +				     (domain_keeper_list_len + 1) *
 +				     sizeof(struct domain_keeper_entry));
 +	if (!domain_keeper_list)
-+		OutOfMemory();
++		out_of_memory();
  	ptr = &domain_keeper_list[domain_keeper_list_len++];
  	memset(ptr, 0, sizeof(struct domain_keeper_entry));
 -	if ((ptr->domainname = SaveName(domainname)) == NULL) OutOfMemory();
 -	if (program && (ptr->program = SaveName(program)) == NULL) OutOfMemory();
-+	ptr->domainname = SaveName(domainname);
++	ptr->domainname = savename(domainname);
 +	if (!ptr->domainname)
-+		OutOfMemory();
++		out_of_memory();
 +	if (program) {
-+		ptr->program = SaveName(program);
++		ptr->program = savename(program);
 +		if (!ptr->program)
-+			OutOfMemory();
++			out_of_memory();
 +	}
  	ptr->is_not = is_not;
  	ptr->is_last_name = is_last_name;
@@ -2083,14 +2809,15 @@ Index: ccstools.src/editpolicy.c
 +	int i;
 +	int j;
  	struct path_group_entry *group = NULL;
- 	if (!IsCorrectPath(group_name, 0, 0, 0) ||
+-	if (!IsCorrectPath(group_name, 0, 0, 0) ||
 -		!IsCorrectPath(member_name, 0, 0, 0)) return -EINVAL;
 -	if ((saved_group_name = SaveName(group_name)) == NULL ||
 -		(saved_member_name = SaveName(member_name)) == NULL) return -ENOMEM;
-+	    !IsCorrectPath(member_name, 0, 0, 0))
++	if (!is_correct_path(group_name, 0, 0, 0) ||
++	    !is_correct_path(member_name, 0, 0, 0))
 +		return -EINVAL;
-+	saved_group_name = SaveName(group_name);
-+	saved_member_name = SaveName(member_name);
++	saved_group_name = savename(group_name);
++	saved_member_name = savename(member_name);
 +	if (!saved_group_name || !saved_member_name)
 +		return -ENOMEM;
  	for (i = 0; i < path_group_list_len; i++) {
@@ -2128,7 +2855,7 @@ Index: ccstools.src/editpolicy.c
 +					  (path_group_list_len + 1) *
 +					  sizeof(struct path_group_entry));
 +		if (!path_group_list)
-+			OutOfMemory();
++			out_of_memory();
  		group = &path_group_list[path_group_list_len++];
  		memset(group, 0, sizeof(struct path_group_entry));
  		group->group_name = saved_group_name;
@@ -2138,7 +2865,7 @@ Index: ccstools.src/editpolicy.c
 +				     (group->member_name_len + 1)
 +				     * sizeof(const struct path_info *));
 +	if (!group->member_name)
-+		OutOfMemory();
++		out_of_memory();
  	group->member_name[group->member_name_len++] = saved_member_name;
  	return 0;
  }
@@ -2188,7 +2915,7 @@ Index: ccstools.src/editpolicy.c
  	if (i == 4 || i == 8) {
  		for (j = 0; j < 4; j++) {
  			entry->min[j] = (u8) min[j];
-@@ -965,13 +1687,19 @@
+@@ -965,13 +1678,19 @@
  		return 0;
  	}
  	i = sscanf(address, "%X:%X:%X:%X:%X:%X:%X:%X-%X:%X:%X:%X:%X:%X:%X:%X",
@@ -2213,7 +2940,7 @@ Index: ccstools.src/editpolicy.c
  		}
  		entry->is_ipv6 = 1;
  		return 0;
-@@ -979,233 +1707,330 @@
+@@ -979,233 +1698,330 @@
  	return -EINVAL;
  }
  
@@ -2232,9 +2959,9 @@ Index: ccstools.src/editpolicy.c
 -	if ((saved_group_name = SaveName(group_name)) == NULL) return -ENOMEM;
 +	if (parse_ip(member_name, &entry))
 +		return -EINVAL;
-+	if (!IsCorrectPath(group_name, 0, 0, 0))
++	if (!is_correct_path(group_name, 0, 0, 0))
 +		return -EINVAL;
-+	saved_group_name = SaveName(group_name);
++	saved_group_name = savename(group_name);
 +	if (!saved_group_name)
 +		return -ENOMEM;
  	for (i = 0; i < address_group_list_len; i++) {
@@ -2274,7 +3001,7 @@ Index: ccstools.src/editpolicy.c
 +			     (address_group_list_len + 1) *
 +			     sizeof(struct address_group_entry));
 +		if (!vp)
-+			OutOfMemory();
++			out_of_memory();
 +		address_group_list = vp;
  		group = &address_group_list[address_group_list_len++];
  		memset(group, 0, sizeof(struct address_group_entry));
@@ -2285,7 +3012,7 @@ Index: ccstools.src/editpolicy.c
 +				     (group->member_name_len + 1) *
 +				     sizeof(const struct ip_address_entry));
 +	if (!group->member_name)
-+		OutOfMemory();
++		out_of_memory();
  	group->member_name[group->member_name_len++] = entry;
  	return 0;
  }
@@ -2323,12 +3050,13 @@ Index: ccstools.src/editpolicy.c
  		get();
  		memset(shared_buffer, 0, shared_buffer_len);
 -		snprintf(shared_buffer, shared_buffer_len - 1, "%s %s", domainname->name, program);
+-		NormalizeLine(shared_buffer);
+-		if (FindOrAssignNewDomain(shared_buffer, 1, 0) == EOF) OutOfMemory();
 +		snprintf(shared_buffer, shared_buffer_len - 1, "%s %s",
 +			 domainname->name, program);
- 		NormalizeLine(shared_buffer);
--		if (FindOrAssignNewDomain(shared_buffer, 1, 0) == EOF) OutOfMemory();
++		normalize_line(shared_buffer);
 +		if (find_or_assign_new_domain(shared_buffer, 1, 0) == EOF)
-+			OutOfMemory();
++			out_of_memory();
  		put();
  	}
  }
@@ -2424,7 +3152,7 @@ Index: ccstools.src/editpolicy.c
 +		char *cp;
 +		char *cp2;
 +		unsigned int profile;
-+		if (IsDomainDef(shared_buffer)) {
++		if (is_domain_def(shared_buffer)) {
 +			index = find_or_assign_new_domain(shared_buffer, 0, 0);
 +			continue;
 +		} else if (index == EOF) {
@@ -2446,7 +3174,7 @@ Index: ccstools.src/editpolicy.c
 +			cp2 = strchr(cp, ' ');
 +			if (cp2)
 +				*cp2 = '\0';
-+			if (*cp == '@' || IsCorrectPath(cp, 1, 0, -1))
++			if (*cp == '@' || is_correct_path(cp, 1, 0, -1))
 +				add_string_entry(cp, index);
 +		} else if (sscanf(shared_buffer,
 +				  KEYWORD_USE_PROFILE "%u", &profile) == 1) {
@@ -2677,7 +3405,7 @@ Index: ccstools.src/editpolicy.c
 +				continue;
 +			if (find_or_assign_new_domain(shared_buffer, 0, 1)
 +			    == EOF)
-+				OutOfMemory();
++				out_of_memory();
  		}
 -
 +		put();
@@ -2704,13 +3432,13 @@ Index: ccstools.src/editpolicy.c
  				domain_list[index].number = -1;
  				unnumbered_domain_count++;
  			} else {
-@@ -1215,14 +2040,18 @@
+@@ -1215,14 +2031,18 @@
  	}
  
  	domain_list_selected = realloc(domain_list_selected, domain_list_count);
 -	if (domain_list_count && !domain_list_selected) OutOfMemory();
 +	if (domain_list_count && !domain_list_selected)
-+		OutOfMemory();
++		out_of_memory();
  	memset(domain_list_selected, 0, domain_list_count);
  }
  
@@ -2727,7 +3455,7 @@ Index: ccstools.src/editpolicy.c
  
  static const int header_lines = 3;
  static int body_lines = 0;
-@@ -1230,516 +2059,768 @@
+@@ -1230,516 +2050,768 @@
  static int max_eat_col[MAXSCREEN];
  static int eat_col = 0;
  static int max_col = 0;
@@ -3309,7 +4037,7 @@ Index: ccstools.src/editpolicy.c
 +			pathname_delimiter = strchr(pathname, '\0');
 +		if (!pattern_delimiter)
 +			pattern_delimiter = strchr(pattern, '\0');
-+		if (!FileMatchesToPattern(pathname, pathname_delimiter,
++		if (!file_matches_pattern(pathname, pathname_delimiter,
 +					  pattern, pattern_delimiter))
 +			return 0;
 +		pathname = *pathname_delimiter ? pathname_delimiter + 1 :
@@ -3840,7 +4568,7 @@ Index: ccstools.src/editpolicy.c
  			switch (sscanf(sarg2.name, "%u-%u", &smin, &smax)) {
  			case 1:
  				smax = smin;
-@@ -1756,32 +2837,279 @@
+@@ -1756,32 +2828,279 @@
  			default:
  				continue;
  			}
@@ -3957,11 +4685,11 @@ Index: ccstools.src/editpolicy.c
 +	if (!line || !*line)
 +		goto out;
 +	rl->count = simple_add_history(line, rl->history, rl->count, rl->max);
-+	if (current_screen == SCREEN_DOMAIN_LIST && !IsCorrectDomain(line)) {
++	if (current_screen == SCREEN_DOMAIN_LIST && !is_correct_domain(line)) {
 +		const int len = strlen(line) + 128;
 +		rl->last_error = realloc(rl->last_error, len);
 +		if (!rl->last_error)
-+			OutOfMemory();
++			out_of_memory();
 +		memset(rl->last_error, 0, len);
 +		snprintf(rl->last_error, len - 1,
 +			 "%s is an invalid domainname.", line);
@@ -4134,7 +4862,7 @@ Index: ccstools.src/editpolicy.c
  		first = 0;
  	}
  	if (current_screen == SCREEN_SYSTEM_LIST) {
-@@ -1795,252 +3123,168 @@
+@@ -1795,252 +3114,168 @@
  		list_caption = "Domain Policy";
  	} else {
  		policy_file = DOMAIN_POLICY_FILE;
@@ -4456,7 +5184,7 @@ Index: ccstools.src/editpolicy.c
 +				free(current_domain);
 +				current_domain = strdup(domain_name(current));
 +				if (!current_domain)
-+					OutOfMemory();
++					out_of_memory();
 +				return SCREEN_ACL_LIST;
  			}
  			break;
@@ -4498,7 +5226,7 @@ Index: ccstools.src/editpolicy.c
  			goto start2;
  		case KEY_RIGHT:
  			max_eat_col[current_screen]++;
-@@ -2052,63 +3296,49 @@
+@@ -2052,63 +3287,49 @@
  			max_eat_col[current_screen] = max_col;
  			goto start2;
  		case KEY_IC:
@@ -4588,7 +5316,7 @@ Index: ccstools.src/editpolicy.c
  			char cmsg_buf[CMSG_SPACE(sizeof(int))];
  			struct cmsghdr *cmsg = (struct cmsghdr *) cmsg_buf;
  			memset(&msg, 0, sizeof(msg));
-@@ -2123,8 +3353,9 @@
+@@ -2123,8 +3344,9 @@
  				cmsg->cmsg_level == SOL_SOCKET &&
  				cmsg->cmsg_type == SCM_RIGHTS &&
  				cmsg->cmsg_len == CMSG_LEN(sizeof(int))) {
@@ -4600,7 +5328,7 @@ Index: ccstools.src/editpolicy.c
  					close(fd);
  					continue;
  				}
-@@ -2132,98 +3363,144 @@
+@@ -2132,98 +3354,144 @@
  				break;
  			}
  		}
@@ -4687,7 +5415,7 @@ Index: ccstools.src/editpolicy.c
 +				is_delete = 1;
 +			else if (str_starts(shared_buffer, "select "))
 +				is_select = 1;
-+			if (!IsDomainDef(shared_buffer))
++			if (!is_domain_def(shared_buffer))
 +				goto not_domain_def;
 +			if (is_delete) {
 +				index = find_domain(shared_buffer, 0, 0);
@@ -4760,11 +5488,11 @@ Index: ccstools.src/editpolicy.c
 +			vp = realloc(exception_list, (exception_list_count + 1)
 +				     * sizeof(const struct path_info *));
 +			if (!vp)
-+				OutOfMemory();
++				out_of_memory();
 +			exception_list = vp;
-+			cp = SaveName(shared_buffer);
++			cp = savename(shared_buffer);
 +			if (!cp)
-+				OutOfMemory();
++				out_of_memory();
 +			exception_list[exception_list_count++] = cp;
 +		}
 +		goto close_file;
@@ -4795,11 +5523,11 @@ Index: ccstools.src/editpolicy.c
 +			vp = realloc(system_list, (system_list_count + 1)
 +				     * sizeof(struct path_info *));
 +			if (!vp)
-+				OutOfMemory();
++				out_of_memory();
 +			system_list = vp;
-+			cp = SaveName(shared_buffer);
++			cp = savename(shared_buffer);
 +			if (!cp)
-+				OutOfMemory();
++				out_of_memory();
 +			system_list[system_list_count++] = cp;
 +		}
 +		goto close_file;
@@ -4834,7 +5562,7 @@ Index: ccstools.src/editpolicy.c
  		fclose(fp);
  	}
  	put();
-@@ -2232,15 +3509,19 @@
+@@ -2232,15 +3500,19 @@
  
  static void init_keyword_map(void);
  
@@ -4858,7 +5586,7 @@ Index: ccstools.src/editpolicy.c
  		else {
  			printf("Usage: %s [s|e|d]\n", argv[0]);
  			return 1;
-@@ -2249,14 +3530,18 @@
+@@ -2249,14 +3521,18 @@
  	init_keyword_map();
  	{
  		char *cp = strrchr(argv[0], '/');
@@ -4881,7 +5609,7 @@ Index: ccstools.src/editpolicy.c
  			return 1;
  		}
  		if (socketpair(PF_UNIX, SOCK_STREAM, 0, fd)) {
-@@ -2276,42 +3561,65 @@
+@@ -2276,42 +3552,65 @@
  		close(fd[1]);
  		persistent_fd = fd[0];
  		{
@@ -4963,7 +5691,7 @@ Index: ccstools.src/editpolicy.c
  	cbreak();
  	noecho();
  	nonl();
-@@ -2320,53 +3628,85 @@
+@@ -2320,53 +3619,85 @@
  	getmaxyx(stdscr, window_height, window_width);
  	while (current_screen < MAXSCREEN) {
  		if (!offline_mode) {
@@ -5072,7 +5800,7 @@ Index: ccstools.src/editpolicy.c
  		}
  	}
  	return 0;
-@@ -2374,77 +3714,71 @@
+@@ -2374,77 +3705,71 @@
  
  /* keyword mapping */
  
@@ -5161,8 +5889,8 @@ Index: ccstools.src/editpolicy.c
 +		if (!cp)
 +			continue;
  		*cp++ = '\0';
- 		NormalizeLine(shared_buffer);
- 		NormalizeLine(cp);
+-		NormalizeLine(shared_buffer);
+-		NormalizeLine(cp);
 -		if (!*shared_buffer || !*cp) continue;
 -		if ((directive_alias = (struct directive_alias_list *) realloc(directive_alias, (directive_alias_len + 1) * sizeof(struct directive_alias_list))) == NULL) OutOfMemory();
 -		if ((cp = strdup2(cp)) == NULL) OutOfMemory();
@@ -5173,6 +5901,8 @@ Index: ccstools.src/editpolicy.c
 -		for (i = 0; i < max_optimize_directive_index; i++) {
 -			if (strcmp(cp, directive_list[i])) continue;
 -			directive_list[i] = directive_alias[directive_alias_len].alias;
++		normalize_line(shared_buffer);
++		normalize_line(cp);
 +		if (!*shared_buffer || !*cp)
 +			continue;
 +		for (i = 0; i < MAX_DIRECTIVE_INDEX; i++) {
@@ -5181,7 +5911,7 @@ Index: ccstools.src/editpolicy.c
 +			free((void *) directives[i].alias);
 +			cp = strdup(cp);
 +			if (!cp)
-+				OutOfMemory();
++				out_of_memory();
 +			directives[i].alias = cp;
 +			directives[i].alias_len = strlen(cp);
  			break;
@@ -5201,16 +5931,38 @@ Index: ccstools.src/editpolicy.c
  	}
  }
  
+Index: ccstools.src/patternize.c
+===================================================================
+--- ccstools.src/patternize.c	(リビジョン 1537)
++++ ccstools.src/patternize.c	(作業コピー)
+@@ -47,7 +47,7 @@
+ 		const char *pathname_delimiter = strchr(pathname, '/'), *pattern_delimiter = strchr(pattern, '/');
+ 		if (!pathname_delimiter) pathname_delimiter = strchr(pathname, '\0');
+ 		if (!pattern_delimiter) pattern_delimiter = strchr(pattern, '\0');
+-		if (!FileMatchesToPattern(pathname, pathname_delimiter, pattern, pattern_delimiter)) return 0;
++		if (!file_matches_pattern(pathname, pathname_delimiter, pattern, pattern_delimiter)) return 0;
+ 		pathname = *pathname_delimiter ? pathname_delimiter + 1 : pathname_delimiter;
+ 		pattern = *pattern_delimiter ? pattern_delimiter + 1 : pattern_delimiter;
+ 	}
+@@ -57,7 +57,7 @@
+ 
+ int patternize_main(int argc, char *argv[]) {
+ 	struct path_info *pattern_list = malloc(argc * sizeof(struct path_info));
+-	if (!pattern_list) OutOfMemory();
++	if (!pattern_list) out_of_memory();
+ 	int i;
+ 	for (i = 0; i < argc; i++) {
+ 		pattern_list[i].name = argv[i];
 Index: ccstools.src/ccstools.c
 ===================================================================
 --- ccstools.src/ccstools.c	(リビジョン 1537)
 +++ ccstools.src/ccstools.c	(作業コピー)
-@@ -5,50 +5,64 @@
+@@ -5,50 +5,102 @@
   *
   * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.6.4+   2008/09/04
-+ * Version: 1.6.4+   2008/09/06
++ * Version: 1.6.4+   2008/09/07
   *
   */
  #include "ccstools.h"
@@ -5218,7 +5970,7 @@ Index: ccstools.src/ccstools.c
  /***** UTILITY FUNCTIONS START *****/
  
 -void OutOfMemory(void) {
-+void OutOfMemory(void)
++void out_of_memory(void)
 +{
  	fprintf(stderr, "Out of memory. Aborted.\n");
  	exit(1);
@@ -5226,7 +5978,45 @@ Index: ccstools.src/ccstools.c
  
 -void NormalizeLine(unsigned char *line) {
 -	unsigned char *sp = line, *dp = line;
-+void NormalizeLine(unsigned char *line)
++bool str_starts(char *str, const const char *begin)
++{
++	const int len = strlen(begin);
++	if (strncmp(str, begin, len))
++		return 0;
++	memmove(str, str + len, strlen(str + len) + 1);
++	return 1;
++}
++
++static bool is_byte_range(const char *str)
++{
++	return *str >= '0' && *str++ <= '3' &&
++		*str >= '0' && *str++ <= '7' &&
++		*str >= '0' && *str <= '7';
++}
++
++static bool is_decimal(const char c)
++{
++	return c >= '0' && c <= '9';
++}
++
++static bool is_hexadecimal(const char c)
++{
++	return (c >= '0' && c <= '9') ||
++		(c >= 'A' && c <= 'F') ||
++		(c >= 'a' && c <= 'f');
++}
++
++static bool is_alphabet_char(const char c)
++{
++	return (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
++}
++
++static u8 make_byte(const u8 c1, const u8 c2, const u8 c3)
++{
++	return ((c1 - '0') << 6) + ((c2 - '0') << 3) + (c3 - '0');
++}
++
++void normalize_line(unsigned char *line)
 +{
 +	unsigned char *sp = line;
 +	unsigned char *dp = line;
@@ -5280,24 +6070,24 @@ Index: ccstools.src/ccstools.c
 -		if ((ptr = malloc(PAGE_SIZE)) == NULL) OutOfMemory();
 +		ptr = malloc(PAGE_SIZE);
 +		if (!ptr)
-+			OutOfMemory();
++			out_of_memory();
  		buf = ptr;
  		memset(buf, 0, PAGE_SIZE);
  		buf_used_len = size;
-@@ -57,37 +71,55 @@
+@@ -57,37 +109,55 @@
  		int i;
  		ptr = buf + buf_used_len;
  		buf_used_len += size;
 -		for (i = 0; i < size; i++) if (ptr[i]) OutOfMemory();
 +		for (i = 0; i < size; i++)
 +			if (ptr[i])
-+				OutOfMemory();
++				out_of_memory();
  	}
  	return ptr;
  }
  
 -static int PathDepth(const char *pathname) {
-+static int PathDepth(const char *pathname)
++static int path_depth(const char *pathname)
 +{
  	int i = 0;
  	if (pathname) {
@@ -5348,13 +6138,13 @@ Index: ccstools.src/ccstools.c
  			}
  			break;
  		}
-@@ -95,35 +127,55 @@
+@@ -95,35 +165,55 @@
  	return len;
  }
  
 -int IsDomainDef(const unsigned char *domainname) {
 -	return strncmp(domainname, ROOT_NAME, ROOT_NAME_LEN) == 0 && (domainname[ROOT_NAME_LEN] == '\0' || domainname[ROOT_NAME_LEN] == ' ');
-+int IsDomainDef(const unsigned char *domainname)
++bool is_domain_def(const unsigned char *domainname)
 +{
 +	return strncmp(domainname, ROOT_NAME, ROOT_NAME_LEN) == 0 &&
 +		(domainname[ROOT_NAME_LEN] == '\0'
@@ -5364,7 +6154,7 @@ Index: ccstools.src/ccstools.c
 -int IsCorrectDomain(const unsigned char *domainname) {
 -	unsigned char c, d, e;
 -	if (!domainname || strncmp(domainname, ROOT_NAME, ROOT_NAME_LEN)) goto out;
-+int IsCorrectDomain(const unsigned char *domainname)
++bool is_correct_domain(const unsigned char *domainname)
 +{
 +	unsigned char c;
 +	unsigned char d;
@@ -5421,7 +6211,7 @@ Index: ccstools.src/ccstools.c
  				}
  				goto out;
  			} else if (c < ' ' || c >= 127) {
-@@ -132,28 +184,40 @@
+@@ -132,28 +222,41 @@
  		}
  	} while (*domainname);
  	return 1;
@@ -5430,7 +6220,9 @@ Index: ccstools.src/ccstools.c
  	return 0;
  }
  
- void fprintf_encoded(FILE *fp, const char *pathname) {
+-void fprintf_encoded(FILE *fp, const char *pathname) {
++void fprintf_encoded(FILE *fp, const char *pathname)
++{
  	unsigned char c;
 -	while ((c = * (const unsigned char *) pathname++) != 0) {
 +	while (1) {
@@ -5445,7 +6237,7 @@ Index: ccstools.src/ccstools.c
  		} else {
 -			fprintf(fp, "\\%c%c%c", (c >> 6) + '0', ((c >> 3) & 7) + '0', (c & 7) + '0'); 
 +			fprintf(fp, "\\%c%c%c", (c >> 6) + '0',
-+				((c >> 3) & 7) + '0', (c & 7) + '0'); 
++				((c >> 3) & 7) + '0', (c & 7) + '0');
  		}
  	}
  }
@@ -5468,7 +6260,7 @@ Index: ccstools.src/ccstools.c
  			c = *ascii++;
  			switch (c) {
  			case '\\':      /* "\\" */
-@@ -162,15 +226,18 @@
+@@ -162,15 +265,18 @@
  			case '1':
  			case '2':
  			case '3':
@@ -5496,26 +6288,28 @@ Index: ccstools.src/ccstools.c
  				}
  			}
  			return 0;
-@@ -181,29 +248,45 @@
+@@ -181,25 +287,36 @@
  	return 1;
  }
  
 -void RemoveHeader(char *line, const int len) {
-+void RemoveHeader(char *line, const int len)
+-	memmove(line, line + len, strlen(line + len) + 1); 
++void remove_header(char *line, const int len)
 +{
- 	memmove(line, line + len, strlen(line + len) + 1); 
++	memmove(line, line + len, strlen(line + len) + 1);
  }
  
 -int IsCorrectPath(const char *filename, const int start_type, const int pattern_type, const int end_type) {
-+int IsCorrectPath(const char *filename, const int start_type,
-+		  const int pattern_type, const int end_type)
-+{
- 	int contains_pattern = 0;
+-	int contains_pattern = 0;
 -	char c, d, e;
 -	if (!filename) goto out;
-+	char c;
-+	char d;
-+	char e;
++bool is_correct_path(const char *filename, const s8 start_type,
++		     const s8 pattern_type, const s8 end_type)
++{
++	bool contains_pattern = false;
++	unsigned char c;
++	unsigned char d;
++	unsigned char e;
 +	if (!filename)
 +		goto out;
  	c = *filename;
@@ -5540,27 +6334,17 @@ Index: ccstools.src/ccstools.c
 +		if (c == '/')
 +			goto out;
  	}
--	while ((c = *filename++) != '\0') {
-+	while (1) {
-+		c = *filename++;
-+		if (!c)
-+			break;
+ 	while ((c = *filename++) != '\0') {
  		if (c == '\\') {
--			switch ((c = *filename++)) {
-+			u8 f;
-+			c = *filename++;
-+			switch (c) {
- 			case '\\':  /* "\\" */
- 				continue;
- 			case '$':   /* "\$" */
-@@ -216,20 +299,25 @@
+@@ -216,20 +333,23 @@
  			case 'a':   /* "\a" */
  			case 'A':   /* "\A" */
  			case '-':   /* "\-" */
 -				if (pattern_type == -1) break; /* Must not contain pattern */
+-				contains_pattern = 1;
 +				if (pattern_type == -1)
 +					break; /* Must not contain pattern */
- 				contains_pattern = 1;
++				contains_pattern = true;
  				continue;
  			case '0':   /* "\ooo" */
  			case '1':
@@ -5579,15 +6363,13 @@ Index: ccstools.src/ccstools.c
 +				e = *filename++;
 +				if (e < '0' || e > '7')
 +					break;
-+				f = ((u8) (c - '0') << 6) +
-+					(((u8) (d - '0')) << 3) +
-+					(((u8) (e - '0')));
-+				if (f && (f <= ' ' || f >= 127))
++				c = make_byte(c, d, e);
++				if (c && (c <= ' ' || c >= 127))
 +					continue; /* pattern is not \000 */
  			}
  			goto out;
  		} else if (c <= ' ' || c >= 127) {
-@@ -237,17 +325,23 @@
+@@ -237,127 +357,207 @@
  		}
  	}
  	if (pattern_type == 1) { /* Must contain pattern */
@@ -5595,107 +6377,291 @@ Index: ccstools.src/ccstools.c
 +		if (!contains_pattern)
 +			goto out;
  	}
- 	return 1;
+-	return 1;
++	return true;
   out:
- 	return 0;
+-	return 0;
++	return false;
  }
  
 -static int FileMatchesToPattern2(const char *filename, const char *filename_end, const char *pattern, const char *pattern_end) {
-+static int FileMatchesToPattern2(const char *filename,
-+				 const char *filename_end,
-+				 const char *pattern,
-+				 const char *pattern_end)
++static bool file_matches_pattern2(const char *filename,
++				  const char *filename_end,
++				  const char *pattern,
++				  const char *pattern_end)
 +{
  	while (filename < filename_end && pattern < pattern_end) {
++		char c;
  		if (*pattern != '\\') {
 -			if (*filename++ != *pattern++) return 0;
+-		} else {
+-			char c = *filename;
+-			pattern++;
+-			switch (*pattern) {
+-			case '?':
+-				if (c == '/') {
+-					return 0;
+-				} else if (c == '\\') {
+-					if ((c = filename[1]) == '\\') {
+-						filename++; /* safe because filename is \\ */
+-					} else if (c >= '0' && c <= '3' && (c = filename[2]) >= '0' && c <= '7' && (c = filename[3]) >= '0' && c <= '7') {
+-						filename += 3; /* safe because filename is \ooo */
+-					} else {
+-						return 0;
+-					}
+-				}
 +			if (*filename++ != *pattern++)
-+				return 0;
- 		} else {
- 			char c = *filename;
- 			pattern++;
-@@ -266,17 +360,22 @@
- 				}
++				return false;
++			continue;
++		}
++		c = *filename;
++		pattern++;
++		switch (*pattern) {
++			int i;
++			int j;
++		case '?':
++			if (c == '/') {
++				return false;
++			} else if (c == '\\') {
++				if (filename[1] == '\\')
++					filename++;
++				else if (is_byte_range(filename + 1))
++					filename += 3;
++				else
++					return false;
++			}
++			break;
++		case '\\':
++			if (c != '\\')
++				return false;
++			if (*++filename != '\\')
++				return false;
++			break;
++		case '+':
++			if (!is_decimal(c))
++				return false;
++			break;
++		case 'x':
++			if (!is_hexadecimal(c))
++				return false;
++			break;
++		case 'a':
++			if (!is_alphabet_char(c))
++				return false;
++			break;
++		case '0':
++		case '1':
++		case '2':
++		case '3':
++			if (c == '\\' && is_byte_range(filename + 1)
++			    && strncmp(filename + 1, pattern, 3) == 0) {
++				filename += 3;
++				pattern += 2;
  				break;
- 			case '\\':
+-			case '\\':
 -				if (c != '\\') return 0;
 -				if (*++filename != '\\') return 0; /* safe because *filename != '\0' */
-+				if (c != '\\')
-+					return 0;
-+				if (*++filename != '\\')
-+					return 0; /* safe because *filename != '\0' */
- 				break;
- 			case '+':
+-				break;
+-			case '+':
 -				if (c < '0' || c > '9') return 0;
-+				if (c < '0' || c > '9')
-+					return 0;
- 				break;
- 			case 'x':
+-				break;
+-			case 'x':
 -				if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f'))) return 0;
-+				if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')))
-+					return 0;
- 				break;
- 			case 'a':
+-				break;
+-			case 'a':
 -				if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))) return 0;
-+				if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')))
-+					return 0;
- 				break;
- 			case '0':
- 			case '1':
-@@ -295,7 +394,8 @@
- 				{
- 					int i;
- 					for (i = 0; i <= filename_end - filename; i++) {
+-				break;
+-			case '0':
+-			case '1':
+-			case '2':
+-			case '3':
+-				if (c == '\\' && (c = filename[1]) >= '0' && c <= '3' && c == *pattern
+-					&& (c = filename[2]) >= '0' && c <= '7' && c == pattern[1]
+-					&& (c = filename[3]) >= '0' && c <= '7' && c == pattern[2]) {
+-					filename += 3; /* safe because filename is \ooo */
+-					pattern += 2; /* safe because pattern is \ooo  */
++			}
++			return false; /* Not matched. */
++		case '*':
++		case '@':
++			for (i = 0; i <= filename_end - filename; i++) {
++				if (file_matches_pattern2(filename + i,
++							  filename_end,
++							  pattern + 1,
++							  pattern_end))
++					return true;
++				c = filename[i];
++				if (c == '.' && *pattern == '@')
+ 					break;
+-				}
+-				return 0; /* Not matched. */
+-			case '*':
+-			case '@':
+-				{
+-					int i;
+-					for (i = 0; i <= filename_end - filename; i++) {
 -						if (FileMatchesToPattern2(filename + i, filename_end, pattern + 1, pattern_end)) return 1;
-+						if (FileMatchesToPattern2(filename + i, filename_end, pattern + 1, pattern_end))
-+							return 1;
- 						if ((c = filename[i]) == '.' && *pattern == '@') break;
- 						if (c == '\\') {
- 							if ((c = filename[i + 1]) == '\\') {
-@@ -320,7 +420,8 @@
- 						while (((c = filename[j]) >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) j++;
- 					}
- 					for (i = 1; i <= j; i++) {
+-						if ((c = filename[i]) == '.' && *pattern == '@') break;
+-						if (c == '\\') {
+-							if ((c = filename[i + 1]) == '\\') {
+-								i++; /* safe because filename is \\ */
+-							} else if (c >= '0' && c <= '3' && (c = filename[i + 2]) >= '0' && c <= '7' && (c = filename[i + 3]) >= '0' && c <= '7') {
+-								i += 3; /* safe because filename is \ooo */
+-							} else {
+-								break; /* Bad pattern. */
+-							}
+-						}
+-					}
+-					return 0; /* Not matched. */
+-				}
+-			default:
+-				{
+-					int i, j = 0;
+-					if ((c = *pattern) == '$') {
+-						while ((c = filename[j]) >= '0' && c <= '9') j++;
+-					} else if (c == 'X') {
+-						while (((c = filename[j]) >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) j++;
+-					} else if (c == 'A') {
+-						while (((c = filename[j]) >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) j++;
+-					}
+-					for (i = 1; i <= j; i++) {
 -						if (FileMatchesToPattern2(filename + i, filename_end, pattern + 1, pattern_end)) return 1;
-+						if (FileMatchesToPattern2(filename + i, filename_end, pattern + 1, pattern_end))
-+							return 1;
- 					}
- 				}
- 				return 0; /* Not matched or bad pattern. */
-@@ -333,15 +434,19 @@
- 	return (filename == filename_end && pattern == pattern_end);
+-					}
+-				}
+-				return 0; /* Not matched or bad pattern. */
++				if (c != '\\')
++					continue;
++				if (filename[i + 1] == '\\')
++					i++;
++				else if (is_byte_range(filename + i + 1))
++					i += 3;
++				else
++					break; /* Bad pattern. */
+ 			}
+-			filename++; /* safe because *filename != '\0' */
+-			pattern++; /* safe because *pattern != '\0' */
++			return false; /* Not matched. */
++		default:
++			j = 0;
++			c = *pattern;
++			if (c == '$') {
++				while (is_decimal(filename[j]))
++					j++;
++			} else if (c == 'X') {
++				while (is_hexadecimal(filename[j]))
++					j++;
++			} else if (c == 'A') {
++				while (is_alphabet_char(filename[j]))
++					j++;
++			}
++			for (i = 1; i <= j; i++) {
++				if (file_matches_pattern2(filename + i,
++							  filename_end,
++							  pattern + 1,
++							  pattern_end))
++					return true;
++			}
++			return false; /* Not matched or bad pattern. */
+ 		}
++		filename++;
++		pattern++;
+ 	}
+-	while (*pattern == '\\' && (*(pattern + 1) == '*' || *(pattern + 1) == '@')) pattern += 2;
+-	return (filename == filename_end && pattern == pattern_end);
++	while (*pattern == '\\' &&
++	       (*(pattern + 1) == '*' || *(pattern + 1) == '@'))
++		pattern += 2;
++	return filename == filename_end && pattern == pattern_end;
  }
  
 -int FileMatchesToPattern(const char *filename, const char *filename_end, const char *pattern, const char *pattern_end) {
-+int FileMatchesToPattern(const char *filename, const char *filename_end,
-+			 const char *pattern, const char *pattern_end)
++bool file_matches_pattern(const char *filename,
++			  const char *filename_end,
++			  const char *pattern,
++			  const char *pattern_end)
 +{
  	const char *pattern_start = pattern;
- 	int first = 1;
- 	int result;
+-	int first = 1;
+-	int result;
++	bool first = true;
++	bool result;
  	while (pattern < pattern_end - 1) {
- 		if (*pattern++ != '\\' || *pattern++ != '-') continue;
- 		result = FileMatchesToPattern2(filename, filename_end, pattern_start, pattern - 2);
+-		if (*pattern++ != '\\' || *pattern++ != '-') continue;
+-		result = FileMatchesToPattern2(filename, filename_end, pattern_start, pattern - 2);
 -		if (first) result = !result;
 -		if (result) return 0;
+-		first = 0;
++		/* Split at "\-" pattern. */
++		if (*pattern++ != '\\' || *pattern++ != '-')
++			continue;
++		result = file_matches_pattern2(filename, filename_end,
++					       pattern_start, pattern - 2);
 +		if (first)
 +			result = !result;
 +		if (result)
-+			return 0;
- 		first = 0;
++			return false;
++		first = false;
  		pattern_start = pattern;
  	}
-@@ -349,15 +454,18 @@
+-	result = FileMatchesToPattern2(filename, filename_end, pattern_start, pattern_end);
++	result = file_matches_pattern2(filename, filename_end,
++				       pattern_start, pattern_end);
  	return first ? result : !result;
  }
  
 -int string_compare(const void *a, const void *b) {
-+int string_compare(const void *a, const void *b)
+-	return strcmp(* (char **) a, * (char **) b);
++bool path_matches_pattern(const struct path_info *filename,
++			  const struct path_info *pattern)
 +{
- 	return strcmp(* (char **) a, * (char **) b);
++	/*
++	  if (!filename || !pattern)
++	  return false;
++	*/
++	const char *f = filename->name;
++	const char *p = pattern->name;
++	const int len = pattern->const_len;
++	/* If @pattern doesn't contain pattern, I can use strcmp(). */
++	if (!pattern->is_patterned)
++		return !pathcmp(filename, pattern);
++	/* Dont compare if the number of '/' differs. */
++	if (filename->depth != pattern->depth)
++		return false;
++	/* Compare the initial length without patterns. */
++	if (strncmp(f, p, len))
++		return false;
++	f += len;
++	p += len;
++	/* Main loop. Compare each directory component. */
++	while (*f && *p) {
++		const char *f_delimiter = strchr(f, '/');
++		const char *p_delimiter = strchr(p, '/');
++		if (!f_delimiter)
++			f_delimiter = strchr(f, '\0');
++		if (!p_delimiter)
++			p_delimiter = strchr(p, '\0');
++		if (!file_matches_pattern(f, f_delimiter, p, p_delimiter))
++			return false;
++		f = f_delimiter;
++		if (*f)
++			f++;
++		p = p_delimiter;
++		if (*p)
++			p++;
++	}
++	/* Ignore trailing "\*" and "\@" in @pattern. */
++	while (*p == '\\' &&
++	       (*(p + 1) == '*' || *(p + 1) == '@'))
++		p += 2;
++	return !*f && !*p;
  }
  
 -int pathcmp(const struct path_info *a, const struct path_info *b) {
++int string_compare(const void *a, const void *b)
++{
++	return strcmp(*(char **) a, *(char **) b);
++}
++
 +int pathcmp(const struct path_info *a, const struct path_info *b)
 +{
  	return a->hash != b->hash || strcmp(a->name, b->name);
@@ -5707,17 +6673,25 @@ Index: ccstools.src/ccstools.c
  	const char *name = ptr->name;
  	const int len = strlen(name);
  	ptr->total_len = len;
-@@ -368,7 +476,8 @@
- 	ptr->depth = PathDepth(name);
+@@ -365,21 +565,25 @@
+ 	ptr->is_dir = len && (name[len - 1] == '/');
+ 	ptr->is_patterned = (ptr->const_len < len);
+ 	ptr->hash = full_name_hash(name, len);
+-	ptr->depth = PathDepth(name);
++	ptr->depth = path_depth(name);
  }
  
 -const struct path_info *SaveName(const char *name) {
-+const struct path_info *SaveName(const char *name)
++const struct path_info *savename(const char *name)
 +{
  	static struct free_memory_block_list fmb_list = { NULL, NULL, 0 };
- 	static struct savename_entry name_list[SAVENAME_MAX_HASH]; /* The list of names. */
- 	struct savename_entry *ptr, *prev = NULL;
-@@ -376,7 +485,8 @@
+-	static struct savename_entry name_list[SAVENAME_MAX_HASH]; /* The list of names. */
+-	struct savename_entry *ptr, *prev = NULL;
++	/* The list of names. */
++	static struct savename_entry name_list[SAVENAME_MAX_HASH];
++	struct savename_entry *ptr;
++	struct savename_entry *prev = NULL;
+ 	unsigned int hash;
  	struct free_memory_block_list *fmb = &fmb_list;
  	int len;
  	static int first_call = 1;
@@ -5726,8 +6700,12 @@ Index: ccstools.src/ccstools.c
 +		return NULL;
  	len = strlen(name) + 1;
  	if (len > CCS_MAX_PATHNAME_LEN) {
- 		fprintf(stderr, "ERROR: Name too long for SaveName().\n");
-@@ -391,7 +501,8 @@
+-		fprintf(stderr, "ERROR: Name too long for SaveName().\n");
++		fprintf(stderr, "ERROR: Name too long for savename().\n");
+ 		return NULL;
+ 	}
+ 	hash = full_name_hash((const unsigned char *) name, len - 1);
+@@ -391,26 +595,38 @@
  			name_list[i].entry.name = "/";
  			fill_path_info(&name_list[i].entry);
  		}
@@ -5737,61 +6715,104 @@ Index: ccstools.src/ccstools.c
  	}
  	ptr = &name_list[hash % SAVENAME_MAX_HASH];
  	while (ptr) {
-@@ -403,14 +514,16 @@
+-		if (hash == ptr->entry.hash && strcmp(name, ptr->entry.name) == 0) goto out;
+-		prev = ptr; ptr = ptr->next;
++		if (hash == ptr->entry.hash && !strcmp(name, ptr->entry.name))
++			goto out;
++		prev = ptr;
++		ptr = ptr->next;
+ 	}
+ 	while (len > fmb->len) {
++		char *cp;
+ 		if (fmb->next) {
  			fmb = fmb->next;
- 		} else {
- 			char *cp;
+-		} else {
+-			char *cp;
 -			if ((cp = (char *) malloc(PAGE_SIZE)) == NULL || (fmb->next = (struct free_memory_block_list *) alloc_element(sizeof(struct free_memory_block_list))) == NULL) OutOfMemory();
-+			if ((cp = (char *) malloc(PAGE_SIZE)) == NULL || (fmb->next = (struct free_memory_block_list *) alloc_element(sizeof(struct free_memory_block_list))) == NULL)
-+				OutOfMemory();
- 			memset(cp, 0, PAGE_SIZE);
- 			fmb = fmb->next;
- 			fmb->ptr = cp;
- 			fmb->len = PAGE_SIZE;
+-			memset(cp, 0, PAGE_SIZE);
+-			fmb = fmb->next;
+-			fmb->ptr = cp;
+-			fmb->len = PAGE_SIZE;
++			continue;
  		}
++		cp = malloc(PAGE_SIZE);
++		if (!cp)
++			out_of_memory();
++		fmb->next = (struct free_memory_block_list *)
++			alloc_element(sizeof(struct free_memory_block_list));
++		if (!fmb->next)
++			out_of_memory();
++		memset(cp, 0, PAGE_SIZE);
++		fmb = fmb->next;
++		fmb->ptr = cp;
++		fmb->len = PAGE_SIZE;
  	}
 -	if ((ptr = (struct savename_entry *) alloc_element(sizeof(struct savename_entry))) == NULL) OutOfMemory();
-+	if ((ptr = (struct savename_entry *) alloc_element(sizeof(struct savename_entry))) == NULL)
-+		OutOfMemory();
++	ptr = (struct savename_entry *)
++		alloc_element(sizeof(struct savename_entry));
++	if (!ptr)
++		out_of_memory();
  	memset(ptr, 0, sizeof(struct savename_entry));
  	ptr->entry.name = fmb->ptr;
  	memmove(fmb->ptr, name, len);
-@@ -428,20 +541,27 @@
+@@ -420,137 +636,219 @@
+ 	prev->next = ptr; /* prev != NULL because name_list is not empty. */
+ 	if (fmb->len == 0) {
+ 		struct free_memory_block_list *ptr = &fmb_list;
+-		while (ptr->next != fmb) ptr = ptr->next; ptr->next = fmb->next;
++		while (ptr->next != fmb)
++			ptr = ptr->next;
++		ptr->next = fmb->next;
+ 	}
+- out:
++out:
+ 	return ptr ? &ptr->entry : NULL;
+ }
  
  char *shared_buffer = NULL;
  static int buffer_lock = 0;
 -void get(void) {
 -	if (buffer_lock) OutOfMemory();
 -	if (!shared_buffer && (shared_buffer = malloc(shared_buffer_len)) == NULL) OutOfMemory();
++
 +void get(void)
 +{
 +	if (buffer_lock)
-+		OutOfMemory();
-+	if (!shared_buffer && (shared_buffer = malloc(shared_buffer_len)) == NULL)
-+		OutOfMemory();
++		out_of_memory();
++	if (!shared_buffer) {
++		shared_buffer = malloc(shared_buffer_len);
++		if (!shared_buffer)
++			out_of_memory();
++	}
  	buffer_lock++;
  }
 -void put(void) {
 -	if (buffer_lock != 1) OutOfMemory();
++
 +void put(void)
 +{
 +	if (buffer_lock != 1)
-+		OutOfMemory();
++		out_of_memory();
  	buffer_lock--;
  }
 -int freadline(FILE *fp) {
-+int freadline(FILE *fp)
++
++bool freadline(FILE *fp)
 +{
  	char *cp;
  	memset(shared_buffer, 0, shared_buffer_len);
- 	if (fgets(shared_buffer, shared_buffer_len - 1, fp) == NULL ||
+-	if (fgets(shared_buffer, shared_buffer_len - 1, fp) == NULL ||
 -		(cp = strchr(shared_buffer, '\n')) == NULL) return 0;
-+		(cp = strchr(shared_buffer, '\n')) == NULL)
++	if (!fgets(shared_buffer, shared_buffer_len - 1, fp))
++		return 0;
++	cp = strchr(shared_buffer, '\n');
++	if (!cp)
 +		return 0;
  	*cp = '\0';
- 	NormalizeLine(shared_buffer);
+-	NormalizeLine(shared_buffer);
++	normalize_line(shared_buffer);
  	return 1;
-@@ -449,108 +569,173 @@
+ }
  
  /***** UTILITY FUNCTIONS END *****/
  
@@ -6033,6 +7054,1289 @@ Index: ccstools.src/ccstools.c
 +	printf("ccstools version 1.6.4+ build 2008/09/06\n");
  	fprintf(stderr, "Function %s not implemented.\n", argv0);
  	return 1;
+ }
+Index: ccstools.src/pathmatch.c
+===================================================================
+--- ccstools.src/pathmatch.c	(リビジョン 1537)
++++ ccstools.src/pathmatch.c	(作業コピー)
+@@ -46,7 +46,7 @@
+ 	}
+ 	*dp = '\0';
+ 	//printf("Compare: %s %s\n", buffer, scandir_filter_current_part);
+-	if (FileMatchesToPattern(buffer, dp, scandir_filter_current_part, strchr(scandir_filter_current_part, '\0'))) return 1;
++	if (file_matches_pattern(buffer, dp, scandir_filter_current_part, strchr(scandir_filter_current_part, '\0'))) return 1;
+ 	return 0;
+ }
+ 
+@@ -67,7 +67,7 @@
+ 				if (type == DT_DIR) {
+ 					const int len = strlen(path) + strlen(cp) + 4;
+ 					char *child_path = malloc(len);
+-					if (!child_path) OutOfMemory();
++					if (!child_path) out_of_memory();
+ 					snprintf(child_path, len - 1, "%s%s/", path, cp);
+ 					//printf("Check: %s\n", child_path);
+ 					ScanDir(child_path, depth + 1);
+Index: ccstools.src/setprofile.c
+===================================================================
+--- ccstools.src/setprofile.c	(リビジョン 1537)
++++ ccstools.src/setprofile.c	(作業コピー)
+@@ -23,7 +23,7 @@
+ 		fprintf(stderr, "%s [-r] profile domainname [domainname ...]\n", argv[0]);
+ 		return 0;
+ 	}
+-	for (i = start; i < argc; i++) NormalizeLine(argv[i]);
++	for (i = start; i < argc; i++) normalize_line(argv[i]);
+ 	{
+ 		const int fd = open(proc_policy_domain_status, O_RDWR);
+ 		if (fd == EOF) {
+Index: ccstools.src/checkpolicy.c
+===================================================================
+--- ccstools.src/checkpolicy.c	(リビジョン 1537)
++++ ccstools.src/checkpolicy.c	(作業コピー)
+@@ -5,54 +5,69 @@
+  *
+  * Copyright (C) 2005-2008  NTT DATA CORPORATION
+  *
+- * Version: 1.6.2   2008/06/25
++ * Version: 1.6.4+   2008/09/07
+  *
+  */
+ #include "ccstools.h"
+ 
+-static int strendswith(const char *name, const char *tail) {
++static int strendswith(const char *name, const char *tail)
++{
+ 	int len;
+-	if (!name || !tail) return 0;
++	if (!name || !tail)
++		return 0;
+ 	len = strlen(name) - strlen(tail);
+-	return len >= 0 && strcmp(name + len, tail) == 0;
++	return len >= 0 && !strcmp(name + len, tail);
+ }
+ 
+-static int parse_ulong(unsigned long *result, char **str) {
++static int parse_ulong(unsigned long *result, char **str)
++{
+ 	const char *cp = *str;
+ 	char *ep;
+ 	int base = 10;
+ 	if (*cp == '0') {
+-		char c = * (cp + 1);
++		char c = *(cp + 1);
+ 		if (c == 'x' || c == 'X') {
+-			base = 16; cp += 2;
++			base = 16;
++			cp += 2;
+ 		} else if (c >= '0' && c <= '7') {
+-			base = 8; cp++;
++			base = 8;
++			cp++;
+ 		}
+ 	}
+ 	*result = strtoul(cp, &ep, base);
+-	if (cp == ep) return 0;
++	if (cp == ep)
++		return 0;
+ 	*str = ep;
+-	return (base == 16 ? VALUE_TYPE_HEXADECIMAL : (base == 8 ? VALUE_TYPE_OCTAL : VALUE_TYPE_DECIMAL));
++	return base == 16 ? VALUE_TYPE_HEXADECIMAL :
++		(base == 8 ? VALUE_TYPE_OCTAL : VALUE_TYPE_DECIMAL);
+ }
+ 
+-static char *FindConditionPart(char *data) {
+-	char *cp = strstr(data, " if "), *cp2;
++static char *FindConditionPart(char *data)
++{
++	char *cp = strstr(data, " if ");
++	char *cp2;
+ 	if (cp) {
+-		while ((cp2 = strstr(cp + 3, " if ")) != NULL) cp = cp2;
++		while ((cp2 = strstr(cp + 3, " if ")) != NULL)
++			cp = cp2;
+ 		*cp++ = '\0';
+-	} else if ((cp = strstr(data, " ; set ")) != NULL) {
+-		*cp++ = '\0';
++	} else {
++		cp = strstr(data, " ; set ");
++		if (cp)
++			*cp++ = '\0';
+ 	}
+ 	return cp;
+ }
+ 
+ static unsigned int line = 0, errors = 0, warnings = 0;
+ 
+-static int CheckCondition(char *condition) {
+-	enum { TASK_UID, TASK_EUID, TASK_SUID, TASK_FSUID, TASK_GID, TASK_EGID, TASK_SGID, TASK_FSGID,
+-	       TASK_PID, TASK_PPID, PATH1_UID, PATH1_GID, PATH1_INO, PATH1_PARENT_UID, PATH1_PARENT_GID, PATH1_PARENT_INO,
+-	       PATH2_PARENT_UID, PATH2_PARENT_GID, PATH2_PARENT_INO, EXEC_ARGC, EXEC_ENVC, EXEC_ARGV, EXEC_ENVP, TASK_STATE_0,
+-	       TASK_STATE_1, TASK_STATE_2, MAX_KEYWORD };
++static int CheckCondition(char *condition)
++{
++	enum { TASK_UID, TASK_EUID, TASK_SUID, TASK_FSUID, TASK_GID, TASK_EGID,
++	       TASK_SGID, TASK_FSGID, TASK_PID, TASK_PPID, PATH1_UID,
++	       PATH1_GID, PATH1_INO, PATH1_PARENT_UID, PATH1_PARENT_GID,
++	       PATH1_PARENT_INO, PATH2_PARENT_UID, PATH2_PARENT_GID,
++	       PATH2_PARENT_INO, EXEC_ARGC, EXEC_ENVC, EXEC_ARGV, EXEC_ENVP,
++	       TASK_STATE_0, TASK_STATE_1, TASK_STATE_2, MAX_KEYWORD };
+ 	static struct {
+ 		const char *keyword;
+ 		const int keyword_len; /* strlen(keyword) */
+@@ -85,223 +100,334 @@
+ 		[TASK_STATE_2]     = { "task.state[2]",     13 },
+ 	};
+ 	char *start = condition;
+-	u8 left, right, i;
+-	unsigned long left_min = 0, left_max = 0, right_min = 0, right_max = 0;
++	u8 left;
++	u8 right;
++	u8 i;
++	unsigned long left_min = 0;
++	unsigned long left_max = 0;
++	unsigned long right_min = 0;
++	unsigned long right_max = 0;
+ 	u8 post_state[4] = { 0, 0, 0, 0 };
+-	if ((condition = strstr(condition, "; set ")) != NULL) {
++	condition = strstr(condition, "; set ");
++	if (condition) {
+ 		*condition = '\0';
+ 		condition += 6;
+ 		while (1) {
+-			while (*condition == ' ') condition++;
+-			if (!*condition) break;
+-			if (strncmp(condition, "task.state[0]=", 14) == 0) i = 0;
+-			else if (strncmp(condition, "task.state[1]=", 14) == 0) i = 1;
+-			else if (strncmp(condition, "task.state[2]=", 14) == 0) i = 2;
+-			else goto out;
++			while (*condition == ' ')
++				condition++;
++			if (!*condition)
++				break;
++			if (!strncmp(condition, "task.state[0]=", 14))
++				i = 0;
++			else if (!strncmp(condition, "task.state[1]=", 14))
++				i = 1;
++			else if (!strncmp(condition, "task.state[2]=", 14))
++				i = 2;
++			else
++				goto out;
+ 			condition += 14;
+-			if (post_state[3] & (1 << i)) goto out;
++			if (post_state[3] & (1 << i))
++				goto out;
+ 			post_state[3] |= 1 << i;
+-			if (!parse_ulong(&right_min, &condition) || right_min > 255) goto out;
++			if (!parse_ulong(&right_min, &condition) ||
++			    right_min > 255)
++				goto out;
+ 			post_state[i] = (u8) right_min;
+ 		}
+ 	}
+ 	condition = start;
+-	if (strncmp(condition, "if ", 3) == 0) condition += 3;
+-	else if (*condition) goto out;
++	if (!strncmp(condition, "if ", 3))
++		condition += 3;
++	else if (*condition)
++		goto out;
+ 	start = condition;
+ 	while (1) {
+-		while (*condition == ' ') condition++;
+-		if (!*condition) break;
++		while (*condition == ' ')
++			condition++;
++		if (!*condition)
++			break;
+ 		for (left = 0; left < MAX_KEYWORD; left++) {
+-			if (strncmp(condition, condition_control_keyword[left].keyword, condition_control_keyword[left].keyword_len) == 0) {
+-				condition += condition_control_keyword[left].keyword_len;
+-				break;
+-			}
++			int len = condition_control_keyword[left].keyword_len;
++			if (strncmp(condition,
++				    condition_control_keyword[left].keyword,
++				    len))
++				continue;
++			condition += len;
++			break;
+ 		}
+ 		if (left == EXEC_ARGV) {
+-			if (!parse_ulong(&left_min, &condition)) goto out;
+-			if (*condition++ != ']') goto out;
++			if (!parse_ulong(&left_min, &condition))
++				goto out;
++			if (*condition++ != ']')
++				goto out;
+ 		} else if (left == EXEC_ENVP) {
+ 			char *tmp = condition;
+ 			while (1) {
+ 				const char c = *condition;
+ 				/*
+-				 * Since environment variable names don't contain '=',
+-				 * I can treat '"]=' and '"]!=' sequences as delimiters.
++				 * Since environment variable names don't
++				 * contain '=', I can treat '"]=' and '"]!='
++				 * sequences as delimiters.
+ 				 */
+-				if (strncmp(condition, "\"]=", 3) == 0 || strncmp(condition, "\"]!=", 4) == 0) break;
+-				if (!c || c == ' ') goto out;
++				if (!strncmp(condition, "\"]=", 3) ||
++				    !strncmp(condition, "\"]!=", 4))
++					break;
++				if (!c || c == ' ')
++					goto out;
+ 				condition++;
+ 			}
+ 			*condition = '\0';
+-			if (!SaveName(tmp)) goto out;
++			if (!savename(tmp))
++				goto out;
+ 			*condition = '"';
+ 			condition += 2;
+ 		} else if (left == MAX_KEYWORD) {
+-			if (!parse_ulong(&left_min, &condition)) goto out;
++			if (!parse_ulong(&left_min, &condition))
++				goto out;
+ 			if (*condition == '-') {
+ 				condition++;
+-				if (!parse_ulong(&left_max, &condition) || left_min > left_max) goto out;
++				if (!parse_ulong(&left_max, &condition) ||
++				    left_min > left_max)
++					goto out;
+ 			}
+ 		}
+-		if (strncmp(condition, "!=", 2) == 0) condition += 2;
+-		else if (*condition == '=') condition++;
+-		else goto out;
+-		if (left == EXEC_ENVP && strncmp(condition, "NULL", 4) == 0) {
++		if (strncmp(condition, "!=", 2) == 0)
++			condition += 2;
++		else if (*condition == '=')
++			condition++;
++		else
++			goto out;
++		if (left == EXEC_ENVP && !strncmp(condition, "NULL", 4)) {
+ 			char c;
+ 			condition += 4;
+ 			c = *condition;
+-			if (!c || c == ' ') continue;
++			if (!c || c == ' ')
++				continue;
+ 			goto out;
+ 		} else if (left == EXEC_ARGV || left == EXEC_ENVP) {
+ 			char c;
+ 			char *tmp;
+-			if (*condition++ != '"') goto out;
++			if (*condition++ != '"')
++				goto out;
+ 			tmp = condition;
+ 			while (1) {
+ 				c = *condition++;
+-				if (!c || c == ' ') goto out;
+-				if (c != '"') continue;
++				if (!c || c == ' ')
++					goto out;
++				if (c != '"')
++					continue;
+ 				c = *condition;
+-				if (!c || c == ' ') break;
++				if (!c || c == ' ')
++					break;
+ 			}
+ 			c = *--condition;
+ 			*condition = '\0';
+-			if (!SaveName(tmp)) goto out;
++			if (!savename(tmp))
++				goto out;
+ 			*condition = c;
+ 			condition++;
+ 			continue;
+ 		}
+ 		for (right = 0; right < MAX_KEYWORD; right++) {
+-			if (strncmp(condition, condition_control_keyword[right].keyword, condition_control_keyword[right].keyword_len) == 0) {
+-				condition += condition_control_keyword[right].keyword_len;
+-				break;
+-			}
++			int len = condition_control_keyword[right].keyword_len;
++			if (strncmp(condition,
++				    condition_control_keyword[right].keyword,
++				    len))
++				continue;
++			condition += len;
++			break;
+ 		}
+ 		if (right == MAX_KEYWORD) {
+-			if (!parse_ulong(&right_min, &condition)) goto out;
++			if (!parse_ulong(&right_min, &condition))
++				goto out;
+ 			if (*condition == '-') {
+ 				condition++;
+-				if (!parse_ulong(&right_max, &condition) || right_min > right_max) goto out;
++				if (!parse_ulong(&right_max, &condition) ||
++				    right_min > right_max)
++					goto out;
+ 			}
+ 		}
+ 	}
+ 	return 1;
+- out:
+-	printf("%u: ERROR: '%s' is a illegal condition.\n", line, start); errors++;
++out:
++	printf("%u: ERROR: '%s' is a illegal condition.\n", line, start);
++	errors++;
+ 	return 0;
+ }
+ 
+-static void CheckCapabilityPolicy(char *data) {
++static void CheckCapabilityPolicy(char *data)
++{
+ 	static const char *capability_keywords[] = {
+-		"inet_tcp_create", "inet_tcp_listen", "inet_tcp_connect", "use_inet_udp", "use_inet_ip", "use_route", "use_packet",
+-		"SYS_MOUNT", "SYS_UMOUNT", "SYS_REBOOT", "SYS_CHROOT", "SYS_KILL", "SYS_VHANGUP", "SYS_TIME", "SYS_NICE", "SYS_SETHOSTNAME",
+-		"use_kernel_module", "create_fifo", "create_block_dev", "create_char_dev", "create_unix_socket",
+-		"SYS_LINK", "SYS_SYMLINK", "SYS_RENAME", "SYS_UNLINK", "SYS_CHMOD", "SYS_CHOWN", "SYS_IOCTL", "SYS_KEXEC_LOAD", "SYS_PIVOT_ROOT",
+-		"SYS_PTRACE", NULL
++		"inet_tcp_create", "inet_tcp_listen", "inet_tcp_connect",
++		"use_inet_udp", "use_inet_ip", "use_route", "use_packet",
++		"SYS_MOUNT", "SYS_UMOUNT", "SYS_REBOOT", "SYS_CHROOT",
++		"SYS_KILL", "SYS_VHANGUP", "SYS_TIME", "SYS_NICE",
++		"SYS_SETHOSTNAME", "use_kernel_module", "create_fifo",
++		"create_block_dev", "create_char_dev", "create_unix_socket",
++		"SYS_LINK", "SYS_SYMLINK", "SYS_RENAME", "SYS_UNLINK",
++		"SYS_CHMOD", "SYS_CHOWN", "SYS_IOCTL", "SYS_KEXEC_LOAD",
++		"SYS_PIVOT_ROOT", "SYS_PTRACE", NULL
+ 	};
+ 	int i;
+ 	for (i = 0; capability_keywords[i]; i++) {
+-		if (strcmp(data, capability_keywords[i]) == 0) return;
++		if (!strcmp(data, capability_keywords[i]))
++			return;
+ 	}
+-	printf("%u: ERROR: '%s' is a bad capability name.\n", line, data); errors++;
++	printf("%u: ERROR: '%s' is a bad capability name.\n", line, data);
++	errors++;
+ }
+ 
+-static void CheckSignalPolicy(char *data) {
++static void CheckSignalPolicy(char *data)
++{
+ 	int sig;
+ 	char *cp;
+ 	cp = strchr(data, ' ');
+ 	if (!cp) {
+-		printf("%u: ERROR: Too few parameters.\n", line); errors++;
++		printf("%u: ERROR: Too few parameters.\n", line);
++		errors++;
+ 		return;
+ 	}
+ 	*cp++ = '\0';
+ 	if (sscanf(data, "%d", &sig) != 1) {
+-		printf("%u: ERROR: '%s' is a bad signal number.\n", line, data); errors++;
++		printf("%u: ERROR: '%s' is a bad signal number.\n", line, data);
++		errors++;
+ 	}
+-	if (!IsCorrectDomain(cp)) {
+-		printf("%u: ERROR: '%s' is a bad domainname.\n", line, cp); errors++;
++	if (!is_correct_domain(cp)) {
++		printf("%u: ERROR: '%s' is a bad domainname.\n", line, cp);
++		errors++;
+ 	}
+ }
+ 
+-static void CheckArgv0Policy(char *data) {
++static void CheckArgv0Policy(char *data)
++{
+ 	char *argv0 = strchr(data, ' ');
+ 	if (!argv0) {
+-		printf("%u: ERROR: Too few parameters.\n", line); errors++;
++		printf("%u: ERROR: Too few parameters.\n", line);
++		errors++;
+ 		return;
+ 	}
+ 	*argv0++ = '\0';
+-	if (!IsCorrectPath(data, 1, 0, -1)) {
+-		printf("%u: ERROR: '%s' is a bad pathname.\n", line, data); errors++;
++	if (!is_correct_path(data, 1, 0, -1)) {
++		printf("%u: ERROR: '%s' is a bad pathname.\n", line, data);
++		errors++;
+ 	}
+-	if (!IsCorrectPath(argv0, -1, 0, -1) || strchr(argv0, '/')) {
+-		printf("%u: ERROR: '%s' is a bad argv[0] name.\n", line, data); errors++;
++	if (!is_correct_path(argv0, -1, 0, -1) || strchr(argv0, '/')) {
++		printf("%u: ERROR: '%s' is a bad argv[0] name.\n", line, data);
++		errors++;
+ 	}
+ }
+ 
+-static void CheckEnvPolicy(char *data) {
+-	if (!IsCorrectPath(data, 0, 0, 0)) {
+-		printf("%u: ERROR: '%s' is a bad variable name.\n", line, data); errors++;
++static void CheckEnvPolicy(char *data)
++{
++	if (!is_correct_path(data, 0, 0, 0)) {
++		printf("%u: ERROR: '%s' is a bad variable name.\n", line, data);
++		errors++;
+ 	}
+ }
+ 
+-static void CheckNetworkPolicy(char *data) {
+-	int sock_type, operation, is_ipv6;
+-	u16 min_address[8], max_address[8];
+-	unsigned int min_port, max_port;
++static void CheckNetworkPolicy(char *data)
++{
++	int sock_type;
++	int operation;
++	u16 min_address[8];
++	u16 max_address[8];
++	unsigned int min_port;
++	unsigned int max_port;
+ 	int count;
+-	char *cp1 = NULL, *cp2 = NULL;
+-	if ((cp1 = strchr(data, ' ')) == NULL) goto out; cp1++;
+-	if (strncmp(data, "TCP ", 4) == 0) sock_type = SOCK_STREAM;
+-	else if (strncmp(data, "UDP ", 4) == 0) sock_type = SOCK_DGRAM;
+-	else if (strncmp(data, "RAW ", 4) == 0) sock_type = SOCK_RAW;
+-	else goto out;
+-	if ((cp2 = strchr(cp1, ' ')) == NULL) goto out; cp2++;
+-	if (strncmp(cp1, "bind ", 5) == 0) {
+-		operation = (sock_type == SOCK_STREAM) ? NETWORK_ACL_TCP_BIND : (sock_type == SOCK_DGRAM) ? NETWORK_ACL_UDP_BIND : NETWORK_ACL_RAW_BIND;
+-	} else if (strncmp(cp1, "connect ", 8) == 0) {
+-		operation = (sock_type == SOCK_STREAM) ? NETWORK_ACL_TCP_CONNECT : (sock_type == SOCK_DGRAM) ? NETWORK_ACL_UDP_CONNECT : NETWORK_ACL_RAW_CONNECT;
+-	} else if (sock_type == SOCK_STREAM && strncmp(cp1, "listen ", 7) == 0) {
++	char *cp1 = NULL;
++	char *cp2 = NULL;
++	cp1 = strchr(data, ' ');
++	if (!cp1)
++		goto out;
++	cp1++;
++	if (!strncmp(data, "TCP ", 4))
++		sock_type = SOCK_STREAM;
++	else if (!strncmp(data, "UDP ", 4))
++		sock_type = SOCK_DGRAM;
++	else if (!strncmp(data, "RAW ", 4))
++		sock_type = SOCK_RAW;
++	else
++		goto out;
++	cp2 = strchr(cp1, ' ');
++	if (!cp2)
++		goto out;
++	cp2++;
++	if (!strncmp(cp1, "bind ", 5)) {
++		operation = (sock_type == SOCK_STREAM) ? NETWORK_ACL_TCP_BIND :
++			(sock_type == SOCK_DGRAM) ? NETWORK_ACL_UDP_BIND :
++			NETWORK_ACL_RAW_BIND;
++	} else if (!strncmp(cp1, "connect ", 8)) {
++		operation = (sock_type == SOCK_STREAM) ?
++			NETWORK_ACL_TCP_CONNECT : (sock_type == SOCK_DGRAM) ?
++			NETWORK_ACL_UDP_CONNECT : NETWORK_ACL_RAW_CONNECT;
++	} else if (sock_type == SOCK_STREAM && !strncmp(cp1, "listen ", 7)) {
+ 		operation = NETWORK_ACL_TCP_LISTEN;
+-	} else if (sock_type == SOCK_STREAM && strncmp(cp1, "accept ", 7) == 0) {
++	} else if (sock_type == SOCK_STREAM && !strncmp(cp1, "accept ", 7)) {
+ 		operation = NETWORK_ACL_TCP_ACCEPT;
+ 	} else {
+ 		goto out;
+ 	}
+-	if ((cp1 = strchr(cp2, ' ')) == NULL) goto out; cp1++;
+-	if ((count = sscanf(cp2, "%hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx-%hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx",
+-						&min_address[0], &min_address[1], &min_address[2], &min_address[3],
+-						&min_address[4], &min_address[5], &min_address[6], &min_address[7],
+-						&max_address[0], &max_address[1], &max_address[2], &max_address[3],
+-						&max_address[4], &max_address[5], &max_address[6], &max_address[7])) == 8 || count == 16) {
++	cp1 = strchr(cp2, ' ');
++	if (!cp1)
++		goto out;
++	cp1++;
++	count = sscanf(cp2, "%hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx-"
++		       "%hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx",
++		       &min_address[0], &min_address[1], &min_address[2],
++		       &min_address[3], &min_address[4], &min_address[5],
++		       &min_address[6], &min_address[7], &max_address[0],
++		       &max_address[1], &max_address[2], &max_address[3],
++		       &max_address[4], &max_address[5], &max_address[6],
++		       &max_address[7]);
++	if (count == 8 || count == 16) {
+ 		int i;
+ 		for (i = 0; i < 8; i++) {
+ 			min_address[i] = htons(min_address[i]);
+ 			max_address[i] = htons(max_address[i]);
+ 		}
+-		if (count == 8) memmove(max_address, min_address, sizeof(min_address));
+-		is_ipv6 = 1;
+-	} else if ((count = sscanf(cp2, "%hu.%hu.%hu.%hu-%hu.%hu.%hu.%hu",
+-							   &min_address[0], &min_address[1], &min_address[2], &min_address[3],
+- 							   &max_address[0], &max_address[1], &max_address[2], &max_address[3])) == 4 || count == 8) {
+-		u32 ip = htonl((((u8) min_address[0]) << 24) + (((u8) min_address[1]) << 16) + (((u8) min_address[2]) << 8) + (u8) min_address[3]);
+-		* (u32 *) (void *) min_address = ip;
+-		if (count == 8) ip = htonl((((u8) max_address[0]) << 24) + (((u8) max_address[1]) << 16) + (((u8) max_address[2]) << 8) + (u8) max_address[3]);
+-		* (u32 *) (void *) max_address = ip;
+-		is_ipv6 = 0;
+-	} else if (*cp2 != '@') { // Don't reject address_group.
++		if (count == 8)
++			memmove(max_address, min_address, sizeof(min_address));
++		goto next;
++	}
++	count = sscanf(cp2, "%hu.%hu.%hu.%hu-%hu.%hu.%hu.%hu",
++		       &min_address[0], &min_address[1], &min_address[2],
++		       &min_address[3], &max_address[0], &max_address[1],
++		       &max_address[2], &max_address[3]);
++	if (count == 4 || count == 8) {
++		u32 *p = (u32 *) min_address;
++		u32 ip = htonl((((u8) min_address[0]) << 24) +
++			       (((u8) min_address[1]) << 16) +
++			       (((u8) min_address[2]) << 8) +
++			       (u8) min_address[3]);
++		*p = ip;
++		p = (u32 *) max_address;
++		if (count == 8)
++			ip = htonl((((u8) max_address[0]) << 24) +
++				   (((u8) max_address[1]) << 16) +
++				   (((u8) max_address[2]) << 8) +
++				   (u8) max_address[3]);
++		*p = ip;
++		goto next;
++	}
++	if (*cp2 != '@') /* Don't reject address_group. */
+ 		goto out;
++next:
++	if (strchr(cp1, ' '))
++		goto out;
++	count = sscanf(cp1, "%u-%u", &min_port, &max_port);
++	if (count == 1 || count == 2) {
++		if (count == 1)
++			max_port = min_port;
++		if (min_port <= max_port && max_port < 65536)
++			return;
+ 	}
+-	if (strchr(cp1, ' ')) goto out;
+-	if ((count = sscanf(cp1, "%u-%u", &min_port, &max_port)) == 1 || count == 2) {
+-		if (count == 1) max_port = min_port;
+-		if (min_port <= max_port && max_port < 65536) return;
+-	}
+- out: ;
+-	printf("%u: ERROR: Bad network address.\n", line); errors++;
++out:
++	printf("%u: ERROR: Bad network address.\n", line);
++	errors++;
+ }
+ 
+-static void CheckFilePolicy(char *data) {
++static void CheckFilePolicy(char *data)
++{
+ 	static const struct {
+ 		const char * const keyword;
+ 		const int paths;
+@@ -329,100 +455,149 @@
+ 	char *cp;
+ 	unsigned int perm;
+ 	if (!filename) {
+-		printf("%u: ERROR: Unknown command '%s'\n", line, data); errors++;
++		printf("%u: ERROR: Unknown command '%s'\n", line, data);
++		errors++;
+ 		return;
+ 	}
+ 	*filename++ = '\0';
+ 	if (sscanf(data, "%u", &perm) == 1 && perm > 0 && perm <= 7) {
+-		if (filename[0] != '@' && strendswith(filename, "/")) { // Don't reject path_group.
+-			printf("%u: WARNING: Only 'mkdir' and 'rmdir' are valid for directory '%s'.\n", line, filename); warnings++;
++		/* Don't reject path_group. */
++		if (filename[0] != '@' && strendswith(filename, "/")) {
++			printf("%u: WARNING: Only 'mkdir' and 'rmdir' are "
++			       "valid for directory '%s'.\n", line, filename);
++			warnings++;
+ 		}
+-		if (!IsCorrectPath(filename, 0, 0, 0)) goto out;
++		if (!is_correct_path(filename, 0, 0, 0))
++			goto out1;
+ 		return;
+ 	}
+-	if (strncmp(data, "allow_", 6) == 0) {
++	if (!strncmp(data, "allow_", 6)) {
+ 		int type;
+ 		for (type = 0; acl_type_array[type].keyword; type++) {
+-			if (strcmp(data + 6, acl_type_array[type].keyword)) continue;
++			if (strcmp(data + 6, acl_type_array[type].keyword))
++				continue;
+ 			if (acl_type_array[type].paths == 2) {
+ 				cp = strchr(filename, ' ');
+-				if (!cp || !IsCorrectPath(cp + 1, 0, 0, 0)) break;
++				if (!cp || !is_correct_path(cp + 1, 0, 0, 0))
++					break;
+ 				*cp = '\0';
+ 			}
+-			if (!IsCorrectPath(filename, 0, 0, 0)) break;
++			if (!is_correct_path(filename, 0, 0, 0))
++				break;
+ 			return;
+ 		}
+-		if (!acl_type_array[type].keyword) goto out2;
+-	out:
+-		printf("%u: ERROR: '%s' is a bad pathname.\n", line, filename); errors++;
++		if (!acl_type_array[type].keyword)
++			goto out2;
++out1:
++		printf("%u: ERROR: '%s' is a bad pathname.\n", line, filename);
++		errors++;
+ 		return;
+ 	}
+- out2:
+-	printf("%u: ERROR: Invalid permission '%s %s'\n", line, data, filename); errors++;
++out2:
++	printf("%u: ERROR: Invalid permission '%s %s'\n", line, data, filename);
++	errors++;
+ }
+ 
+-static void CheckMountPolicy(char *data) {
+-	char *cp, *cp2;
+-	const char *dev, *dir;
++static void CheckMountPolicy(char *data)
++{
++	char *cp;
++	char *cp2;
++	const char *dev;
++	const char *dir;
+ 	unsigned int flags;
+-	cp2 = data; if ((cp = strchr(cp2, ' ')) == NULL) goto out; *cp = '\0'; dev = cp2;
+-	cp2 = cp + 1; if ((cp = strchr(cp2, ' ')) == NULL) goto out; *cp = '\0'; dir = cp2;
++	cp2 = data;
++	cp = strchr(cp2, ' ');
++	if (!cp)
++		goto out;
++	*cp = '\0';
++	dev = cp2;
++	cp2 = cp + 1;
++	cp = strchr(cp2, ' ');
++	if (!cp)
++		goto out;
++	*cp = '\0';
++	dir = cp2;
+ 	cp2 = strchr(cp + 1, ' ');
+-	if (!cp2) goto out;
+-	if (!IsCorrectPath(dev, 0, 0, 0)) {
+-		printf("%u: ERROR: '%s' is a bad device name.\n", line, dir); errors++;
++	if (!cp2)
++		goto out;
++	if (!is_correct_path(dev, 0, 0, 0)) {
++		printf("%u: ERROR: '%s' is a bad device name.\n", line, dir);
++		errors++;
+ 	}
+-	if (!IsCorrectPath(dir, 0, 0, 0)) {
+-		printf("%u: ERROR: '%s' is a bad mount point.\n", line, dir); errors++;
++	if (!is_correct_path(dir, 0, 0, 0)) {
++		printf("%u: ERROR: '%s' is a bad mount point.\n", line, dir);
++		errors++;
+ 	}
+ 	if (sscanf(cp2 + 1, "0x%X", &flags) != 1) {
+-		printf("%u: ERROR: '%s' is a bad mount option.\n", line, cp2 + 1); errors++;
++		printf("%u: ERROR: '%s' is a bad mount option.\n",
++		       line, cp2 + 1);
++		errors++;
+ 	}
+ 	return;
+  out:
+-	printf("%u: ERROR: Too few parameters.\n", line); errors++;
++	printf("%u: ERROR: Too few parameters.\n", line);
++	errors++;
+ }
+ 
+-static void CheckPivotRootPolicy(char *data) {
+-	char *cp;
+-	if ((cp = strchr(data, ' ')) == NULL) goto out;
++static void CheckPivotRootPolicy(char *data)
++{
++	char *cp = strchr(data, ' ');
++	if (!cp)
++		goto out;
+ 	*cp++ = '\0';
+-	if (!IsCorrectPath(data, 1, 0, 1)) {
+-		printf("%u: ERROR: '%s' is a bad directory.\n", line, data); errors++;
++	if (!is_correct_path(data, 1, 0, 1)) {
++		printf("%u: ERROR: '%s' is a bad directory.\n", line, data);
++		errors++;
+ 	}
+-	if (!IsCorrectPath(cp, 1, 0, 1)) {
+-		printf("%u: ERROR: '%s' is a bad directory.\n", line, cp); errors++;
++	if (!is_correct_path(cp, 1, 0, 1)) {
++		printf("%u: ERROR: '%s' is a bad directory.\n", line, cp);
++		errors++;
+ 	}
+ 	return;
+  out:
+-	printf("%u: ERROR: Too few parameters.\n", line); errors++;
++	printf("%u: ERROR: Too few parameters.\n", line);
++	errors++;
+ }
+ 
+-static void CheckReservedPortPolicy(char *data) {
+-	unsigned int from, to;
+-	if (strchr(data, ' ')) goto out;
++static void CheckReservedPortPolicy(char *data)
++{
++	unsigned int from;
++	unsigned int to;
++	if (strchr(data, ' '))
++		goto out;
+ 	if (sscanf(data, "%u-%u", &from, &to) == 2) {
+-		if (from <= to && to < 65536) return;
++		if (from <= to && to < 65536)
++			return;
+ 	} else if (sscanf(data, "%u", &from) == 1) {
+-		if (from < 65536) return;
++		if (from < 65536)
++			return;
+ 	} else {
+-		printf("%u: ERROR: Too few parameters.\n", line); errors++;
++		printf("%u: ERROR: Too few parameters.\n", line);
++		errors++;
+ 		return;
+ 	}
+  out:
+-	printf("%u: ERROR: '%s' is a bad port number.\n", line, data); errors++;
++	printf("%u: ERROR: '%s' is a bad port number.\n", line, data);
++	errors++;
+ }
+ 
+-static void CheckDomainInitializerEntry(const char *domainname, const char *program) {
+-	if (!IsCorrectPath(program, 1, 0, -1)) {
+-		printf("%u: ERROR: '%s' is a bad pathname.\n", line, program); errors++;
++static void CheckDomainInitializerEntry(const char *domainname,
++					const char *program)
++{
++	if (!is_correct_path(program, 1, 0, -1)) {
++		printf("%u: ERROR: '%s' is a bad pathname.\n", line, program);
++		errors++;
+ 	}
+-	if (domainname && !IsCorrectPath(domainname, 1, -1, -1) && !IsCorrectDomain(domainname)) {
+-		printf("%u: ERROR: '%s' is a bad domainname.\n", line, domainname); errors++;
++	if (domainname && !is_correct_path(domainname, 1, -1, -1) &&
++	    !is_correct_domain(domainname)) {
++		printf("%u: ERROR: '%s' is a bad domainname.\n",
++		       line, domainname);
++		errors++;
+ 	}
+ }
+ 
+-static void CheckDomainInitializerPolicy(char *data) {
++static void CheckDomainInitializerPolicy(char *data)
++{
+ 	char *cp = strstr(data, " from ");
+ 	if (cp) {
+ 		*cp = '\0';
+@@ -432,16 +607,22 @@
+ 	}
+ }
+ 
+-static void CheckDomainKeeperEntry(const char *domainname, const char *program) {
+-	if (!IsCorrectPath(domainname, 1, -1, -1) && !IsCorrectDomain(domainname)) {
+-		printf("%u: ERROR: '%s' is a bad domainname.\n", line, domainname); errors++;
++static void CheckDomainKeeperEntry(const char *domainname, const char *program)
++{
++	if (!is_correct_path(domainname, 1, -1, -1) &&
++	    !is_correct_domain(domainname)) {
++		printf("%u: ERROR: '%s' is a bad domainname.\n",
++		       line, domainname);
++		errors++;
+ 	}
+-	if (program && !IsCorrectPath(program, 1, 0, -1)) {
+-		printf("%u: ERROR: '%s' is a bad pathname.\n", line, program); errors++;
++	if (program && !is_correct_path(program, 1, 0, -1)) {
++		printf("%u: ERROR: '%s' is a bad pathname.\n", line, program);
++		errors++;
+ 	}
+ }
+ 
+-static void CheckDomainKeeperPolicy(char *data) {
++static void CheckDomainKeeperPolicy(char *data)
++{
+ 	char *cp = strstr(data, " from ");
+ 	if (cp) {
+ 		*cp = '\0';
+@@ -451,44 +632,251 @@
+ 	}
+ }
+ 
+-static void CheckGroupPolicy(char *data) {
++static void CheckGroupPolicy(char *data)
++{
+ 	char *cp = strchr(data, ' ');
+ 	if (!cp) {
+-		printf("%u: ERROR: Too few parameters.\n", line); errors++;
++		printf("%u: ERROR: Too few parameters.\n", line);
++		errors++;
+ 		return;
+ 	}
+ 	*cp++ = '\0';
+-	if (!IsCorrectPath(data, 0, 0, 0)) {
+-		printf("%u: ERROR: '%s' is a bad group name.\n", line, data); errors++;
++	if (!is_correct_path(data, 0, 0, 0)) {
++		printf("%u: ERROR: '%s' is a bad group name.\n", line, data);
++		errors++;
+ 	}
+-	if (!IsCorrectPath(cp, 0, 0, 0)) {
+-		printf("%u: ERROR: '%s' is a bad pathname.\n", line, cp); errors++;
++	if (!is_correct_path(cp, 0, 0, 0)) {
++		printf("%u: ERROR: '%s' is a bad pathname.\n", line, cp);
++		errors++;
+ 	}
+ }
+ 
+-static void CheckAddressGroupPolicy(char *data) {
++static void CheckAddressGroupPolicy(char *data)
++{
+ 	char *cp = strchr(data, ' ');
+-	u16 min_address[8], max_address[8];
++	u16 min_address[8];
++	u16 max_address[8];
+ 	int count;
+ 	if (!cp) {
+-		printf("%u: ERROR: Too few parameters.\n", line); errors++;
++		printf("%u: ERROR: Too few parameters.\n", line);
++		errors++;
+ 		return;
+ 	}
+ 	*cp++ = '\0';
+-	if ((count = sscanf(cp, "%hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx-%hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx",
+-						&min_address[0], &min_address[1], &min_address[2], &min_address[3],
+-						&min_address[4], &min_address[5], &min_address[6], &min_address[7],
+-						&max_address[0], &max_address[1], &max_address[2], &max_address[3],
+-						&max_address[4], &max_address[5], &max_address[6], &max_address[7])) == 8 || count == 16) {
+-	} else if ((count = sscanf(cp, "%hu.%hu.%hu.%hu-%hu.%hu.%hu.%hu",
+-							   &min_address[0], &min_address[1], &min_address[2], &min_address[3],
+- 							   &max_address[0], &max_address[1], &max_address[2], &max_address[3])) == 4 || count == 8) {
++	count = sscanf(cp, "%hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx-"
++		       "%hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx",
++		       &min_address[0], &min_address[1], &min_address[2],
++		       &min_address[3], &min_address[4], &min_address[5],
++		       &min_address[6], &min_address[7], &max_address[0],
++		       &max_address[1], &max_address[2], &max_address[3],
++		       &max_address[4], &max_address[5], &max_address[6],
++		       &max_address[7]);
++	if (count == 8 || count == 16)
++		return;
++	count = sscanf(cp, "%hu.%hu.%hu.%hu-%hu.%hu.%hu.%hu",
++		       &min_address[0], &min_address[1], &min_address[2],
++		       &min_address[3], &max_address[0], &max_address[1],
++		       &max_address[2], &max_address[3]);
++	if (count == 4 || count == 8)
++		return;
++	printf("%u: ERROR: '%s' is a bad address.\n", line, cp);
++	errors++;
++}
++
++static void check_domain_policy(int *domain0)
++{
++	int domain = *domain0;
++	int is_delete = 0;
++	int is_select = 0;
++	int is_undelete = 0;
++	if (str_starts(shared_buffer, KEYWORD_DELETE))
++		is_delete = 1;
++	else if (str_starts(shared_buffer, KEYWORD_SELECT))
++		is_select = 1;
++	else if (str_starts(shared_buffer, KEYWORD_UNDELETE))
++		is_undelete = 1;
++	if (is_domain_def(shared_buffer)) {
++		if (!is_correct_domain(shared_buffer) ||
++		    strlen(shared_buffer) >= CCS_MAX_PATHNAME_LEN) {
++			printf("%u: ERROR: '%s' is a bad domainname.\n",
++			       line, shared_buffer);
++			errors++;
++		} else {
++			if (is_delete)
++				domain = EOF;
++			else
++				domain = 0;
++		}
++		*domain0 = domain;
++	} else if (is_select) {
++		printf("%u: ERROR: Command 'select' is valid for selecting "
++		       "domains only.\n", line);
++		errors++;
++	} else if (is_undelete) {
++		printf("%u: ERROR: Command 'undelete' is valid for undeleting "
++		       "domains only.\n", line);
++		errors++;
++	} else if (domain == EOF) {
++		printf("%u: WARNING: '%s' is unprocessed because domain is not "
++		       "selected.\n", line, shared_buffer);
++		warnings++;
++	} else if (str_starts(shared_buffer, KEYWORD_USE_PROFILE)) {
++		unsigned int profile;
++		if (sscanf(shared_buffer, "%u", &profile) != 1 ||
++		    profile >= 256) {
++			printf("%u: ERROR: '%s' is a bad profile.\n",
++			       line, shared_buffer);
++			errors++;
++		}
++	} else if (!strcmp(shared_buffer, "ignore_global_allow_read")) {
++		/* Nothing to do. */
++	} else if (!strcmp(shared_buffer, "ignore_global_allow_env")) {
++		/* Nothing to do. */
++	} else if (str_starts(shared_buffer, "execute_handler ")) {
++		if (!is_correct_path(shared_buffer, 1, -1, -1)) {
++			printf("%u: ERROR: '%s' is a bad pathname.\n",
++			       line, shared_buffer);
++			errors++;
++		}
++	} else if (str_starts(shared_buffer, "denied_execute_handler ")) {
++		if (!is_correct_path(shared_buffer, 1, -1, -1)) {
++			printf("%u: ERROR: '%s' is a bad pathname.\n",
++			       line, shared_buffer);
++			errors++;
++		}
++	} else if (!strcmp(shared_buffer, "quota_exceeded")) {
++		/* Nothing to do. */
+ 	} else {
+-		printf("%u: ERROR: '%s' is a bad address.\n", line, cp); errors++;
++		char *cp = FindConditionPart(shared_buffer);
++		if (cp && !CheckCondition(cp))
++			return;
++		if (str_starts(shared_buffer, KEYWORD_ALLOW_CAPABILITY))
++			CheckCapabilityPolicy(shared_buffer);
++		else if (str_starts(shared_buffer, KEYWORD_ALLOW_NETWORK))
++			CheckNetworkPolicy(shared_buffer);
++		else if (str_starts(shared_buffer, KEYWORD_ALLOW_SIGNAL))
++			CheckSignalPolicy(shared_buffer);
++		else if (str_starts(shared_buffer, KEYWORD_ALLOW_ARGV0))
++			CheckArgv0Policy(shared_buffer);
++		else if (str_starts(shared_buffer, KEYWORD_ALLOW_ENV))
++			CheckEnvPolicy(shared_buffer);
++		else
++			CheckFilePolicy(shared_buffer);
+ 	}
+ }
+-		
+-int checkpolicy_main(int argc, char *argv[]) {
++
++static void check_exception_policy(void)
++{
++	str_starts(shared_buffer, KEYWORD_DELETE);
++	if (str_starts(shared_buffer, KEYWORD_ALLOW_READ)) {
++		if (!is_correct_path(shared_buffer, 1, 0, -1)) {
++			printf("%u: ERROR: '%s' is a bad pathname.\n",
++			       line, shared_buffer);
++			errors++;
++		}
++	} else if (str_starts(shared_buffer, KEYWORD_INITIALIZE_DOMAIN)) {
++		CheckDomainInitializerPolicy(shared_buffer);
++	} else if (str_starts(shared_buffer, KEYWORD_NO_INITIALIZE_DOMAIN)) {
++		CheckDomainInitializerPolicy(shared_buffer);
++	} else if (str_starts(shared_buffer, KEYWORD_KEEP_DOMAIN)) {
++		CheckDomainKeeperPolicy(shared_buffer);
++	} else if (str_starts(shared_buffer, KEYWORD_NO_KEEP_DOMAIN)) {
++		CheckDomainKeeperPolicy(shared_buffer);
++	} else if (str_starts(shared_buffer, KEYWORD_PATH_GROUP)) {
++		CheckGroupPolicy(shared_buffer);
++	} else if (str_starts(shared_buffer, KEYWORD_ADDRESS_GROUP)) {
++		CheckAddressGroupPolicy(shared_buffer);
++	} else if (str_starts(shared_buffer, KEYWORD_ALIAS)) {
++		char *cp = strchr(shared_buffer, ' ');
++		if (!cp) {
++			printf("%u: ERROR: Too few parameters.\n", line);
++			errors++;
++		} else {
++			*cp++ = '\0';
++			if (!is_correct_path(shared_buffer, 1, -1, -1)) {
++				printf("%u: ERROR: '%s' is a bad pathname.\n",
++				       line, shared_buffer);
++				errors++;
++			}
++			if (!is_correct_path(cp, 1, -1, -1)) {
++				printf("%u: ERROR: '%s' is a bad pathname.\n",
++				       line, cp);
++				errors++;
++			}
++		}
++	} else if (str_starts(shared_buffer, KEYWORD_AGGREGATOR)) {
++		char *cp = strchr(shared_buffer, ' ');
++		if (!cp) {
++			printf("%u: ERROR: Too few parameters.\n", line);
++			errors++;
++		} else {
++			*cp++ = '\0';
++			if (!is_correct_path(shared_buffer, 1, 0, -1)) {
++				printf("%u: ERROR: '%s' is a bad pattern.\n",
++				       line, shared_buffer);
++				errors++;
++			}
++			if (!is_correct_path(cp, 1, -1, -1)) {
++				printf("%u: ERROR: '%s' is a bad pathname.\n",
++				       line, cp);
++				errors++;
++			}
++		}
++	} else if (str_starts(shared_buffer, KEYWORD_FILE_PATTERN)) {
++		if (!is_correct_path(shared_buffer, 0, 1, 0)) {
++			printf("%u: ERROR: '%s' is a bad pattern.\n",
++			       line, shared_buffer);
++			errors++;
++		}
++	} else if (str_starts(shared_buffer, KEYWORD_DENY_REWRITE)) {
++		if (!is_correct_path(shared_buffer, 0, 0, 0)) {
++			printf("%u: ERROR: '%s' is a bad pattern.\n",
++			       line, shared_buffer);
++			errors++;
++		}
++	} else if (str_starts(shared_buffer, KEYWORD_ALLOW_ENV)) {
++		if (!is_correct_path(shared_buffer, 0, 0, 0)) {
++			printf("%u: ERROR: '%s' is a bad variable name.\n",
++			       line, shared_buffer);
++			errors++;
++		}
++	} else {
++		printf("%u: ERROR: Unknown command '%s'.\n",
++		       line, shared_buffer);
++		errors++;
++	}
++}
++
++static void check_system_policy(void)
++{
++	str_starts(shared_buffer, KEYWORD_DELETE);
++	if (str_starts(shared_buffer, KEYWORD_ALLOW_MOUNT)) {
++		CheckMountPolicy(shared_buffer);
++	} else if (str_starts(shared_buffer, KEYWORD_DENY_UNMOUNT)) {
++		if (!is_correct_path(shared_buffer, 1, 0, 1)) {
++			printf("%u: ERROR: '%s' is a bad pattern.\n",
++			       line, shared_buffer);
++			errors++;
++		}
++	} else if (str_starts(shared_buffer, KEYWORD_ALLOW_CHROOT)) {
++		if (!is_correct_path(shared_buffer, 1, 0, 1)) {
++			printf("%u: ERROR: '%s' is a bad pattern.\n",
++			       line, shared_buffer);
++			errors++;
++		}
++	} else if (str_starts(shared_buffer, KEYWORD_ALLOW_PIVOT_ROOT)) {
++		CheckPivotRootPolicy(shared_buffer);
++	} else if (str_starts(shared_buffer, KEYWORD_DENY_AUTOBIND)) {
++		CheckReservedPortPolicy(shared_buffer);
++	} else {
++		printf("%u: ERROR: Unknown command '%s'.\n",
++		       line, shared_buffer);
++		errors++;
++	}
++}
++
++int checkpolicy_main(int argc, char *argv[])
++{
+ 	int policy_type = POLICY_TYPE_UNKNOWN;
+ 	if (argc > 1) {
+ 		switch (argv[1][0]) {
+@@ -508,188 +896,49 @@
+ 		return 0;
+ 	}
+ 	get();
+-	while (memset(shared_buffer, 0, shared_buffer_len), fgets(shared_buffer, shared_buffer_len - 1, stdin)) {
++	while (memset(shared_buffer, 0, shared_buffer_len),
++	       fgets(shared_buffer, shared_buffer_len - 1, stdin)) {
+ 		static int domain = EOF;
+-		int is_select = 0, is_delete = 0, is_undelete = 0;
+ 		char *cp = strchr(shared_buffer, '\n');
+ 		line++;
+ 		if (!cp) {
+-			printf("%u: ERROR: Line too long.\n", line); errors++;
++			printf("%u: ERROR: Line too long.\n", line);
++			errors++;
+ 			break;
+ 		}
+ 		*cp = '\0';
+ 		{
+ 			int c;
+ 			for (c = 1; c < 256; c++) {
+-				if (c == '\t' || c == '\r' || (c >= ' ' && c < 127)) continue;
+-				if (strchr(shared_buffer, c)) {
+-					printf("%u: WARNING: Line contains illegal character (\\%03o).\n", line, c); warnings++;
+-					break;
+-				}
++				if (c == '\t' || c == '\r' ||
++				    (c >= ' ' && c < 127))
++					continue;
++				if (!strchr(shared_buffer, c))
++					continue;
++				printf("%u: WARNING: Line contains illegal "
++				       "character (\\%03o).\n", line, c);
++				warnings++;
++				break;
+ 			}
+ 		}
+-		NormalizeLine(shared_buffer);
+-		if (!shared_buffer[0]) continue;
++		normalize_line(shared_buffer);
++		if (!shared_buffer[0])
++			continue;
+ 		switch (policy_type) {
+ 		case POLICY_TYPE_DOMAIN_POLICY:
+-			if (strncmp(shared_buffer, KEYWORD_DELETE, KEYWORD_DELETE_LEN) == 0) {
+-				RemoveHeader(shared_buffer, KEYWORD_DELETE_LEN);
+-				is_delete = 1;
+-			} else if (strncmp(shared_buffer, KEYWORD_SELECT, KEYWORD_SELECT_LEN) == 0) {
+-				RemoveHeader(shared_buffer, KEYWORD_SELECT_LEN);
+-				is_select = 1;
+-			} else if (strncmp(shared_buffer, KEYWORD_UNDELETE, KEYWORD_UNDELETE_LEN) == 0) {
+-				RemoveHeader(shared_buffer, KEYWORD_UNDELETE_LEN);
+-				is_undelete = 1;
+-			}
+-			if (IsDomainDef(shared_buffer)) {
+-				if (!IsCorrectDomain(shared_buffer) || strlen(shared_buffer) >= CCS_MAX_PATHNAME_LEN) {
+-					printf("%u: ERROR: '%s' is a bad domainname.\n", line, shared_buffer); errors++;
+-				} else {
+-					if (is_delete) domain = EOF;
+-					else domain = 0;
+-				}
+-			} else if (is_select) {
+-				printf("%u: ERROR: Command 'select' is valid for selecting domains only.\n", line); errors++;
+-			} else if (is_undelete) {
+-				printf("%u: ERROR: Command 'undelete' is valid for undeleting domains only.\n", line); errors++;
+-			} else if (domain == EOF) {
+-				printf("%u: WARNING: '%s' is unprocessed because domain is not selected.\n", line, shared_buffer); warnings++;
+-			} else if (strncmp(shared_buffer, KEYWORD_USE_PROFILE, KEYWORD_USE_PROFILE_LEN) == 0) {
+-				unsigned int profile;
+-				RemoveHeader(shared_buffer, KEYWORD_USE_PROFILE_LEN);
+-				if (sscanf(shared_buffer, "%u", &profile) != 1 || profile >= 256) {
+-					printf("%u: ERROR: '%s' is a bad profile.\n", line, shared_buffer); errors++;
+-				}
+-			} else if (strcmp(shared_buffer, "ignore_global_allow_read") == 0) {
+-				/* Nothing to do. */
+-			} else if (strcmp(shared_buffer, "ignore_global_allow_env") == 0) {
+-				/* Nothing to do. */
+-			} else if (strncmp(shared_buffer, "execute_handler ", 16) == 0) {
+-				RemoveHeader(shared_buffer, 16);
+-				if (!IsCorrectPath(shared_buffer, 1, -1, -1)) {
+-					printf("%u: ERROR: '%s' is a bad pathname.\n", line, shared_buffer); errors++;
+-				}
+-			} else if (strncmp(shared_buffer, "denied_execute_handler ", 23) == 0) {
+-				RemoveHeader(shared_buffer, 23);
+-				if (!IsCorrectPath(shared_buffer, 1, -1, -1)) {
+-					printf("%u: ERROR: '%s' is a bad pathname.\n", line, shared_buffer); errors++;
+-				}
+-			} else if (strcmp(shared_buffer, "quota_exceeded") == 0) {
+-				/* Nothing to do. */
+-			} else {
+-				char *cp;
+-				if ((cp = FindConditionPart(shared_buffer)) != NULL && !CheckCondition(cp)) break;
+-				if (strncmp(shared_buffer, KEYWORD_ALLOW_CAPABILITY, KEYWORD_ALLOW_CAPABILITY_LEN) == 0) {
+-					CheckCapabilityPolicy(shared_buffer + KEYWORD_ALLOW_CAPABILITY_LEN);
+-				} else if (strncmp(shared_buffer, KEYWORD_ALLOW_NETWORK, KEYWORD_ALLOW_NETWORK_LEN) == 0) {
+-					CheckNetworkPolicy(shared_buffer + KEYWORD_ALLOW_NETWORK_LEN);
+-				} else if (strncmp(shared_buffer, KEYWORD_ALLOW_SIGNAL, KEYWORD_ALLOW_SIGNAL_LEN) == 0) {
+-					CheckSignalPolicy(shared_buffer + KEYWORD_ALLOW_SIGNAL_LEN);
+-				} else if (strncmp(shared_buffer, KEYWORD_ALLOW_ARGV0, KEYWORD_ALLOW_ARGV0_LEN) == 0) {
+-					CheckArgv0Policy(shared_buffer + KEYWORD_ALLOW_ARGV0_LEN);
+-				} else if (strncmp(shared_buffer, KEYWORD_ALLOW_ENV, KEYWORD_ALLOW_ENV_LEN) == 0) {
+-					CheckEnvPolicy(shared_buffer + KEYWORD_ALLOW_ENV_LEN);
+-				} else {
+-					CheckFilePolicy(shared_buffer);
+-				}
+-			}
++			check_domain_policy(&domain);
+ 			break;
+ 		case POLICY_TYPE_EXCEPTION_POLICY:
+-			if (strncmp(shared_buffer, KEYWORD_DELETE, KEYWORD_DELETE_LEN) == 0) {
+-				RemoveHeader(shared_buffer, KEYWORD_DELETE_LEN);
+-			}
+-			if (strncmp(shared_buffer, KEYWORD_ALLOW_READ, KEYWORD_ALLOW_READ_LEN) == 0) {
+-				RemoveHeader(shared_buffer, KEYWORD_ALLOW_READ_LEN);
+-				if (!IsCorrectPath(shared_buffer, 1, 0, -1)) {
+-					printf("%u: ERROR: '%s' is a bad pathname.\n", line, shared_buffer); errors++;
+-				}
+-			} else if (strncmp(shared_buffer, KEYWORD_INITIALIZE_DOMAIN, KEYWORD_INITIALIZE_DOMAIN_LEN) == 0) {
+-				CheckDomainInitializerPolicy(shared_buffer + KEYWORD_INITIALIZE_DOMAIN_LEN);
+-			} else if (strncmp(shared_buffer, KEYWORD_NO_INITIALIZE_DOMAIN, KEYWORD_NO_INITIALIZE_DOMAIN_LEN) == 0) {
+-				CheckDomainInitializerPolicy(shared_buffer + KEYWORD_NO_INITIALIZE_DOMAIN_LEN);
+-			} else if (strncmp(shared_buffer, KEYWORD_KEEP_DOMAIN, KEYWORD_KEEP_DOMAIN_LEN) == 0) {
+-				CheckDomainKeeperPolicy(shared_buffer + KEYWORD_KEEP_DOMAIN_LEN);
+-			} else if (strncmp(shared_buffer, KEYWORD_NO_KEEP_DOMAIN, KEYWORD_NO_KEEP_DOMAIN_LEN) == 0) {
+-				CheckDomainKeeperPolicy(shared_buffer + KEYWORD_NO_KEEP_DOMAIN_LEN);
+-			} else if (strncmp(shared_buffer, KEYWORD_PATH_GROUP, KEYWORD_PATH_GROUP_LEN) == 0) {
+-				CheckGroupPolicy(shared_buffer + KEYWORD_PATH_GROUP_LEN);
+-			} else if (strncmp(shared_buffer, KEYWORD_ADDRESS_GROUP, KEYWORD_ADDRESS_GROUP_LEN) == 0) {
+-				CheckAddressGroupPolicy(shared_buffer + KEYWORD_ADDRESS_GROUP_LEN);
+-			} else if (strncmp(shared_buffer, KEYWORD_ALIAS, KEYWORD_ALIAS_LEN) == 0) {
+-				char *cp;
+-				RemoveHeader(shared_buffer, KEYWORD_ALIAS_LEN);
+-				if ((cp = strchr(shared_buffer, ' ')) == NULL) {
+-					printf("%u: ERROR: Too few parameters.\n", line); errors++;
+-				} else {
+-					*cp++ = '\0';
+-					if (!IsCorrectPath(shared_buffer, 1, -1, -1)) {
+-						printf("%u: ERROR: '%s' is a bad pathname.\n", line, shared_buffer); errors++;
+-					}
+-					if (!IsCorrectPath(cp, 1, -1, -1)) {
+-						printf("%u: ERROR: '%s' is a bad pathname.\n", line, cp); errors++;
+-					}
+-				}
+-			} else if (strncmp(shared_buffer, KEYWORD_AGGREGATOR, KEYWORD_AGGREGATOR_LEN) == 0) {
+-				char *cp;
+-				RemoveHeader(shared_buffer, KEYWORD_AGGREGATOR_LEN);
+-				if ((cp = strchr(shared_buffer, ' ')) == NULL) {
+-					printf("%u: ERROR: Too few parameters.\n", line); errors++;
+-				} else {
+-					*cp++ = '\0';
+-					if (!IsCorrectPath(shared_buffer, 1, 0, -1)) {
+-						printf("%u: ERROR: '%s' is a bad pattern.\n", line, shared_buffer); errors++;
+-					}
+-					if (!IsCorrectPath(cp, 1, -1, -1)) {
+-						printf("%u: ERROR: '%s' is a bad pathname.\n", line, cp); errors++;
+-					}
+-				}
+-			} else if (strncmp(shared_buffer, KEYWORD_FILE_PATTERN, KEYWORD_FILE_PATTERN_LEN) == 0) {
+-				RemoveHeader(shared_buffer, KEYWORD_FILE_PATTERN_LEN);
+-				if (!IsCorrectPath(shared_buffer, 0, 1, 0)) {
+-					printf("%u: ERROR: '%s' is a bad pattern.\n", line, shared_buffer); errors++;
+-				}
+-			} else if (strncmp(shared_buffer, KEYWORD_DENY_REWRITE, KEYWORD_DENY_REWRITE_LEN) == 0) {
+-				RemoveHeader(shared_buffer, KEYWORD_DENY_REWRITE_LEN);
+-				if (!IsCorrectPath(shared_buffer, 0, 0, 0)) {
+-					printf("%u: ERROR: '%s' is a bad pattern.\n", line, shared_buffer); errors++;
+-				}
+-			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_ENV, KEYWORD_ALLOW_ENV_LEN) == 0) {
+-				RemoveHeader(shared_buffer, KEYWORD_ALLOW_ENV_LEN);
+-				if (!IsCorrectPath(shared_buffer, 0, 0, 0)) {
+-					printf("%u: ERROR: '%s' is a bad variable name.\n", line, shared_buffer); errors++;
+-				}
+-			} else {
+-				printf("%u: ERROR: Unknown command '%s'.\n", line, shared_buffer); errors++;
+-			}
++			check_exception_policy();
+ 			break;
+ 		case POLICY_TYPE_SYSTEM_POLICY:
+-			if (strncmp(shared_buffer, KEYWORD_DELETE, KEYWORD_DELETE_LEN) == 0) {
+-				RemoveHeader(shared_buffer, KEYWORD_DELETE_LEN);
+-			}
+-			if (strncmp(shared_buffer, KEYWORD_ALLOW_MOUNT, KEYWORD_ALLOW_MOUNT_LEN) == 0) {
+-				CheckMountPolicy(shared_buffer + KEYWORD_ALLOW_MOUNT_LEN);
+-			} else if (strncmp(shared_buffer, KEYWORD_DENY_UNMOUNT, KEYWORD_DENY_UNMOUNT_LEN) == 0) {
+-				RemoveHeader(shared_buffer, KEYWORD_DENY_UNMOUNT_LEN);
+-				if (!IsCorrectPath(shared_buffer, 1, 0, 1)) {
+-					printf("%u: ERROR: '%s' is a bad pattern.\n", line, shared_buffer); errors++;
+-				}
+-			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_CHROOT, KEYWORD_ALLOW_CHROOT_LEN) == 0) {
+-				RemoveHeader(shared_buffer, KEYWORD_ALLOW_CHROOT_LEN);
+-				if (!IsCorrectPath(shared_buffer, 1, 0, 1)) {
+-					printf("%u: ERROR: '%s' is a bad pattern.\n", line, shared_buffer); errors++;
+-				}
+-			} else if (strncmp(shared_buffer, KEYWORD_ALLOW_PIVOT_ROOT, KEYWORD_ALLOW_PIVOT_ROOT_LEN) == 0) {
+-				CheckPivotRootPolicy(shared_buffer + KEYWORD_ALLOW_PIVOT_ROOT_LEN);
+-			} else if (strncmp(shared_buffer, KEYWORD_DENY_AUTOBIND, KEYWORD_DENY_AUTOBIND_LEN) == 0) {
+-				CheckReservedPortPolicy(shared_buffer + KEYWORD_DENY_AUTOBIND_LEN);
+-			} else {
+-				printf("%u: ERROR: Unknown command '%s'.\n", line, shared_buffer); errors++;
+-			}
++			check_system_policy();
+ 			break;
+ 		}
+ 	}
+ 	put();
+-	printf("Total:   %u Line%s   %u Error%s   %u Warning%s\n", line, line > 1 ? "s" : "", errors, errors > 1 ? "s" : "", warnings, warnings > 1 ? "s" : "");
+-	return (errors ? 2 : (warnings ? 1 : 0));
++	printf("Total:   %u Line%s   %u Error%s   %u Warning%s\n",
++	       line, line > 1 ? "s" : "", errors, errors > 1 ? "s" : "",
++	       warnings, warnings > 1 ? "s" : "");
++	return errors ? 2 : (warnings ? 1 : 0);
  }
 Index: ccs-init
 ===================================================================
