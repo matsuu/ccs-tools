@@ -6688,7 +6688,7 @@ Index: ccstools.src/patternize.c
   * Returns nonzero if patterned, zero otherwise.
   */
 -static int PathContainsPattern(const char *filename) {
-+static int path_contains_pattern(const char *filename)
++static _Bool path_contains_pattern(const char *filename)
 +{
  	if (filename) {
 -		char c, d, e;
@@ -6934,7 +6934,7 @@ Index: ccstools.src/ccstree.c
  #include "ccstools.h"
  
 -static pid_t GetPPID(const pid_t pid) {
-+static pid_t GetPPID(const pid_t pid)
++static pid_t get_ppid(const pid_t pid)
 +{
  	char buffer[1024];
  	FILE *fp;
@@ -6957,7 +6957,7 @@ Index: ccstools.src/ccstree.c
  }
  
 -static char *GetName(const pid_t pid) {
-+static char *GetName(const pid_t pid)
++static char *get_name(const pid_t pid)
 +{
  	char buffer[1024];
  	FILE *fp;
@@ -6994,7 +6994,7 @@ Index: ccstools.src/ccstree.c
  static int status_fd = EOF;
  
 -static const char *ReadInfo(const pid_t pid, int *profile) {
-+static const char *ReadInfo(const pid_t pid, int *profile)
++static const char *read_info(const pid_t pid, int *profile)
 +{
  	char *cp; /* caller must use get()/put(). */
  	memset(shared_buffer, 0, shared_buffer_len);
@@ -7014,12 +7014,12 @@ Index: ccstools.src/ccstree.c
  	}
  	*profile = -1;
  	return "<UNKNOWN>";
-@@ -68,38 +81,46 @@
+@@ -68,41 +81,49 @@
  static struct task_entry *task_list = NULL;
  static int task_list_len = 0;
  
 -static void Dump(const pid_t pid, const int depth) {
-+static void Dump(const pid_t pid, const int depth)
++static void dump(const pid_t pid, const int depth)
 +{
  	int i;
  	for (i = 0; i < task_list_len; i++) {
@@ -7027,13 +7027,15 @@ Index: ccstools.src/ccstree.c
  		char *name;
 -		int j, profile;
 -		if (pid != task_list[i].pid) continue;
+-		name = GetName(pid);
 +		int j;
 +		int profile;
 +		if (pid != task_list[i].pid)
 +			continue;
- 		name = GetName(pid);
++		name = get_name(pid);
  		get();
- 		info = ReadInfo(pid, &profile);
+-		info = ReadInfo(pid, &profile);
++		info = read_info(pid, &profile);
  		printf("%3d", profile);
 -		for (j = 0; j < depth - 1; j++) printf("    ");
 -		for (; j < depth; j++) printf("  +-");
@@ -7048,14 +7050,15 @@ Index: ccstools.src/ccstree.c
  	}
  	for (i = 0; i < task_list_len; i++) {
 -		if (pid != task_list[i].ppid) continue;
+-		Dump(task_list[i].pid, depth + 1);
 +		if (pid != task_list[i].ppid)
 +			continue;
- 		Dump(task_list[i].pid, depth + 1);
++		dump(task_list[i].pid, depth + 1);
  	}
  }
  
 -static void DumpUnprocessed(void) {
-+static void DumpUnprocessed(void)
++static void dump_unprocessed(void)
 +{
  	int i;
  	for (i = 0; i < task_list_len; i++) {
@@ -7064,11 +7067,16 @@ Index: ccstools.src/ccstree.c
  		int profile;
  		const pid_t pid = task_list[i].pid;
 -		if (task_list[i].done) continue;
+-		name = GetName(task_list[i].pid);
 +		if (task_list[i].done)
 +			continue;
- 		name = GetName(task_list[i].pid);
++		name = get_name(task_list[i].pid);
  		get();
- 		info = ReadInfo(pid, &profile);
+-		info = ReadInfo(pid, &profile);
++		info = read_info(pid, &profile);
+ 		printf("%3d %s (%u) %s\n", profile, name, pid, info);
+ 		put();
+ 		free(name);
 @@ -110,11 +131,13 @@
  	}
  }
@@ -7085,7 +7093,7 @@ Index: ccstools.src/ccstree.c
  		return 1;
  	}
  	if (argc > 1) {
-@@ -125,30 +148,39 @@
+@@ -125,33 +148,42 @@
  			return 0;
  		}
  	}
@@ -7126,7 +7134,7 @@ Index: ccstools.src/ccstree.c
 +						    (task_list_len + 1) *
 +						    sizeof(struct task_entry));
 +				task_list[task_list_len].pid = pid;
-+				task_list[task_list_len].ppid = GetPPID(pid);
++				task_list[task_list_len].ppid = get_ppid(pid);
 +				task_list[task_list_len].done = 0;
 +				task_list_len++;
  			}
@@ -7137,8 +7145,13 @@ Index: ccstools.src/ccstree.c
 +		if (n >= 0)
 +			free((void *) namelist);
  	}
- 	Dump(1, 0);
- 	DumpUnprocessed();
+-	Dump(1, 0);
+-	DumpUnprocessed();
++	dump(1, 0);
++	dump_unprocessed();
+ 	close(status_fd);
+ 	return 0;
+ }
 Index: ccstools.src/ccstools.c
 ===================================================================
 --- ccstools.src/ccstools.c	(リビジョン 1537)
@@ -8315,7 +8328,7 @@ Index: ccstools.src/pathmatch.c
  static char **scandir_target_part = NULL;
  
 -static void ScanDir(const char *path, int depth) {
-+static void ScanDir(const char *path, int depth)
++static void scan_dir(const char *path, int depth)
 +{
  	struct dirent **namelist;
 -	int i, n;
@@ -8359,7 +8372,7 @@ Index: ccstools.src/pathmatch.c
 +				snprintf(child_path, len - 1, "%s%s/",
 +					 path, cp);
 +				/* printf("Check: %s\n", child_path); */
-+				ScanDir(child_path, depth + 1);
++				scan_dir(child_path, depth + 1);
 +				free(child_path);
  			}
 -			free((void *) namelist[i]);
@@ -8413,7 +8426,8 @@ Index: ccstools.src/pathmatch.c
 +			printf("%d %s\n", i, scandir_target_part[i]);
 +		*/
  		print_path_needs_separator = 0;
- 		ScanDir("/", 0);
+-		ScanDir("/", 0);
++		scan_dir("/", 0);
  		putchar('\n');
  	}
  }
@@ -8597,7 +8611,7 @@ Index: ccstools.src/checkpolicy.c
  
 -static char *FindConditionPart(char *data) {
 -	char *cp = strstr(data, " if "), *cp2;
-+static char *FindConditionPart(char *data)
++static char *find_condition_part(char *data)
 +{
 +	char *cp = strstr(data, " if ");
 +	char *cp2;
@@ -8623,7 +8637,7 @@ Index: ccstools.src/checkpolicy.c
 -	       TASK_PID, TASK_PPID, PATH1_UID, PATH1_GID, PATH1_INO, PATH1_PARENT_UID, PATH1_PARENT_GID, PATH1_PARENT_INO,
 -	       PATH2_PARENT_UID, PATH2_PARENT_GID, PATH2_PARENT_INO, EXEC_ARGC, EXEC_ENVC, EXEC_ARGV, EXEC_ENVP, TASK_STATE_0,
 -	       TASK_STATE_1, TASK_STATE_2, MAX_KEYWORD };
-+static int CheckCondition(char *condition)
++static int check_condition(char *condition)
 +{
 +	enum { TASK_UID, TASK_EUID, TASK_SUID, TASK_FSUID, TASK_GID, TASK_EGID,
 +	       TASK_SGID, TASK_FSGID, TASK_PID, TASK_PPID, PATH1_UID,
@@ -8840,7 +8854,7 @@ Index: ccstools.src/checkpolicy.c
  }
  
 -static void CheckCapabilityPolicy(char *data) {
-+static void CheckCapabilityPolicy(char *data)
++static void check_capability_policy(char *data)
 +{
  	static const char *capability_keywords[] = {
 -		"inet_tcp_create", "inet_tcp_listen", "inet_tcp_connect", "use_inet_udp", "use_inet_ip", "use_route", "use_packet",
@@ -8870,7 +8884,7 @@ Index: ccstools.src/checkpolicy.c
  }
  
 -static void CheckSignalPolicy(char *data) {
-+static void CheckSignalPolicy(char *data)
++static void check_signal_policy(char *data)
 +{
  	int sig;
  	char *cp;
@@ -8896,7 +8910,7 @@ Index: ccstools.src/checkpolicy.c
  }
  
 -static void CheckArgv0Policy(char *data) {
-+static void CheckArgv0Policy(char *data)
++static void check_argv0_policy(char *data)
 +{
  	char *argv0 = strchr(data, ' ');
  	if (!argv0) {
@@ -8923,7 +8937,7 @@ Index: ccstools.src/checkpolicy.c
 -static void CheckEnvPolicy(char *data) {
 -	if (!IsCorrectPath(data, 0, 0, 0)) {
 -		printf("%u: ERROR: '%s' is a bad variable name.\n", line, data); errors++;
-+static void CheckEnvPolicy(char *data)
++static void check_env_policy(char *data)
 +{
 +	if (!is_correct_path(data, 0, 0, 0)) {
 +		printf("%u: ERROR: '%s' is a bad variable name.\n", line, data);
@@ -8935,7 +8949,7 @@ Index: ccstools.src/checkpolicy.c
 -	int sock_type, operation, is_ipv6;
 -	u16 min_address[8], max_address[8];
 -	unsigned int min_port, max_port;
-+static void CheckNetworkPolicy(char *data)
++static void check_network_policy(char *data)
 +{
 +	int sock_type;
 +	int operation;
@@ -9074,12 +9088,12 @@ Index: ccstools.src/checkpolicy.c
  }
  
 -static void CheckFilePolicy(char *data) {
-+static void CheckFilePolicy(char *data)
++static void check_file_policy(char *data)
 +{
  	static const struct {
  		const char * const keyword;
  		const int paths;
-@@ -329,100 +455,149 @@
+@@ -329,166 +455,429 @@
  	char *cp;
  	unsigned int perm;
  	if (!filename) {
@@ -9142,7 +9156,7 @@ Index: ccstools.src/checkpolicy.c
 -static void CheckMountPolicy(char *data) {
 -	char *cp, *cp2;
 -	const char *dev, *dir;
-+static void CheckMountPolicy(char *data)
++static void check_mount_policy(char *data)
 +{
 +	char *cp;
 +	char *cp2;
@@ -9195,7 +9209,7 @@ Index: ccstools.src/checkpolicy.c
 -static void CheckPivotRootPolicy(char *data) {
 -	char *cp;
 -	if ((cp = strchr(data, ' ')) == NULL) goto out;
-+static void CheckPivotRootPolicy(char *data)
++static void check_pivot_root_policy(char *data)
 +{
 +	char *cp = strchr(data, ' ');
 +	if (!cp)
@@ -9223,7 +9237,7 @@ Index: ccstools.src/checkpolicy.c
 -static void CheckReservedPortPolicy(char *data) {
 -	unsigned int from, to;
 -	if (strchr(data, ' ')) goto out;
-+static void CheckReservedPortPolicy(char *data)
++static void check_reserved_port_policy(char *data)
 +{
 +	unsigned int from;
 +	unsigned int to;
@@ -9252,7 +9266,7 @@ Index: ccstools.src/checkpolicy.c
 -static void CheckDomainInitializerEntry(const char *domainname, const char *program) {
 -	if (!IsCorrectPath(program, 1, 0, -1)) {
 -		printf("%u: ERROR: '%s' is a bad pathname.\n", line, program); errors++;
-+static void CheckDomainInitializerEntry(const char *domainname,
++static void check_domain_initializer_entry(const char *domainname,
 +					const char *program)
 +{
 +	if (!is_correct_path(program, 1, 0, -1)) {
@@ -9270,19 +9284,24 @@ Index: ccstools.src/checkpolicy.c
  }
  
 -static void CheckDomainInitializerPolicy(char *data) {
-+static void CheckDomainInitializerPolicy(char *data)
++static void check_domain_initializer_policy(char *data)
 +{
  	char *cp = strstr(data, " from ");
  	if (cp) {
  		*cp = '\0';
-@@ -432,16 +607,22 @@
+-		CheckDomainInitializerEntry(cp + 6, data);
++		check_domain_initializer_entry(cp + 6, data);
+ 	} else {
+-		CheckDomainInitializerEntry(NULL, data);
++		check_domain_initializer_entry(NULL, data);
  	}
  }
  
 -static void CheckDomainKeeperEntry(const char *domainname, const char *program) {
 -	if (!IsCorrectPath(domainname, 1, -1, -1) && !IsCorrectDomain(domainname)) {
 -		printf("%u: ERROR: '%s' is a bad domainname.\n", line, domainname); errors++;
-+static void CheckDomainKeeperEntry(const char *domainname, const char *program)
++static void check_domain_keeper_entry(const char *domainname,
++				      const char *program)
 +{
 +	if (!is_correct_path(domainname, 1, -1, -1) &&
 +	    !is_correct_domain(domainname)) {
@@ -9299,17 +9318,21 @@ Index: ccstools.src/checkpolicy.c
  }
  
 -static void CheckDomainKeeperPolicy(char *data) {
-+static void CheckDomainKeeperPolicy(char *data)
++static void check_domain_keeper_policy(char *data)
 +{
  	char *cp = strstr(data, " from ");
  	if (cp) {
  		*cp = '\0';
-@@ -451,44 +632,251 @@
+-		CheckDomainKeeperEntry(cp + 6, data);
++		check_domain_keeper_entry(cp + 6, data);
+ 	} else {
+-		CheckDomainKeeperEntry(data, NULL);
++		check_domain_keeper_entry(data, NULL);
  	}
  }
  
 -static void CheckGroupPolicy(char *data) {
-+static void CheckGroupPolicy(char *data)
++static void check_path_group_policy(char *data)
 +{
  	char *cp = strchr(data, ' ');
  	if (!cp) {
@@ -9334,7 +9357,7 @@ Index: ccstools.src/checkpolicy.c
  }
  
 -static void CheckAddressGroupPolicy(char *data) {
-+static void CheckAddressGroupPolicy(char *data)
++static void check_address_group_policy(char *data)
 +{
  	char *cp = strchr(data, ' ');
 -	u16 min_address[8], max_address[8];
@@ -9441,21 +9464,21 @@ Index: ccstools.src/checkpolicy.c
 +		/* Nothing to do. */
  	} else {
 -		printf("%u: ERROR: '%s' is a bad address.\n", line, cp); errors++;
-+		char *cp = FindConditionPart(shared_buffer);
-+		if (cp && !CheckCondition(cp))
++		char *cp = find_condition_part(shared_buffer);
++		if (cp && !check_condition(cp))
 +			return;
 +		if (str_starts(shared_buffer, KEYWORD_ALLOW_CAPABILITY))
-+			CheckCapabilityPolicy(shared_buffer);
++			check_capability_policy(shared_buffer);
 +		else if (str_starts(shared_buffer, KEYWORD_ALLOW_NETWORK))
-+			CheckNetworkPolicy(shared_buffer);
++			check_network_policy(shared_buffer);
 +		else if (str_starts(shared_buffer, KEYWORD_ALLOW_SIGNAL))
-+			CheckSignalPolicy(shared_buffer);
++			check_signal_policy(shared_buffer);
 +		else if (str_starts(shared_buffer, KEYWORD_ALLOW_ARGV0))
-+			CheckArgv0Policy(shared_buffer);
++			check_argv0_policy(shared_buffer);
 +		else if (str_starts(shared_buffer, KEYWORD_ALLOW_ENV))
-+			CheckEnvPolicy(shared_buffer);
++			check_env_policy(shared_buffer);
 +		else
-+			CheckFilePolicy(shared_buffer);
++			check_file_policy(shared_buffer);
  	}
  }
 -		
@@ -9471,17 +9494,17 @@ Index: ccstools.src/checkpolicy.c
 +			errors++;
 +		}
 +	} else if (str_starts(shared_buffer, KEYWORD_INITIALIZE_DOMAIN)) {
-+		CheckDomainInitializerPolicy(shared_buffer);
++		check_domain_initializer_policy(shared_buffer);
 +	} else if (str_starts(shared_buffer, KEYWORD_NO_INITIALIZE_DOMAIN)) {
-+		CheckDomainInitializerPolicy(shared_buffer);
++		check_domain_initializer_policy(shared_buffer);
 +	} else if (str_starts(shared_buffer, KEYWORD_KEEP_DOMAIN)) {
-+		CheckDomainKeeperPolicy(shared_buffer);
++		check_domain_keeper_policy(shared_buffer);
 +	} else if (str_starts(shared_buffer, KEYWORD_NO_KEEP_DOMAIN)) {
-+		CheckDomainKeeperPolicy(shared_buffer);
++		check_domain_keeper_policy(shared_buffer);
 +	} else if (str_starts(shared_buffer, KEYWORD_PATH_GROUP)) {
-+		CheckGroupPolicy(shared_buffer);
++		check_path_group_policy(shared_buffer);
 +	} else if (str_starts(shared_buffer, KEYWORD_ADDRESS_GROUP)) {
-+		CheckAddressGroupPolicy(shared_buffer);
++		check_address_group_policy(shared_buffer);
 +	} else if (str_starts(shared_buffer, KEYWORD_ALIAS)) {
 +		char *cp = strchr(shared_buffer, ' ');
 +		if (!cp) {
@@ -9547,7 +9570,7 @@ Index: ccstools.src/checkpolicy.c
 +{
 +	str_starts(shared_buffer, KEYWORD_DELETE);
 +	if (str_starts(shared_buffer, KEYWORD_ALLOW_MOUNT)) {
-+		CheckMountPolicy(shared_buffer);
++		check_mount_policy(shared_buffer);
 +	} else if (str_starts(shared_buffer, KEYWORD_DENY_UNMOUNT)) {
 +		if (!is_correct_path(shared_buffer, 1, 0, 1)) {
 +			printf("%u: ERROR: '%s' is a bad pattern.\n",
@@ -9561,9 +9584,9 @@ Index: ccstools.src/checkpolicy.c
 +			errors++;
 +		}
 +	} else if (str_starts(shared_buffer, KEYWORD_ALLOW_PIVOT_ROOT)) {
-+		CheckPivotRootPolicy(shared_buffer);
++		check_pivot_root_policy(shared_buffer);
 +	} else if (str_starts(shared_buffer, KEYWORD_DENY_AUTOBIND)) {
-+		CheckReservedPortPolicy(shared_buffer);
++		check_reserved_port_policy(shared_buffer);
 +	} else {
 +		printf("%u: ERROR: Unknown command '%s'.\n",
 +		       line, shared_buffer);
@@ -9576,7 +9599,7 @@ Index: ccstools.src/checkpolicy.c
  	int policy_type = POLICY_TYPE_UNKNOWN;
  	if (argc > 1) {
  		switch (argv[1][0]) {
-@@ -508,188 +896,49 @@
+@@ -508,188 +897,49 @@
  		return 0;
  	}
  	get();
