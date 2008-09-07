@@ -856,6 +856,177 @@ Index: ccstools.src/ccs-queryd.c
  	}
  	endwin();
  	return 0;
+Index: ccstools.src/ccs-auditd.c
+===================================================================
+--- ccstools.src/ccs-auditd.c	(リビジョン 1537)
++++ ccstools.src/ccs-auditd.c	(作業コピー)
+@@ -3,40 +3,51 @@
+  *
+  * TOMOYO Linux's utilities.
+  *
+- * Copyright (C) 2005-2007  NTT DATA CORPORATION
++ * Copyright (C) 2005-2008  NTT DATA CORPORATION
+  *
+- * Version: 1.5.0   2007/09/20
++ * Version: 1.6.4+   2007/09/07
+  *
+  */
+ #include "ccstools.h"
+ 
+-int ccsauditd_main(int argc, char *argv[]) {
++int ccsauditd_main(int argc, char *argv[])
++{
+ 	const char *procfile_path[CCS_AUDITD_MAX_FILES] = {
+ 		proc_policy_grant_log,
+ 		proc_policy_reject_log
+-	};	
+-	int i, fd_in[CCS_AUDITD_MAX_FILES], fd_out[CCS_AUDITD_MAX_FILES];
++	};
++	int i;
++	int fd_in[CCS_AUDITD_MAX_FILES];
++	int fd_out[CCS_AUDITD_MAX_FILES];
+ 	const char *logfile_path[2] = { "/dev/null", "/dev/null" };
+ 	if (access(proc_policy_dir, F_OK)) {
+ 		fprintf(stderr, "You can't run this daemon for this kernel.\n");
+ 		return 0;
+ 	}
+ 	if (argc < 3) {
+-		fprintf(stderr, "%s grant_log_file reject_log_file\n" "  These files may /dev/null, if needn't to be saved.\n", argv[0]);
++		fprintf(stderr, "%s grant_log_file reject_log_file\n"
++			"  These files may /dev/null, if needn't to be saved."
++			"\n", argv[0]);
+ 		return 0;
+ 	}
+-	logfile_path[0] = argv[1]; logfile_path[1] = argv[2];
+-	{ // Get exclusive lock.
+-		int fd = open("/proc/self/exe", O_RDONLY); if (flock(fd, LOCK_EX | LOCK_NB) == EOF) return 0;
++	logfile_path[0] = argv[1];
++	logfile_path[1] = argv[2];
++	{ /* Get exclusive lock. */
++		int fd = open("/proc/self/exe", O_RDONLY);
++		if (flock(fd, LOCK_EX | LOCK_NB) == EOF)
++			return 0;
+ 	}
+ 	umask(0);
+ 	for (i = 0; i < CCS_AUDITD_MAX_FILES; i++) {
+-		if ((fd_out[i] = open(logfile_path[i], O_WRONLY | O_CREAT | O_APPEND, 0600)) == EOF) {
+-			fprintf(stderr, "Can't open %s for writing.\n", logfile_path[i]);
++		fd_out[i] = open(logfile_path[i], O_WRONLY | O_CREAT |
++				 O_APPEND, 0600);
++		if (fd_out[i] == EOF) {
++			fprintf(stderr, "Can't open %s for writing.\n",
++				logfile_path[i]);
+ 			return 1;
+ 		}
+ 	}
+-	switch(fork()) {
++	switch (fork()) {
+ 	case 0:
+ 		break;
+ 	case -1:
+@@ -49,7 +60,7 @@
+ 		fprintf(stderr, "Can't setsid()\n");
+ 		return 1;
+ 	}
+-	switch(fork()) {
++	switch (fork()) {
+ 	case 0:
+ 		break;
+ 	case -1:
+@@ -62,11 +73,15 @@
+ 		fprintf(stderr, "Can't chdir()\n");
+ 		return 1;
+ 	}
+-	close(0); close(1); close(2);
++	close(0);
++	close(1);
++	close(2);
+ 	openlog("ccs-auditd", 0,  LOG_USER);
+ 	for (i = 0; i < CCS_AUDITD_MAX_FILES; i++) {
+-		if ((fd_in[i] = open(procfile_path[i], O_RDONLY)) == EOF) {
+-			syslog(LOG_WARNING, "Can't open %s for reading.\n", procfile_path[i]);
++		fd_in[i] = open(procfile_path[i], O_RDONLY);
++		if (fd_in[i] == EOF) {
++			syslog(LOG_WARNING, "Can't open %s for reading.\n",
++			       procfile_path[i]);
+ 			return 1;
+ 		}
+ 	}
+@@ -76,29 +91,51 @@
+ 		static char *buffer = NULL;
+ 		char timestamp[128];
+ 		fd_set rfds;
+-		if (!buffer && (buffer = malloc(buffer_len)) == NULL) break;
++		if (!buffer) {
++			buffer = malloc(buffer_len);
++			if (!buffer)
++				break;
++		}
+ 		FD_ZERO(&rfds);
+-		for (i = 0; i < CCS_AUDITD_MAX_FILES; i++) FD_SET(fd_in[i], &rfds);
+-		// Wait for data.
+-		if (select(FD_SETSIZE, &rfds, NULL, NULL, NULL) == EOF) break;
++		for (i = 0; i < CCS_AUDITD_MAX_FILES; i++)
++			FD_SET(fd_in[i], &rfds);
++		/* Wait for data. */
++		if (select(FD_SETSIZE, &rfds, NULL, NULL, NULL) == EOF)
++			break;
+ 		for (i = 0; i < CCS_AUDITD_MAX_FILES; i++) {
+ 			time_t stamp;
+ 			char *cp;
+ 			int len;
+-			if (!FD_ISSET(fd_in[i], &rfds)) continue;
++			struct tm *tm;
++			if (!FD_ISSET(fd_in[i], &rfds))
++				continue;
+ 			memset(buffer, 0, buffer_len);
+-			if (read(fd_in[i], buffer, buffer_len - 1) < 0) continue;
++			if (read(fd_in[i], buffer, buffer_len - 1) < 0)
++				continue;
+ 			memset(timestamp, 0, sizeof(timestamp));
+-			if (sscanf(buffer, "#timestamp=%lu", &stamp) == 1 && (cp = strchr(buffer, ' ')) != NULL) {
+-				struct tm *tm = localtime(&stamp);
+-				snprintf(timestamp, sizeof(timestamp) - 1, "#%04d-%02d-%02d %02d:%02d:%02d#", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+-				memmove(buffer, cp, strlen(cp) + 1);
+-			}
+-			// Open destination file.
++			if (sscanf(buffer, "#timestamp=%lu", &stamp) != 1)
++				goto no_timestamp;
++			cp = strchr(buffer, ' ');
++			if (!cp)
++				goto no_timestamp;
++			tm = localtime(&stamp);
++			snprintf(timestamp, sizeof(timestamp) - 1,
++				 "#%04d-%02d-%02d %02d:%02d:%02d#",
++				 tm->tm_year + 1900, tm->tm_mon + 1,
++				 tm->tm_mday, tm->tm_hour, tm->tm_min,
++				 tm->tm_sec);
++			memmove(buffer, cp, strlen(cp) + 1);
++no_timestamp:
++			/* Open destination file. */
+ 			if (access(logfile_path[i], F_OK)) {
+ 				close(fd_out[i]);
+-				if ((fd_out[i] = open(logfile_path[i], O_WRONLY | O_CREAT | O_APPEND, 0600)) == EOF) {
+-					syslog(LOG_WARNING, "Can't open %s for writing.\n", logfile_path[i]);
++				fd_out[i] = open(logfile_path[i],
++						 O_WRONLY | O_CREAT | O_APPEND,
++						 0600);
++				if (fd_out[i] == EOF) {
++					syslog(LOG_WARNING,
++					       "Can't open %s for writing.\n",
++					       logfile_path[i]);
+ 					goto out;
+ 				}
+ 			}
+@@ -110,7 +147,7 @@
+ 			fsync(fd_out[i]);
+ 		}
+ 	}
+- out: ;
++out:
+ 	syslog(LOG_WARNING, "Terminated.\n");
+ 	closelog();
+ 	return 0;
 Index: ccstools.src/ld-watch.c
 ===================================================================
 --- ccstools.src/ld-watch.c	(リビジョン 1537)
@@ -8074,24 +8245,195 @@ Index: ccstools.src/pathmatch.c
 ===================================================================
 --- ccstools.src/pathmatch.c	(リビジョン 1537)
 +++ ccstools.src/pathmatch.c	(作業コピー)
-@@ -46,7 +46,7 @@
+@@ -3,17 +3,19 @@
+  *
+  * TOMOYO Linux's utilities.
+  *
+- * Copyright (C) 2005-2007  NTT DATA CORPORATION
++ * Copyright (C) 2005-2008  NTT DATA CORPORATION
+  *
+- * Version: 1.4.1   2007/06/05
++ * Version: 1.6.4+   2008/09/07
+  *
+  */
+ #include "ccstools.h"
+ 
+ static int print_path_needs_separator = 0;
+ 
+-static void print_path(const char *dir, const char *file, const char *trailer) {
+-	if (print_path_needs_separator) putchar(' ');
++static void print_path(const char *dir, const char *file, const char *trailer)
++{
++	if (print_path_needs_separator)
++		putchar(' ');
+ 	print_path_needs_separator = 1;
+ 	fprintf_encoded(stdout, dir);
+ 	fprintf_encoded(stdout, file);
+@@ -22,16 +24,22 @@
+ 
+ static char *scandir_filter_current_part = NULL;
+ 
+-static int scandir_filter(const struct dirent *buf) {
++static int scandir_filter(const struct dirent *buf)
++{
+ 	char buffer[1024];
+ 	char c;
+ 	char *dp = buffer;
+ 	const char *cp = buf->d_name;
+ 	if (buf->d_type == DT_DIR) {
+-		if (strcmp(cp, ".") == 0 || strcmp(cp, "..") == 0) return 0;
++		if (!strcmp(cp, ".") || !strcmp(cp, ".."))
++			return 0;
+ 	}
+-	if (strlen(cp) > 255) return 0;
+-	while ((c = *cp++) != '\0') {
++	if (strlen(cp) > 255)
++		return 0;
++	while (1) {
++		c = *cp++;
++		if (!c)
++			break;
+ 		if (c == '\\') {
+ 			*dp++ = '\\';
+ 			*dp++ = '\\';
+@@ -45,49 +53,56 @@
+ 		}
  	}
  	*dp = '\0';
- 	//printf("Compare: %s %s\n", buffer, scandir_filter_current_part);
+-	//printf("Compare: %s %s\n", buffer, scandir_filter_current_part);
 -	if (FileMatchesToPattern(buffer, dp, scandir_filter_current_part, strchr(scandir_filter_current_part, '\0'))) return 1;
-+	if (file_matches_pattern(buffer, dp, scandir_filter_current_part, strchr(scandir_filter_current_part, '\0'))) return 1;
++	/* printf("Compare: %s %s\n", buffer, scandir_filter_current_part); */
++	if (file_matches_pattern(buffer, dp, scandir_filter_current_part,
++				 strchr(scandir_filter_current_part, '\0')))
++		return 1;
  	return 0;
  }
  
-@@ -67,7 +67,7 @@
- 				if (type == DT_DIR) {
- 					const int len = strlen(path) + strlen(cp) + 4;
- 					char *child_path = malloc(len);
+-static int scandir_target_is_dir = 0; 
++static int scandir_target_is_dir = 0;
+ static int scandir_target_depth = 0;
+ static char **scandir_target_part = NULL;
+ 
+-static void ScanDir(const char *path, int depth) {
++static void ScanDir(const char *path, int depth)
++{
+ 	struct dirent **namelist;
+-	int i, n;
++	int i;
++	int n;
+ 	scandir_filter_current_part = scandir_target_part[depth];
+-	//printf("Scan: %d %s\n", depth, scandir_filter_current_part);
+-	if ((n = scandir(path, &namelist, scandir_filter, 0)) >= 0) {	
+-		for (i = 0; i < n; i++) {
+-			const char *cp = namelist[i]->d_name;
+-			const unsigned char type = namelist[i]->d_type;
+-			if (depth < scandir_target_depth - 1) {
+-				if (type == DT_DIR) {
+-					const int len = strlen(path) + strlen(cp) + 4;
+-					char *child_path = malloc(len);
 -					if (!child_path) OutOfMemory();
-+					if (!child_path) out_of_memory();
- 					snprintf(child_path, len - 1, "%s%s/", path, cp);
- 					//printf("Check: %s\n", child_path);
- 					ScanDir(child_path, depth + 1);
+-					snprintf(child_path, len - 1, "%s%s/", path, cp);
+-					//printf("Check: %s\n", child_path);
+-					ScanDir(child_path, depth + 1);
+-					free(child_path);
+-				}
+-			} else if (scandir_target_is_dir) {
+-				if (type == DT_DIR) {
+-					print_path(path, cp, "/");
+-				}
+-			} else if (type != DT_DIR) {
+-				print_path(path, cp, "");
++	/* printf("Scan: %d %s\n", depth, scandir_filter_current_part); */
++	n = scandir(path, &namelist, scandir_filter, 0);
++	if (n < 0)
++		return;
++	for (i = 0; i < n; i++) {
++		const char *cp = namelist[i]->d_name;
++		const unsigned char type = namelist[i]->d_type;
++		if (depth < scandir_target_depth - 1) {
++			if (type == DT_DIR) {
++				const int len = strlen(path) + strlen(cp) + 4;
++				char *child_path = malloc(len);
++				if (!child_path)
++					out_of_memory();
++				snprintf(child_path, len - 1, "%s%s/",
++					 path, cp);
++				/* printf("Check: %s\n", child_path); */
++				ScanDir(child_path, depth + 1);
++				free(child_path);
+ 			}
+-			free((void *) namelist[i]);
++		} else if (scandir_target_is_dir) {
++			if (type == DT_DIR)
++				print_path(path, cp, "/");
++		} else if (type != DT_DIR) {
++			print_path(path, cp, "");
+ 		}
+-		free((void *) namelist);
++		free((void *) namelist[i]);
+ 	}
++	free((void *) namelist);
+ }
+ 
+-static void do_pathmatch_main(char *target) {
+-	if (strcmp(target, "/") == 0) {
++static void do_pathmatch_main(char *target)
++{
++	if (!strcmp(target, "/")) {
+ 		printf("/\n");
+ 	} else if (target[0] != '/') {
+ 		putchar('\n');
+@@ -99,28 +114,39 @@
+ 		cp = target + 1;
+ 		for (i = 1; ; i++) {
+ 			char c = target[i];
+-			if (c == '/' || c == '\0') {
+-				target[i] = '\0';
+-				scandir_target_part = (char **) realloc(scandir_target_part, (scandir_target_depth + 1) * sizeof(char *));
+-				if (target + i != cp) scandir_target_part[scandir_target_depth++] = cp;
+-				cp = target + i + 1;
+-				if (!c) break;
+-			}
++			if (c != '/' && c != '\0')
++				continue;
++			target[i] = '\0';
++			scandir_target_part = realloc(scandir_target_part,
++						      (scandir_target_depth + 1)
++						      * sizeof(char *));
++			if (target + i != cp)
++				scandir_target_part[scandir_target_depth++]
++					= cp;
++			cp = target + i + 1;
++			if (!c)
++				break;
+ 		}
+-		//for (i = 0; i < target_depth; i++) printf("%d %s\n", i, scandir_target_part[i]);
++		/*
++		for (i = 0; i < target_depth; i++)
++			printf("%d %s\n", i, scandir_target_part[i]);
++		*/
+ 		print_path_needs_separator = 0;
+ 		ScanDir("/", 0);
+ 		putchar('\n');
+ 	}
+ }
+ 
+-int pathmatch_main(int argc, char *argv[]) {
++int pathmatch_main(int argc, char *argv[])
++{
+ 	if (argc > 1) {
+ 		int i;
+-		for (i = 1; i < argc; i++) do_pathmatch_main(argv[i]);
++		for (i = 1; i < argc; i++)
++			do_pathmatch_main(argv[i]);
+ 	} else {
+ 		get();
+-		while (freadline(stdin)) do_pathmatch_main(shared_buffer);
++		while (freadline(stdin))
++			do_pathmatch_main(shared_buffer);
+ 		put();
+ 	}
+ 	return 0;
 Index: ccstools.src/setprofile.c
 ===================================================================
 --- ccstools.src/setprofile.c	(リビジョン 1537)
