@@ -3061,7 +3061,7 @@ Index: ccstools.src/editpolicy.c
  		}
  	}
  	if (chdir(disk_policy_dir)) {
-@@ -648,106 +1071,318 @@
+@@ -648,106 +1071,320 @@
  		return 1;
  	}
  
@@ -3157,64 +3157,65 @@ Index: ccstools.src/editpolicy.c
  
  /***** editpolicy start *****/
  
-+#define DIRECTIVE_1                                 0
-+#define DIRECTIVE_2                                 1
-+#define DIRECTIVE_3                                 2
-+#define DIRECTIVE_4                                 3
-+#define DIRECTIVE_5                                 4
-+#define DIRECTIVE_6                                 5
-+#define DIRECTIVE_7                                 6
-+#define DIRECTIVE_ALLOW_EXECUTE                     7
-+#define DIRECTIVE_ALLOW_READ                        8
-+#define DIRECTIVE_ALLOW_WRITE                       9
-+#define DIRECTIVE_ALLOW_READ_WRITE                 10
-+#define DIRECTIVE_ALLOW_CREATE                     11
-+#define DIRECTIVE_ALLOW_UNLINK                     12
-+#define DIRECTIVE_ALLOW_MKDIR                      13
-+#define DIRECTIVE_ALLOW_RMDIR                      14
-+#define DIRECTIVE_ALLOW_MKFIFO                     15
-+#define DIRECTIVE_ALLOW_MKSOCK                     16
-+#define DIRECTIVE_ALLOW_MKBLOCK                    17
-+#define DIRECTIVE_ALLOW_MKCHAR                     18
-+#define DIRECTIVE_ALLOW_TRUNCATE                   19
-+#define DIRECTIVE_ALLOW_SYMLINK                    20
-+#define DIRECTIVE_ALLOW_LINK                       21
-+#define DIRECTIVE_ALLOW_RENAME                     22
-+#define DIRECTIVE_ALLOW_REWRITE                    23
-+#define DIRECTIVE_ALLOW_ARGV0                      24
-+#define DIRECTIVE_ALLOW_SIGNAL                     25
-+#define DIRECTIVE_ALLOW_NETWORK_UDIRECTIVE_BIND    26
-+#define DIRECTIVE_ALLOW_NETWORK_UDIRECTIVE_CONNECT 27
-+#define DIRECTIVE_ALLOW_NETWORK_TCP_BIND           28
-+#define DIRECTIVE_ALLOW_NETWORK_TCP_LISTEN         29
-+#define DIRECTIVE_ALLOW_NETWORK_TCP_CONNECT        30
-+#define DIRECTIVE_ALLOW_NETWORK_TCP_ACCEPT         31
-+#define DIRECTIVE_ALLOW_NETWORK_RAW_BIND           32
-+#define DIRECTIVE_ALLOW_NETWORK_RAW_CONNECT        33
-+#define DIRECTIVE_ALLOW_ENV                        34
-+#define DIRECTIVE_ADDRESS_GROUP                    35
-+#define DIRECTIVE_AGGREGATOR                       36
-+#define DIRECTIVE_ALIAS                            37
-+#define DIRECTIVE_ALLOW_CAPABILITY                 38
-+#define DIRECTIVE_ALLOW_CHROOT                     39
-+#define DIRECTIVE_ALLOW_MOUNT                      40
-+#define DIRECTIVE_ALLOW_PIVOT_ROOT                 41
-+#define DIRECTIVE_DENY_AUTOBIND                    42
-+#define DIRECTIVE_DENY_REWRITE                     43
-+#define DIRECTIVE_DENY_UNMOUNT                     44
-+#define DIRECTIVE_FILE_PATTERN                     45
-+#define DIRECTIVE_EXECUTE_HANDLER                  46
-+#define DIRECTIVE_DENIED_EXECUTE_HANDLER           47
-+#define DIRECTIVE_IGNORE_GLOBAL_ALLOW_ENV          48
-+#define DIRECTIVE_IGNORE_GLOBAL_ALLOW_READ         49
-+#define DIRECTIVE_INITIALIZE_DOMAIN                50
-+#define DIRECTIVE_KEEP_DOMAIN                      51
-+#define DIRECTIVE_NO_INITIALIZE_DOMAIN             52
-+#define DIRECTIVE_NO_KEEP_DOMAIN                   53
-+#define DIRECTIVE_PATH_GROUP                       54
-+#define DIRECTIVE_QUOTA_EXCEEDED                   55
-+#define DIRECTIVE_USE_PROFILE                      56
-+#define MAX_DIRECTIVE_INDEX                        57
++#define DIRECTIVE_NONE                              0
++#define DIRECTIVE_1                                 1
++#define DIRECTIVE_2                                 2
++#define DIRECTIVE_3                                 3
++#define DIRECTIVE_4                                 4
++#define DIRECTIVE_5                                 5
++#define DIRECTIVE_6                                 6
++#define DIRECTIVE_7                                 7
++#define DIRECTIVE_ALLOW_EXECUTE                     8
++#define DIRECTIVE_ALLOW_READ                        9
++#define DIRECTIVE_ALLOW_WRITE                      10
++#define DIRECTIVE_ALLOW_READ_WRITE                 11
++#define DIRECTIVE_ALLOW_CREATE                     12
++#define DIRECTIVE_ALLOW_UNLINK                     13
++#define DIRECTIVE_ALLOW_MKDIR                      14
++#define DIRECTIVE_ALLOW_RMDIR                      15
++#define DIRECTIVE_ALLOW_MKFIFO                     16
++#define DIRECTIVE_ALLOW_MKSOCK                     17
++#define DIRECTIVE_ALLOW_MKBLOCK                    18
++#define DIRECTIVE_ALLOW_MKCHAR                     19
++#define DIRECTIVE_ALLOW_TRUNCATE                   20
++#define DIRECTIVE_ALLOW_SYMLINK                    21
++#define DIRECTIVE_ALLOW_LINK                       22
++#define DIRECTIVE_ALLOW_RENAME                     23
++#define DIRECTIVE_ALLOW_REWRITE                    24
++#define DIRECTIVE_ALLOW_ARGV0                      25
++#define DIRECTIVE_ALLOW_SIGNAL                     26
++#define DIRECTIVE_ALLOW_NETWORK_UDIRECTIVE_BIND    27
++#define DIRECTIVE_ALLOW_NETWORK_UDIRECTIVE_CONNECT 28
++#define DIRECTIVE_ALLOW_NETWORK_TCP_BIND           29
++#define DIRECTIVE_ALLOW_NETWORK_TCP_LISTEN         30
++#define DIRECTIVE_ALLOW_NETWORK_TCP_CONNECT        31
++#define DIRECTIVE_ALLOW_NETWORK_TCP_ACCEPT         32
++#define DIRECTIVE_ALLOW_NETWORK_RAW_BIND           33
++#define DIRECTIVE_ALLOW_NETWORK_RAW_CONNECT        34
++#define DIRECTIVE_ALLOW_ENV                        35
++#define DIRECTIVE_ADDRESS_GROUP                    36
++#define DIRECTIVE_AGGREGATOR                       37
++#define DIRECTIVE_ALIAS                            38
++#define DIRECTIVE_ALLOW_CAPABILITY                 39
++#define DIRECTIVE_ALLOW_CHROOT                     40
++#define DIRECTIVE_ALLOW_MOUNT                      41
++#define DIRECTIVE_ALLOW_PIVOT_ROOT                 42
++#define DIRECTIVE_DENY_AUTOBIND                    43
++#define DIRECTIVE_DENY_REWRITE                     44
++#define DIRECTIVE_DENY_UNMOUNT                     45
++#define DIRECTIVE_FILE_PATTERN                     46
++#define DIRECTIVE_EXECUTE_HANDLER                  47
++#define DIRECTIVE_DENIED_EXECUTE_HANDLER           48
++#define DIRECTIVE_IGNORE_GLOBAL_ALLOW_ENV          49
++#define DIRECTIVE_IGNORE_GLOBAL_ALLOW_READ         50
++#define DIRECTIVE_INITIALIZE_DOMAIN                51
++#define DIRECTIVE_KEEP_DOMAIN                      52
++#define DIRECTIVE_NO_INITIALIZE_DOMAIN             53
++#define DIRECTIVE_NO_KEEP_DOMAIN                   54
++#define DIRECTIVE_PATH_GROUP                       55
++#define DIRECTIVE_QUOTA_EXCEEDED                   56
++#define DIRECTIVE_USE_PROFILE                      57
++#define MAX_DIRECTIVE_INDEX                        58
 +
 +static struct {
 +	const char *original;
@@ -3222,6 +3223,7 @@ Index: ccstools.src/editpolicy.c
 +	int original_len;
 +	int alias_len;
 +} directives[MAX_DIRECTIVE_INDEX] = {
++	[DIRECTIVE_NONE] = { "", NULL, 0, 0 },
 +	[DIRECTIVE_1]  = { "1", NULL, 0, 0 },
 +	[DIRECTIVE_2]  = { "2", NULL, 0, 0 },
 +	[DIRECTIVE_3]  = { "3", NULL, 0, 0 },
@@ -3414,7 +3416,7 @@ Index: ccstools.src/editpolicy.c
  	memset(&msg, 0, sizeof(msg));
  	msg.msg_iov = &iov;
  	msg.msg_iovlen = 1;
-@@ -755,13 +1390,15 @@
+@@ -755,13 +1392,15 @@
  	msg.msg_controllen = sizeof(cmsg_buf);
  	cmsg->cmsg_level = SOL_SOCKET;
  	cmsg->cmsg_type = SCM_RIGHTS;
@@ -3432,7 +3434,7 @@ Index: ccstools.src/editpolicy.c
  	if (offline_mode) {
  		char request[1024];
  		int fd[2];
-@@ -770,20 +1407,26 @@
+@@ -770,20 +1409,26 @@
  			fprintf(stderr, "socketpair()\n");
  			exit(1);
  		}
@@ -3465,7 +3467,7 @@ Index: ccstools.src/editpolicy.c
  	if (offline_mode) {
  		char request[1024];
  		int fd[2];
-@@ -791,172 +1434,245 @@
+@@ -791,172 +1436,245 @@
  			fprintf(stderr, "socketpair()\n");
  			exit(1);
  		}
@@ -3545,7 +3547,7 @@ Index: ccstools.src/editpolicy.c
  		}
 -		fclose(fp);
 +		directive = find_directive(true, shared_buffer);
-+		if (directive == (u8) EOF)
++		if (directive == DIRECTIVE_NONE)
 +			continue;
 +		generic_acl_list = realloc(generic_acl_list,
 +					   (generic_acl_list_count + 1) *
@@ -3799,7 +3801,7 @@ Index: ccstools.src/editpolicy.c
  	if (i == 4 || i == 8) {
  		for (j = 0; j < 4; j++) {
  			entry->min[j] = (u8) min[j];
-@@ -965,247 +1681,352 @@
+@@ -965,247 +1683,352 @@
  		return 0;
  	}
  	i = sscanf(address, "%X:%X:%X:%X:%X:%X:%X:%X-%X:%X:%X:%X:%X:%X:%X:%X",
@@ -4319,7 +4321,7 @@ Index: ccstools.src/editpolicy.c
  				domain_list[index].number = -1;
  				unnumbered_domain_count++;
  			} else {
-@@ -1215,14 +2036,18 @@
+@@ -1215,14 +2038,18 @@
  	}
  
  	domain_list_selected = realloc(domain_list_selected, domain_list_count);
@@ -4342,7 +4344,7 @@ Index: ccstools.src/editpolicy.c
  
  static const int header_lines = 3;
  static int body_lines = 0;
-@@ -1230,516 +2055,734 @@
+@@ -1230,516 +2057,734 @@
  static int max_eat_col[MAXSCREEN];
  static int eat_col = 0;
  static int max_col = 0;
@@ -5134,7 +5136,7 @@ Index: ccstools.src/editpolicy.c
 +	if (current < 0)
 +		return;
 +	s_index = generic_acl_list[current].directive;
-+	if (s_index == (u8) EOF)
++	if (s_index == DIRECTIVE_NONE)
 +		return;
 +	cp = strdup(generic_acl_list[current].operand);
 +	if (!cp)
@@ -5427,7 +5429,7 @@ Index: ccstools.src/editpolicy.c
  			switch (sscanf(sarg2.name, "%u-%u", &smin, &smax)) {
  			case 1:
  				smax = smin;
-@@ -1756,33 +2799,280 @@
+@@ -1756,33 +2801,276 @@
  			default:
  				continue;
  			}
@@ -5560,7 +5562,7 @@ Index: ccstools.src/editpolicy.c
 +		if (current_screen == SCREEN_ACL_LIST)
 +			fprintf(fp, "select %s\n", current_domain);
 +		directive = find_directive(false, line);
-+		if (directive != (u8) EOF)
++		if (directive != DIRECTIVE_NONE)
 +			fprintf(fp, "%s ", directives[directive].original);
 +		fprintf(fp, "%s\n", line);
 +		fclose(fp);
@@ -5569,10 +5571,10 @@ Index: ccstools.src/editpolicy.c
 +	free(line);
 +}
 +
-+static void find_entry(int input, int forward, int current,
++static void find_entry(bool input, bool forward, int current,
 +		       struct readline_data *rl)
 +{
-+	int index;
++	int index = current;
 +	char *line;
 +	if (current == EOF)
 +		return;
@@ -5588,37 +5590,33 @@ Index: ccstools.src/editpolicy.c
 +	free(rl->search_buffer[current_screen]);
 +	rl->search_buffer[current_screen] = line;
 +	line = NULL;
++	index = -1;
 +start_search:
-+	if (!forward)
-+		goto backward_search;
-+	if (input)
-+		index = 0;
-+	else
-+		index = current + 1;
-+	for (; index < list_item_count[current_screen]; index++) {
++	get();
++	while (true) {
 +		const char *cp;
++		if (forward) {
++			if (++index >= list_item_count[current_screen])
++				break;
++		} else {
++			if (--index < 0)
++				break;
++		}
 +		if (current_screen == SCREEN_DOMAIN_LIST)
 +			cp = get_last_name(index);
-+		else
-+			cp = generic_acl_list[index].operand;
++		else {
++			const u8 directive = generic_acl_list[index].directive;
++			snprintf(shared_buffer, shared_buffer_len - 1,
++				 "%s %s", directives[directive].alias,
++				 generic_acl_list[index].operand);
++			cp = shared_buffer;
++		}
 +		if (!strstr(cp, rl->search_buffer[current_screen]))
 +			continue;
 +		set_cursor_pos(index);
 +		break;
 +	}
-+	goto out;
-+backward_search:
-+	for (index = current - 1; index >= 0; index--) {
-+		const char *cp;
-+		if (current_screen == SCREEN_DOMAIN_LIST)
-+			cp = get_last_name(index);
-+		else
-+			cp = generic_acl_list[index].operand;
-+		if (!strstr(cp, rl->search_buffer[current_screen]))
-+			continue;
-+		set_cursor_pos(index);
-+		break;
-+	}
++	put();
 +out:
 +	free(line);
 +	show_list();
@@ -5724,7 +5722,7 @@ Index: ccstools.src/editpolicy.c
  	}
  	if (current_screen == SCREEN_SYSTEM_LIST) {
  		policy_file = SYSTEM_POLICY_FILE;
-@@ -1795,252 +3085,168 @@
+@@ -1795,252 +3083,168 @@
  		list_caption = "Domain Policy";
  	} else {
  		policy_file = DOMAIN_POLICY_FILE;
@@ -5886,7 +5884,7 @@ Index: ccstools.src/editpolicy.c
 -				free(line);
 -				ShowList();
 -			}
-+			find_entry(1, 1, current, &rl);
++			find_entry(true, true, current, &rl);
  			break;
  		case 'p':
  		case 'P':
@@ -5902,9 +5900,9 @@ Index: ccstools.src/editpolicy.c
 -				}
 -			}
 +			if (!rl.search_buffer[current_screen])
-+				find_entry(1, 0, current, &rl);
++				find_entry(true, false, current, &rl);
 +			else
-+				find_entry(0, 0, current, &rl);
++				find_entry(false, false, current, &rl);
  			break;
  		case 'n':
  		case 'N':
@@ -5920,9 +5918,9 @@ Index: ccstools.src/editpolicy.c
 -				}
 -			}
 +			if (!rl.search_buffer[current_screen])
-+				find_entry(1, 1, current, &rl);
++				find_entry(true, true, current, &rl);
 +			else
-+				find_entry(0, 1, current, &rl);
++				find_entry(false, true, current, &rl);
  			break;
  		case 'd':
  		case 'D':
@@ -6089,19 +6087,27 @@ Index: ccstools.src/editpolicy.c
  			goto start2;
  		case KEY_RIGHT:
  			max_eat_col[current_screen]++;
-@@ -2052,177 +3258,214 @@
+@@ -2052,177 +3256,222 @@
  			max_eat_col[current_screen] = max_col;
  			goto start2;
  		case KEY_IC:
 -			if (current >= 0) readline_history_count = simple_add_history(current_screen == SCREEN_DOMAIN_LIST ? DomainName(current) : generic_acl_list[current], readline_history, readline_history_count, max_readline_history);
 +			if (current == EOF)
 +				break;
++			get();
 +			if (current_screen == SCREEN_DOMAIN_LIST)
 +				line = domain_name(current);
-+			else
-+				line = generic_acl_list[current].operand;
++			else {
++				const u8 directive
++					= generic_acl_list[current].directive;
++				snprintf(shared_buffer, shared_buffer_len - 1,
++					 "%s %s", directives[directive].alias,
++					 generic_acl_list[current].operand);
++				line = shared_buffer;
++			}
 +			rl.count = simple_add_history(line, rl.history,
 +						      rl.count, rl.max);
++			put();
  			break;
  		case 'o':
  		case 'O':
@@ -6289,7 +6295,7 @@ Index: ccstools.src/editpolicy.c
 +	for (i = 0; i < system_list_count; i++)
 +		fprintf(fp, "%s\n", system_list[i]->name);
 +}
-+	
++
 +static void policy_daemon(void)
 +{
  	get();
@@ -6457,7 +6463,7 @@ Index: ccstools.src/editpolicy.c
  		}
  		fclose(fp);
  	}
-@@ -2232,15 +3475,43 @@
+@@ -2232,15 +3481,43 @@
  
  static void init_keyword_map(void);
  
@@ -6470,7 +6476,7 @@ Index: ccstools.src/editpolicy.c
 +		if (len <= 0)
 +			break;
 +		fwrite(buffer, len, 1, fp);
-+	}	
++	}
 +}
 +
 +static bool copy_fp_to_fd(FILE *fp, int fd)
@@ -6485,7 +6491,7 @@ Index: ccstools.src/editpolicy.c
 +	}
 +	return true;
 +}
-+				
++
 +int editpolicy_main(int argc, char *argv[])
 +{
  	memset(current_y, 0, sizeof(current_y));
@@ -6505,7 +6511,7 @@ Index: ccstools.src/editpolicy.c
  		else {
  			printf("Usage: %s [s|e|d]\n", argv[0]);
  			return 1;
-@@ -2249,14 +3520,18 @@
+@@ -2249,14 +3526,18 @@
  	init_keyword_map();
  	{
  		char *cp = strrchr(argv[0], '/');
@@ -6528,7 +6534,7 @@ Index: ccstools.src/editpolicy.c
  			return 1;
  		}
  		if (socketpair(PF_UNIX, SOCK_STREAM, 0, fd)) {
-@@ -2276,42 +3551,54 @@
+@@ -2276,42 +3557,54 @@
  		close(fd[1]);
  		persistent_fd = fd[0];
  		{
@@ -6605,7 +6611,7 @@ Index: ccstools.src/editpolicy.c
  	cbreak();
  	noecho();
  	nonl();
-@@ -2320,53 +3607,89 @@
+@@ -2320,53 +3613,89 @@
  	getmaxyx(stdscr, window_height, window_width);
  	while (current_screen < MAXSCREEN) {
  		if (!offline_mode) {
@@ -6725,7 +6731,7 @@ Index: ccstools.src/editpolicy.c
  		}
  	}
  	return 0;
-@@ -2374,77 +3697,71 @@
+@@ -2374,77 +3703,71 @@
  
  /* keyword mapping */
  
@@ -6739,7 +6745,7 @@ Index: ccstools.src/editpolicy.c
 +static u8 find_directive(const bool forward, char *line)
 +{
 +	u8 i;
-+	for (i = 0; i < MAX_DIRECTIVE_INDEX; i++) {
++	for (i = 1; i < MAX_DIRECTIVE_INDEX; i++) {
 +		if (forward) {
 +			const int len = directives[i].original_len;
 +			if (strncmp(line, directives[i].original, len) ||
@@ -6759,7 +6765,7 @@ Index: ccstools.src/editpolicy.c
 +		}
  	}
 -	return cp;
-+	return EOF;
++	return DIRECTIVE_NONE;
  }
  
 -static struct directive_alias_list {
@@ -6830,7 +6836,7 @@ Index: ccstools.src/editpolicy.c
 +		normalize_line(cp);
 +		if (!*shared_buffer || !*cp)
 +			continue;
-+		for (i = 0; i < MAX_DIRECTIVE_INDEX; i++) {
++		for (i = 1; i < MAX_DIRECTIVE_INDEX; i++) {
 +			if (strcmp(shared_buffer, directives[i].original))
 +				continue;
 +			free((void *) directives[i].alias);
@@ -6848,7 +6854,7 @@ Index: ccstools.src/editpolicy.c
 -	for (i = 0; i < max_optimize_directive_index; i++) {
 -		directive_list_len[i] = strlen(directive_list[i]);
 +use_default:
-+	for (i = 0; i < MAX_DIRECTIVE_INDEX; i++) {
++	for (i = 1; i < MAX_DIRECTIVE_INDEX; i++) {
 +		if (!directives[i].alias)
 +			directives[i].alias = directives[i].original;
 +		directives[i].original_len = strlen(directives[i].original);
