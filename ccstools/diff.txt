@@ -3399,7 +3399,8 @@ Index: ccstools.src/editpolicy.c
 -///////////////////////////  UTILITY FUNCTIONS  //////////////////////////////
 +/* UTILITY FUNCTIONS */
  
- static int offline_mode = 0;
+-static int offline_mode = 0;
++static bool offline_mode = false;
  static int persistent_fd = EOF;
  
 -static void SendFD(char *data, int *fd) {
@@ -5712,7 +5713,7 @@ Index: ccstools.src/editpolicy.c
 -		readline_history = malloc(max_readline_history * sizeof(const char *));
 +		memset(&rl, 0, sizeof(rl));
 +		rl.max = 20;
-+		rl.history = malloc(rl.count * sizeof(const char *));
++		rl.history = malloc(rl.max * sizeof(const char *));
  		memset(saved_current_y, 0, sizeof(saved_current_y));
 -		memset(saved_current_item_index, 0, sizeof(saved_current_item_index));
 -		memset(search_buffer, 0, sizeof(search_buffer));
@@ -6088,7 +6089,7 @@ Index: ccstools.src/editpolicy.c
  			goto start2;
  		case KEY_RIGHT:
  			max_eat_col[current_screen]++;
-@@ -2052,63 +3258,49 @@
+@@ -2052,177 +3258,214 @@
  			max_eat_col[current_screen] = max_col;
  			goto start2;
  		case KEY_IC:
@@ -6145,15 +6146,150 @@ Index: ccstools.src/editpolicy.c
 -					   "Press '?' to escape from this help.\n"); refresh();
 -				while ((c = getch2()) != '?' && c != EOF);
 -				goto start;
--			}
--			break;
 +			show_command_key();
 +			goto start;
++		}
++	}
++}
++
++static void handle_domain_policy(FILE *fp, bool is_write)
++{
++	int i;
++	int index = EOF;
++	if (!is_write)
++		goto read_policy;
++	while (freadline(fp)) {
++		bool is_delete = false;
++		bool is_select = false;
++		unsigned int profile;
++		if (str_starts(shared_buffer, "delete "))
++			is_delete = true;
++		else if (str_starts(shared_buffer, "select "))
++			is_select = true;
++		if (is_domain_def(shared_buffer)) {
++			if (is_delete) {
++				index = find_domain(shared_buffer, 0, 0);
++				if (index > 0)
++					delete_domain(index);
++				index = EOF;
++				continue;
+ 			}
++			if (is_select) {
++				index = find_domain(shared_buffer, 0, 0);
++				continue;
++			}
++			index = find_or_assign_new_domain(shared_buffer, 0, 0);
++			continue;
++		}
++		if (index == EOF || !shared_buffer[0])
++			continue;
++		if (sscanf(shared_buffer, KEYWORD_USE_PROFILE "%u", &profile)
++		    == 1)
++			domain_list[index].profile = (u8) profile;
++		else if (is_delete)
++			del_string_entry(shared_buffer, index);
++		else
++			add_string_entry(shared_buffer, index);
++	}
++	return;
++read_policy:
++	for (i = 0; i < domain_list_count; i++) {
++		int j;
++		const struct path_info **string_ptr = domain_list[i].string_ptr;
++		const int string_count = domain_list[i].string_count;
++		fprintf(fp, "%s\n" KEYWORD_USE_PROFILE "%u\n\n",
++			domain_name(i), domain_list[i].profile);
++		for (j = 0; j < string_count; j++)
++			fprintf(fp, "%s\n", string_ptr[j]->name);
++		fprintf(fp, "\n");
++	}
++}
++
++static void handle_exception_policy(FILE *fp, bool is_write)
++{
++	static const struct path_info **exception_list = NULL;
++	static int exception_list_count = 0;
++	int i;
++	if (!is_write)
++		goto read_policy;
++	while (freadline(fp)) {
++		struct path_info path;
++		const struct path_info *cp;
++		if (!shared_buffer[0])
++			continue;
++		if (!str_starts(shared_buffer, "delete "))
++			goto append_policy;
++		path.name = shared_buffer;
++		fill_path_info(&path);
++		for (i = 0; i < exception_list_count; i++) {
++			if (pathcmp(exception_list[i], &path))
++				continue;
++			for (exception_list_count--;
++			     i < exception_list_count; i++)
++				exception_list[i]
++					= exception_list[i + 1];
+ 			break;
  		}
++		continue;
++append_policy:
++		exception_list = realloc(exception_list,
++					 (exception_list_count + 1)
++					 * sizeof(const struct path_info *));
++		if (!exception_list)
++			out_of_memory();
++		cp = savename(shared_buffer);
++		if (!cp)
++			out_of_memory();
++		exception_list[exception_list_count++] = cp;
  	}
++	return;
++read_policy:
++	for (i = 0; i < exception_list_count; i++)
++		fprintf(fp, "%s\n", exception_list[i]->name);
  }
  
 -static void policy_daemon(void) {
++static void handle_system_policy(FILE *fp, bool is_write)
++{
++	static const struct path_info **system_list = NULL;
++	static int system_list_count = 0;
++	int i;
++	if (!is_write)
++		goto read_policy;
++	while (freadline(fp)) {
++		struct path_info path;
++		const struct path_info *cp;
++		if (!shared_buffer[0])
++			continue;
++		if (!str_starts(shared_buffer, "delete "))
++			goto append_policy;
++		path.name = shared_buffer;
++		fill_path_info(&path);
++		for (i = 0; i < system_list_count; i++) {
++			if (pathcmp(system_list[i], &path))
++				continue;
++			for (system_list_count--;
++			     i < system_list_count; i++)
++				system_list[i] = system_list[i + 1];
++			break;
++		}
++		continue;
++append_policy:
++		system_list = realloc(system_list, (system_list_count + 1)
++				      * sizeof(struct path_info *));
++		if (!system_list)
++			out_of_memory();
++		cp = savename(shared_buffer);
++		if (!cp)
++			out_of_memory();
++		system_list[system_list_count++] = cp;
++	}
++	return;
++read_policy:
++	for (i = 0; i < system_list_count; i++)
++		fprintf(fp, "%s\n", system_list[i]->name);
++}
++	
 +static void policy_daemon(void)
 +{
  	get();
@@ -6163,37 +6299,55 @@ Index: ccstools.src/editpolicy.c
 -		static int exception_list_count = 0, system_list_count = 0;
 +	find_or_assign_new_domain(ROOT_NAME, 0, 0);
 +	while (true) {
-+		static const struct path_info **exception_list = NULL;
-+		static const struct path_info **system_list = NULL;
-+		static int exception_list_count = 0;
-+		static int system_list_count = 0;
  		FILE *fp;
-+		int i;
-+		int j;
-+		int index;
- 		{
- 			struct msghdr msg;
+-		{
+-			struct msghdr msg;
 -			struct iovec iov = { shared_buffer, shared_buffer_len - 1 };
-+			struct iovec iov = { shared_buffer,
-+					     shared_buffer_len - 1 };
- 			char cmsg_buf[CMSG_SPACE(sizeof(int))];
- 			struct cmsghdr *cmsg = (struct cmsghdr *) cmsg_buf;
- 			memset(&msg, 0, sizeof(msg));
-@@ -2123,8 +3315,9 @@
- 				cmsg->cmsg_level == SOL_SOCKET &&
- 				cmsg->cmsg_type == SCM_RIGHTS &&
- 				cmsg->cmsg_len == CMSG_LEN(sizeof(int))) {
+-			char cmsg_buf[CMSG_SPACE(sizeof(int))];
+-			struct cmsghdr *cmsg = (struct cmsghdr *) cmsg_buf;
+-			memset(&msg, 0, sizeof(msg));
+-			msg.msg_iov = &iov;
+-			msg.msg_iovlen = 1;
+-			msg.msg_control = cmsg_buf;
+-			msg.msg_controllen = sizeof(cmsg_buf);
+-			memset(shared_buffer, 0, shared_buffer_len);
+-			errno = 0;
+-			if (recvmsg(persistent_fd, &msg, 0) > 0 &&
+-				(cmsg = CMSG_FIRSTHDR(&msg)) != NULL &&
+-				cmsg->cmsg_level == SOL_SOCKET &&
+-				cmsg->cmsg_type == SCM_RIGHTS &&
+-				cmsg->cmsg_len == CMSG_LEN(sizeof(int))) {
 -				const int fd = * (int *) CMSG_DATA(cmsg);
 -				if ((fp = fdopen(fd, "w+")) == NULL) {
-+				const int fd = *(int *) CMSG_DATA(cmsg);
-+				fp = fdopen(fd, "w+");
-+				if (!fp) {
- 					close(fd);
- 					continue;
- 				}
-@@ -2132,98 +3325,145 @@
- 				break;
+-					close(fd);
+-					continue;
+-				}
+-			} else {
+-				break;
++		struct msghdr msg;
++		struct iovec iov = { shared_buffer, shared_buffer_len - 1 };
++		char cmsg_buf[CMSG_SPACE(sizeof(int))];
++		struct cmsghdr *cmsg = (struct cmsghdr *) cmsg_buf;
++		memset(&msg, 0, sizeof(msg));
++		msg.msg_iov = &iov;
++		msg.msg_iovlen = 1;
++		msg.msg_control = cmsg_buf;
++		msg.msg_controllen = sizeof(cmsg_buf);
++		memset(shared_buffer, 0, shared_buffer_len);
++		errno = 0;
++		if (recvmsg(persistent_fd, &msg, 0) > 0 &&
++		    (cmsg = CMSG_FIRSTHDR(&msg)) != NULL &&
++		    cmsg->cmsg_level == SOL_SOCKET &&
++		    cmsg->cmsg_type == SCM_RIGHTS &&
++		    cmsg->cmsg_len == CMSG_LEN(sizeof(int))) {
++			const int fd = *(int *) CMSG_DATA(cmsg);
++			fp = fdopen(fd, "w+");
++			if (!fp) {
++				close(fd);
++				continue;
  			}
++		} else {
++			break;
  		}
 -		if (strncmp(shared_buffer, "POST ", 5) == 0) {
 -			if (strcmp(shared_buffer + 5, "domain_policy") == 0) {
@@ -6266,28 +6420,7 @@ Index: ccstools.src/editpolicy.c
 -							|| (system_list[system_list_count++] = SaveName(shared_buffer)) == NULL) OutOfMemory();
 -					}
 -				}
-+		if (!str_starts(shared_buffer, "POST "))
-+			goto not_post_method;
-+		if (strcmp(shared_buffer, "domain_policy"))
-+			goto not_domain_policy1;
-+		index = EOF;
-+		while (freadline(fp)) {
-+			bool is_delete = false;
-+			bool is_select = false;
-+			unsigned int profile;
-+			if (str_starts(shared_buffer, "delete "))
-+				is_delete = true;
-+			else if (str_starts(shared_buffer, "select "))
-+				is_select = true;
-+			if (!is_domain_def(shared_buffer))
-+				goto not_domain_def;
-+			if (is_delete) {
-+				index = find_domain(shared_buffer, 0, 0);
-+				if (index > 0)
-+					delete_domain(index);
-+				index = EOF;
-+				continue;
- 			}
+-			}
 -		} else if (strncmp(shared_buffer, "GET ", 4) == 0) {
 -			if (strcmp(shared_buffer + 4, "domain_policy") == 0) {
 -				int i, j;
@@ -6306,127 +6439,25 @@ Index: ccstools.src/editpolicy.c
 -			} else if (strcmp(shared_buffer + 4, "system_policy") == 0) {
 -				int i;
 -				for (i = 0; i < system_list_count; i++) fprintf(fp, "%s\n", system_list[i]->name);
-+			if (is_select) {
-+				index = find_domain(shared_buffer, 0, 0);
-+				continue;
- 			}
-+			index = find_or_assign_new_domain(shared_buffer, 0, 0);
-+			continue;
-+not_domain_def:
-+			if (index == EOF || !shared_buffer[0])
-+				continue;
-+			if (sscanf(shared_buffer, KEYWORD_USE_PROFILE "%u",
-+				   &profile) == 1)
-+				domain_list[index].profile = (u8) profile;
-+			else if (is_delete)
-+				del_string_entry(shared_buffer, index);
-+			else
-+				add_string_entry(shared_buffer, index);
+-			}
++		if (str_starts(shared_buffer, "POST ")) {
++			if (!strcmp(shared_buffer, "domain_policy"))
++				handle_domain_policy(fp, true);
++			else if (!strcmp(shared_buffer, "exception_policy"))
++				handle_exception_policy(fp, true);
++			else if (!strcmp(shared_buffer, "system_policy"))
++				handle_system_policy(fp, true);
++		} else if (str_starts(shared_buffer, "GET ")) {
++			if (!strcmp(shared_buffer, "domain_policy"))
++				handle_domain_policy(fp, false);
++			else if (!strcmp(shared_buffer, "exception_policy"))
++				handle_exception_policy(fp, false);
++			else if (!strcmp(shared_buffer, "system_policy"))
++				handle_system_policy(fp, false);
  		}
-+		goto close_file;
-+not_domain_policy1:
-+		if (!strcmp(shared_buffer, "exception_policy"))
-+			goto not_exception_policy1;
-+		while (freadline(fp)) {
-+			int i;
-+			struct path_info path;
-+			const struct path_info *cp;
-+			void *vp;
-+			if (!shared_buffer[0])
-+				continue;
-+			if (!str_starts(shared_buffer, "delete "))
-+				goto not_delete_exception;
-+			path.name = shared_buffer;
-+			fill_path_info(&path);
-+			for (i = 0; i < exception_list_count; i++) {
-+				if (pathcmp(exception_list[i], &path))
-+					continue;
-+				for (exception_list_count--;
-+				     i < exception_list_count; i++)
-+					exception_list[i]
-+						= exception_list[i + 1];
-+				break;
-+			}
-+			continue;
-+not_delete_exception:
-+			vp = realloc(exception_list, (exception_list_count + 1)
-+				     * sizeof(const struct path_info *));
-+			if (!vp)
-+				out_of_memory();
-+			exception_list = vp;
-+			cp = savename(shared_buffer);
-+			if (!cp)
-+				out_of_memory();
-+			exception_list[exception_list_count++] = cp;
-+		}
-+		goto close_file;
-+not_exception_policy1:
-+		if (!strcmp(shared_buffer, "system_policy"))
-+			goto close_file;
-+		while (freadline(fp)) {
-+			int i;
-+			struct path_info path;
-+			const struct path_info *cp;
-+			void *vp;
-+			if (!shared_buffer[0])
-+				continue;
-+			if (!str_starts(shared_buffer, "delete "))
-+				goto not_delete_system;
-+			path.name = shared_buffer;
-+			fill_path_info(&path);
-+			for (i = 0; i < system_list_count; i++) {
-+				if (pathcmp(system_list[i], &path))
-+					continue;
-+				for (system_list_count--;
-+				     i < system_list_count; i++)
-+					system_list[i] = system_list[i + 1];
-+				break;
-+			}
-+			continue;
-+not_delete_system:
-+			vp = realloc(system_list, (system_list_count + 1)
-+				     * sizeof(struct path_info *));
-+			if (!vp)
-+				out_of_memory();
-+			system_list = vp;
-+			cp = savename(shared_buffer);
-+			if (!cp)
-+				out_of_memory();
-+			system_list[system_list_count++] = cp;
-+		}
-+		goto close_file;
-+not_post_method:
-+		if (!str_starts(shared_buffer, "GET "))
-+			goto close_file;
-+		if (strcmp(shared_buffer, "domain_policy"))
-+			goto not_domain_policy2;
-+		for (i = 0; i < domain_list_count; i++) {
-+			const struct path_info **string_ptr
-+				= domain_list[i].string_ptr;
-+			const int string_count = domain_list[i].string_count;
-+			fprintf(fp, "%s\n" KEYWORD_USE_PROFILE "%u\n\n",
-+				domain_name(i), domain_list[i].profile);
-+			for (j = 0; j < string_count; j++)
-+				fprintf(fp, "%s\n", string_ptr[j]->name);
-+			fprintf(fp, "\n");
-+		}
-+		goto close_file;
-+not_domain_policy2:
-+		if (strcmp(shared_buffer, "exception_policy"))
-+			goto not_exception_policy2;
-+		for (i = 0; i < exception_list_count; i++)
-+			fprintf(fp, "%s\n", exception_list[i]->name);
-+		goto close_file;
-+not_exception_policy2:
-+		if (strcmp(shared_buffer, "system_policy"))
-+			goto close_file;
-+		for (i = 0; i < system_list_count; i++)
-+			fprintf(fp, "%s\n", system_list[i]->name);
-+close_file:
  		fclose(fp);
  	}
- 	put();
-@@ -2232,15 +3472,43 @@
+@@ -2232,15 +3475,43 @@
  
  static void init_keyword_map(void);
  
@@ -6474,7 +6505,7 @@ Index: ccstools.src/editpolicy.c
  		else {
  			printf("Usage: %s [s|e|d]\n", argv[0]);
  			return 1;
-@@ -2249,14 +3517,18 @@
+@@ -2249,14 +3520,18 @@
  	init_keyword_map();
  	{
  		char *cp = strrchr(argv[0], '/');
@@ -6486,7 +6517,7 @@ Index: ccstools.src/editpolicy.c
 +		else
 +			cp++;
 +		if (strstr(cp, "editpolicy_offline"))
-+			offline_mode = 1;
++			offline_mode = true;
  	}
  	if (offline_mode) {
  		int fd[2];
@@ -6497,7 +6528,7 @@ Index: ccstools.src/editpolicy.c
  			return 1;
  		}
  		if (socketpair(PF_UNIX, SOCK_STREAM, 0, fd)) {
-@@ -2276,42 +3548,54 @@
+@@ -2276,42 +3551,54 @@
  		close(fd[1]);
  		persistent_fd = fd[0];
  		{
@@ -6574,7 +6605,7 @@ Index: ccstools.src/editpolicy.c
  	cbreak();
  	noecho();
  	nonl();
-@@ -2320,53 +3604,89 @@
+@@ -2320,53 +3607,89 @@
  	getmaxyx(stdscr, window_height, window_width);
  	while (current_screen < MAXSCREEN) {
  		if (!offline_mode) {
@@ -6694,7 +6725,7 @@ Index: ccstools.src/editpolicy.c
  		}
  	}
  	return 0;
-@@ -2374,77 +3694,71 @@
+@@ -2374,77 +3697,71 @@
  
  /* keyword mapping */
  
@@ -10048,6 +10079,19 @@ Index: ccs-init
      if [ "x$PROFILE" = "xdefault" ]; then
  	[ -r profile.conf ] && cat profile.conf > /proc/ccs/profile
      elif [ "x$PROFILE" != "xdisable" ]; then
+Index: Makefile
+===================================================================
+--- Makefile	(revision 1551)
++++ Makefile	(working copy)
+@@ -31,7 +31,7 @@
+ 
+ CC=gcc
+ 
+-CFLAGS=-Wall -O2 ${shell $(CC) -Wno-pointer-sign -S -o /dev/null -x c - < /dev/null > /dev/null 2>&1 && echo "-Wno-pointer-sign"}
++CFLAGS=-Wall -g -O2 ${shell $(CC) -Wno-pointer-sign -S -o /dev/null -x c - < /dev/null > /dev/null 2>&1 && echo "-Wno-pointer-sign"}
+ 
+ /usr/include/curses.h:
+ 	@echo "/usr/include/curses.h is missing."
 Index: tomoyo-init
 ===================================================================
 --- tomoyo-init	(revision 1551)
