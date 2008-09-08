@@ -1,13 +1,13 @@
 Index: ccstools.src/ccstools.h
 ===================================================================
---- ccstools.src/ccstools.h	(リビジョン 1537)
-+++ ccstools.src/ccstools.h	(作業コピー)
+--- ccstools.src/ccstools.h	(revision 1551)
++++ ccstools.src/ccstools.h	(working copy)
 @@ -5,7 +5,7 @@
   *
   * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.6.2   2008/06/25
-+ * Version: 1.6.4+   2008/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  
@@ -30,34 +30,113 @@ Index: ccstools.src/ccstools.h
  #define SYSTEM_POLICY_FILE    "system_policy"
  #define EXCEPTION_POLICY_FILE "exception_policy"
  #define DOMAIN_POLICY_FILE    "domain_policy"
-@@ -100,7 +105,8 @@
+@@ -68,57 +73,35 @@
+ #define NETWORK_ACL_RAW_CONNECT 7
+ 
+ #define KEYWORD_AGGREGATOR               "aggregator "
+-#define KEYWORD_AGGREGATOR_LEN           (sizeof(KEYWORD_AGGREGATOR) - 1)
+ #define KEYWORD_ALIAS                    "alias "
+-#define KEYWORD_ALIAS_LEN                (sizeof(KEYWORD_ALIAS) - 1)
+ #define KEYWORD_ALLOW_ARGV0              "allow_argv0 "
+-#define KEYWORD_ALLOW_ARGV0_LEN          (sizeof(KEYWORD_ALLOW_ARGV0) - 1)
+ #define KEYWORD_ALLOW_ENV                "allow_env "
+-#define KEYWORD_ALLOW_ENV_LEN            (sizeof(KEYWORD_ALLOW_ENV) - 1)
+ #define KEYWORD_ALLOW_CAPABILITY         "allow_capability "
+-#define KEYWORD_ALLOW_CAPABILITY_LEN     (sizeof(KEYWORD_ALLOW_CAPABILITY) - 1)
+ #define KEYWORD_ALLOW_CHROOT             "allow_chroot "
+-#define KEYWORD_ALLOW_CHROOT_LEN         (sizeof(KEYWORD_ALLOW_CHROOT) - 1)
+ #define KEYWORD_ALLOW_MOUNT              "allow_mount "
+-#define KEYWORD_ALLOW_MOUNT_LEN          (sizeof(KEYWORD_ALLOW_MOUNT) - 1)
+ #define KEYWORD_ALLOW_NETWORK            "allow_network "
+-#define KEYWORD_ALLOW_NETWORK_LEN        (sizeof(KEYWORD_ALLOW_NETWORK) - 1)
+ #define KEYWORD_ALLOW_PIVOT_ROOT         "allow_pivot_root "
+-#define KEYWORD_ALLOW_PIVOT_ROOT_LEN     (sizeof(KEYWORD_ALLOW_PIVOT_ROOT) - 1)
+ #define KEYWORD_ALLOW_READ               "allow_read "
+-#define KEYWORD_ALLOW_READ_LEN           (sizeof(KEYWORD_ALLOW_READ) - 1)
+ #define KEYWORD_ALLOW_SIGNAL             "allow_signal "
+-#define KEYWORD_ALLOW_SIGNAL_LEN         (sizeof(KEYWORD_ALLOW_SIGNAL) - 1)
+ #define KEYWORD_DELETE                   "delete "
+-#define KEYWORD_DELETE_LEN               (sizeof(KEYWORD_DELETE) - 1)
+ #define KEYWORD_DENY_AUTOBIND            "deny_autobind "
+-#define KEYWORD_DENY_AUTOBIND_LEN        (sizeof(KEYWORD_DENY_AUTOBIND) - 1)
+ #define KEYWORD_DENY_REWRITE             "deny_rewrite "
+-#define KEYWORD_DENY_REWRITE_LEN         (sizeof(KEYWORD_DENY_REWRITE) - 1)
+ #define KEYWORD_DENY_UNMOUNT             "deny_unmount "
+-#define KEYWORD_DENY_UNMOUNT_LEN         (sizeof(KEYWORD_DENY_UNMOUNT) - 1)
  #define KEYWORD_FILE_PATTERN             "file_pattern "
- #define KEYWORD_FILE_PATTERN_LEN         (sizeof(KEYWORD_FILE_PATTERN) - 1)
+-#define KEYWORD_FILE_PATTERN_LEN         (sizeof(KEYWORD_FILE_PATTERN) - 1)
  #define KEYWORD_MAC_FOR_CAPABILITY       "MAC_FOR_CAPABILITY::"
 -#define KEYWORD_MAC_FOR_CAPABILITY_LEN   (sizeof(KEYWORD_MAC_FOR_CAPABILITY) - 1)
-+#define KEYWORD_MAC_FOR_CAPABILITY_LEN   \
-+	(sizeof(KEYWORD_MAC_FOR_CAPABILITY) - 1)
  #define KEYWORD_SELECT                   "select "
- #define KEYWORD_SELECT_LEN               (sizeof(KEYWORD_SELECT) - 1)
+-#define KEYWORD_SELECT_LEN               (sizeof(KEYWORD_SELECT) - 1)
  #define KEYWORD_UNDELETE                 "undelete "
-@@ -116,10 +122,15 @@
+-#define KEYWORD_UNDELETE_LEN             (sizeof(KEYWORD_UNDELETE) - 1)
+ #define KEYWORD_USE_PROFILE              "use_profile "
+ #define KEYWORD_USE_PROFILE_LEN          (sizeof(KEYWORD_USE_PROFILE) - 1)
+ #define KEYWORD_INITIALIZE_DOMAIN        "initialize_domain "
+-#define KEYWORD_INITIALIZE_DOMAIN_LEN    (sizeof(KEYWORD_INITIALIZE_DOMAIN) - 1)
+ #define KEYWORD_KEEP_DOMAIN              "keep_domain "
+-#define KEYWORD_KEEP_DOMAIN_LEN          (sizeof(KEYWORD_KEEP_DOMAIN) - 1)
+ #define KEYWORD_PATH_GROUP               "path_group "
+-#define KEYWORD_PATH_GROUP_LEN           (sizeof(KEYWORD_PATH_GROUP) - 1)
  #define KEYWORD_ADDRESS_GROUP            "address_group "
- #define KEYWORD_ADDRESS_GROUP_LEN        (sizeof(KEYWORD_ADDRESS_GROUP) - 1)
+-#define KEYWORD_ADDRESS_GROUP_LEN        (sizeof(KEYWORD_ADDRESS_GROUP) - 1)
  #define KEYWORD_NO_INITIALIZE_DOMAIN     "no_" KEYWORD_INITIALIZE_DOMAIN
 -#define KEYWORD_NO_INITIALIZE_DOMAIN_LEN (sizeof(KEYWORD_NO_INITIALIZE_DOMAIN) - 1)
-+#define KEYWORD_NO_INITIALIZE_DOMAIN_LEN \
-+	(sizeof(KEYWORD_NO_INITIALIZE_DOMAIN) - 1)
  #define KEYWORD_NO_KEEP_DOMAIN           "no_" KEYWORD_KEEP_DOMAIN
- #define KEYWORD_NO_KEEP_DOMAIN_LEN       (sizeof(KEYWORD_NO_KEEP_DOMAIN) - 1)
- 
+-#define KEYWORD_NO_KEEP_DOMAIN_LEN       (sizeof(KEYWORD_NO_KEEP_DOMAIN) - 1)
 +#define KEYWORD_EXECUTE_HANDLER          "execute_handler "
 +#define KEYWORD_DENIED_EXECUTE_HANDLER   "denied_execute_handler "
 +#define KEYWORD_ALLOW_EXECUTE            "allow_executer "
-+
+ 
  #define CCS_AUDITD_MAX_FILES             2
  #define SAVENAME_MAX_HASH                256
- #define PAGE_SIZE                        4096
-@@ -195,17 +206,19 @@
+@@ -137,12 +120,12 @@
+ 
+ struct path_info {
+ 	const char *name;
+-	u32 hash;        /* = full_name_hash(name, strlen(name)) */
+-	u16 total_len;   /* = strlen(name)                       */
+-	u16 const_len;   /* = const_part_length(name)            */
+-	u8 is_dir;       /* = strendswith(name, "/")             */
+-	u8 is_patterned; /* = PathContainsPattern(name)          */
+-	u16 depth;       /* = PathDepth(name)                    */
++	u32 hash;          /* = full_name_hash(name, strlen(name)) */
++	u16 total_len;     /* = strlen(name)                       */
++	u16 const_len;     /* = const_part_length(name)            */
++	bool is_dir;       /* = strendswith(name, "/")             */
++	bool is_patterned; /* = path_contains_pattern(name)        */
++	u16 depth;         /* = path_depth(name)                   */
+ };
+ 
+ struct path_group_entry {
+@@ -154,7 +137,7 @@
+ struct ip_address_entry {
+ 	u8 min[16];
+ 	u8 max[16];
+-	u8 is_ipv6;
++	bool is_ipv6;
+ };
+ 
+ struct address_group_entry {
+@@ -182,77 +165,110 @@
+ struct domain_initializer_entry {
+ 	const struct path_info *domainname;    /* This may be NULL */
+ 	const struct path_info *program;
+-	unsigned char is_not:1;
+-	unsigned char is_last_name:1;
++	bool is_not;
++	bool is_last_name;
+ };
+ 
+ struct domain_keeper_entry {
+ 	const struct path_info *domainname;
+ 	const struct path_info *program;       /* This may be NULL */
+-	unsigned char is_not:1;
+-	unsigned char is_last_name:1;
++	bool is_not;
++	bool is_last_name;
+ };
  
  struct domain_info {
  	const struct path_info *domainname;
@@ -77,15 +156,21 @@ Index: ccstools.src/ccstools.h
 -	unsigned char is_domain_keeper:1;
 -	unsigned char is_domain_unreachable:1;
 -	unsigned char is_domain_deleted:1;
-+	unsigned char is_dis:1; /* domain initializer source */
-+	unsigned char is_dit:1; /* domain initializer target */
-+	unsigned char is_dk:1;  /* domain keeper */
-+	unsigned char is_du:1;  /* unreachable domain */
-+	unsigned char is_dd:1;  /* deleted domain */
++	bool is_dis; /* domain initializer source */
++	bool is_dit; /* domain initializer target */
++	bool is_dk;  /* domain keeper */
++	bool is_du;  /* unreachable domain */
++	bool is_dd;  /* deleted domain */
  };
  
  struct task_entry {
-@@ -218,41 +231,73 @@
+ 	pid_t pid;
+ 	pid_t ppid;
+-	u8 done;
++	bool done;
+ };
+ 
+ /***** STRUCTURES DEFINITION END *****/
  
  /***** PROTOTYPES DEFINITION START *****/
  
@@ -98,17 +183,18 @@ Index: ccstools.src/ccstools.h
 +bool is_domain_def(const unsigned char *domainname);
 +bool is_correct_domain(const unsigned char *domainname);
  void fprintf_encoded(FILE *fp, const char *pathname);
- int decode(const char *ascii, char *bin);
+-int decode(const char *ascii, char *bin);
 -void RemoveHeader(char *line, const int len);
 -int IsCorrectPath(const char *filename, const int start_type, const int pattern_type, const int end_type);
 -int FileMatchesToPattern(const char *filename, const char *filename_end, const char *pattern, const char *pattern_end);
-+void remove_header(char *line, const int len);
++bool decode(const char *ascii, char *bin);
 +bool is_correct_path(const char *filename, const s8 start_type,
 +		     const s8 pattern_type, const s8 end_type);
 +bool file_matches_pattern(const char *filename, const char *filename_end,
 +			  const char *pattern, const char *pattern_end);
  int string_compare(const void *a, const void *b);
- int pathcmp(const struct path_info *a, const struct path_info *b);
+-int pathcmp(const struct path_info *a, const struct path_info *b);
++bool pathcmp(const struct path_info *a, const struct path_info *b);
  void fill_path_info(struct path_info *ptr);
 -const struct path_info *SaveName(const char *name);
 +const struct path_info *savename(const char *name);
@@ -174,14 +260,14 @@ Index: ccstools.src/ccstools.h
  	*proc_policy_reject_log,
 Index: ccstools.src/ccs-queryd.c
 ===================================================================
---- ccstools.src/ccs-queryd.c	(リビジョン 1537)
-+++ ccstools.src/ccs-queryd.c	(作業コピー)
+--- ccstools.src/ccs-queryd.c	(revision 1551)
++++ ccstools.src/ccs-queryd.c	(working copy)
 @@ -5,12 +5,13 @@
   *
   * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.6.2   2008/06/25
-+ * Version: 1.6.4+   2008/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  #include "ccstools.h"
@@ -192,7 +278,7 @@ Index: ccstools.src/ccs-queryd.c
  	FILE *fp_in = fopen(proc_policy_exception_policy, "r");
  	char **pathnames = NULL;
  	int pathnames_len = 0;
-@@ -22,14 +23,20 @@
+@@ -22,18 +23,24 @@
  	}
  	while (fgets(buffer, sizeof(buffer) - 1, fp_in)) {
  		char *cp = strchr(buffer, '\n');
@@ -219,6 +305,11 @@ Index: ccstools.src/ccs-queryd.c
  		pathnames_len++;
  	}
  	fclose(fp_in);
+-	while (1) {
++	while (true) {
+ 		char buffer[16384];
+ 		struct stat64 buf;
+ 		static time_t last_modified = 0;
 @@ -42,38 +49,53 @@
  		sleep(1);
  		for (i = 0; i < pathnames_len; i++) {
@@ -287,7 +378,7 @@ Index: ccstools.src/ccs-queryd.c
  				fprintf(fp_out, "+");
  				fprintf_encoded(fp_out, pathnames[i]);
  				fprintf(fp_out, "\n");
-@@ -84,55 +106,276 @@
+@@ -84,55 +106,277 @@
  	}
  }
  
@@ -339,7 +430,8 @@ Index: ccstools.src/ccs-queryd.c
 +	       pathname + 1, (pathname[0] == '-') ?
 +	       "deleted. Delete from" : "created. Append to");
  	refresh();
- 	while (1) {
+-	while (1) {
++	while (true) {
  		c = getch2();
 -		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n') break;
 +		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
@@ -356,10 +448,16 @@ Index: ccstools.src/ccs-queryd.c
  		fprintf(fp, KEYWORD_ALLOW_READ "%s\n", pathname + 1);
  		fflush(fp);
  	}
+-	printw("\n"); refresh();
 +	printw("\n");
 +	refresh();
-+}
-+
+ }
+ 
+-int ccsqueryd_main(int argc, char *argv[]) {
+-	const int domain_policy_fd = open(proc_policy_domain_policy, O_WRONLY);
+-	static const int max_readline_history = 20;
+-	static const char **readline_history = NULL;
+-	static int readline_history_count = 0;
 +static int domain_policy_fd = EOF;
 +static const int max_readline_history = 20;
 +static const char **readline_history = NULL;
@@ -408,7 +506,7 @@ Index: ccstools.src/ccs-queryd.c
 +		goto not_domain_query;
 +	printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o):");
 +	refresh();
-+	while (1) {
++	while (true) {
 +		c = getch2();
 +		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
 +		    c == 'A' || c == 'a')
@@ -461,7 +559,7 @@ Index: ccstools.src/ccs-queryd.c
 +not_domain_query:
 +	printw("Allow? ('Y'es/'N'o):");
 +	refresh();
-+	while (1) {
++	while (true) {
 +		c = getch2();
 +		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
 +			break;
@@ -505,7 +603,7 @@ Index: ccstools.src/ccs-queryd.c
 +	printw("%s", cp);
 +	printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o):");
 +	refresh();
-+	while (1) {
++	while (true) {
 +		c = getch2();
 +		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
 +		    c == 'A' || c == 'a')
@@ -530,7 +628,8 @@ Index: ccstools.src/ccs-queryd.c
 +	line = simple_readline(y, 0, "Enter new entry> ", readline_history,
 +			       readline_history_count, 4000, 8);
 +	scrollok(stdscr, 1);
- 	printw("\n"); refresh();
++	printw("\n");
++	refresh();
 +	if (!line || !*line) {
 +		printw("None added.\n");
 +		goto not_append;
@@ -559,7 +658,7 @@ Index: ccstools.src/ccs-queryd.c
 +	printw("%s", buffer);
 +	printw("Allow? ('Y'es/'N'o):");
 +	refresh();
-+	while (1) {
++	while (true) {
 +		c = getch2();
 +		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
 +			break;
@@ -567,13 +666,8 @@ Index: ccstools.src/ccs-queryd.c
 +	}
 +	printw("%c\n", c);
 +	goto write_answer;
- }
- 
--int ccsqueryd_main(int argc, char *argv[]) {
--	const int domain_policy_fd = open(proc_policy_domain_policy, O_WRONLY);
--	static const int max_readline_history = 20;
--	static const char **readline_history = NULL;
--	static int readline_history_count = 0;
++}
++
 +int ccsqueryd_main(int argc, char *argv[])
 +{
 +	domain_policy_fd = open(proc_policy_domain_policy, O_WRONLY);
@@ -584,7 +678,7 @@ Index: ccstools.src/ccs-queryd.c
  	if (!strcmp(argv[1], "--no-update")) {
  		check_update = GLOBALLY_READABLE_FILES_UPDATE_NONE;
  		goto ok;
-@@ -143,18 +386,24 @@
+@@ -143,18 +387,24 @@
  	}
  	printf("Usage: %s [--no-update|--ask-update]\n\n", argv[0]);
  	printf("This program is used for granting access requests manually.\n");
@@ -614,7 +708,7 @@ Index: ccstools.src/ccs-queryd.c
  		return 1;
  	}
  	if (check_update) {
-@@ -170,7 +419,8 @@
+@@ -170,7 +420,8 @@
  			fprintf(stderr, "Can't fork().\n");
  			return 1;
  		}
@@ -624,7 +718,7 @@ Index: ccstools.src/ccs-queryd.c
  	}
  	readline_history = malloc(max_readline_history * sizeof(const char *));
  	write(query_fd, "\n", 1);
-@@ -180,35 +430,46 @@
+@@ -180,198 +431,62 @@
  	nonl();
  	intrflush(stdscr, FALSE);
  	keypad(stdscr, TRUE);
@@ -632,8 +726,10 @@ Index: ccstools.src/ccs-queryd.c
 +	clear();
 +	refresh();
  	scrollok(stdscr, 1);
- 	while (1) {
- 		static int first = 1;
+-	while (1) {
+-		static int first = 1;
++	while (true) {
++		static bool first = true;
  		static unsigned int prev_serial = 0;
 -		static const int buffer_len = 32768;
 -		static char *buffer = NULL, *prev_buffer = NULL;
@@ -688,8 +784,10 @@ Index: ccstools.src/ccs-queryd.c
  		if (!first && prev_serial == serial) {
  			sleep(1);
  			write(query_fd, "\n", 1);
-@@ -217,161 +478,14 @@
- 		first = 0;
+ 			continue;
+ 		}
+-		first = 0;
++		first = false;
  		prev_serial = serial;
  		timeout(1000);
 -		if (strncmp(buffer, "#timestamp=", 11) == 0) {
@@ -858,8 +956,8 @@ Index: ccstools.src/ccs-queryd.c
  	return 0;
 Index: ccstools.src/ccs-auditd.c
 ===================================================================
---- ccstools.src/ccs-auditd.c	(リビジョン 1537)
-+++ ccstools.src/ccs-auditd.c	(作業コピー)
+--- ccstools.src/ccs-auditd.c	(revision 1551)
++++ ccstools.src/ccs-auditd.c	(working copy)
 @@ -3,40 +3,51 @@
   *
   * TOMOYO Linux's utilities.
@@ -868,7 +966,7 @@ Index: ccstools.src/ccs-auditd.c
 + * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.5.0   2007/09/20
-+ * Version: 1.6.4+   2007/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  #include "ccstools.h"
@@ -933,7 +1031,7 @@ Index: ccstools.src/ccs-auditd.c
  	case 0:
  		break;
  	case -1:
-@@ -62,11 +73,15 @@
+@@ -62,43 +73,69 @@
  		fprintf(stderr, "Can't chdir()\n");
  		return 1;
  	}
@@ -952,7 +1050,10 @@ Index: ccstools.src/ccs-auditd.c
  			return 1;
  		}
  	}
-@@ -76,29 +91,51 @@
+ 	syslog(LOG_WARNING, "Started.\n");
+-	while (1) {
++	while (true) {
+ 		static const int buffer_len = 16384;
  		static char *buffer = NULL;
  		char timestamp[128];
  		fd_set rfds;
@@ -1029,8 +1130,8 @@ Index: ccstools.src/ccs-auditd.c
  	return 0;
 Index: ccstools.src/ld-watch.c
 ===================================================================
---- ccstools.src/ld-watch.c	(リビジョン 1537)
-+++ ccstools.src/ld-watch.c	(作業コピー)
+--- ccstools.src/ld-watch.c	(revision 1551)
++++ ccstools.src/ld-watch.c	(working copy)
 @@ -3,102 +3,124 @@
   *
   * TOMOYO Linux's utilities.
@@ -1039,7 +1140,7 @@ Index: ccstools.src/ld-watch.c
 + * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.5.0   2007/09/20
-+ * Version: 1.6.4+   2008/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  #include "ccstools.h"
@@ -1153,9 +1254,10 @@ Index: ccstools.src/ld-watch.c
  		fprintf(stderr, "Can't open policy file.\n");
  		exit(1);
  	}
- 	while (1) {
+-	while (1) {
 -		struct stat64 buf;
 -		static time_t last_modified = 0;
++	while (true) {
  		int i;
 -		if (stat64("/etc/ld.so.cache", &buf) == 0 && buf.st_mtime != last_modified) {
 -			FILE *fp_ldconfig;
@@ -1249,14 +1351,14 @@ Index: ccstools.src/ld-watch.c
  }
 Index: ccstools.src/readline.c
 ===================================================================
---- ccstools.src/readline.c	(リビジョン 1537)
-+++ ccstools.src/readline.c	(作業コピー)
+--- ccstools.src/readline.c	(revision 1551)
++++ ccstools.src/readline.c	(working copy)
 @@ -5,33 +5,62 @@
   *
   * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.6.3   2008/07/15
-+ * Version: 1.6.4+   2008/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  #include "ccstools.h"
@@ -1395,12 +1497,14 @@ Index: ccstools.src/readline.c
  		tmp_buffer = tmp;
  		memset(buffer, 0, max_length);
  		memset(tmp_buffer, 0, max_length);
-@@ -99,8 +144,12 @@
+@@ -98,9 +143,13 @@
+ 		buffer_len = strlen(buffer);
  		ungetch(KEY_END);
  	}
- 	while (1) {
+-	while (1) {
 -		int window_width, window_height;
 -		int c, x, y, i;
++	while (true) {
 +		int window_width;
 +		int window_height;
 +		int c;
@@ -1569,8 +1673,8 @@ Index: ccstools.src/readline.c
  }
 Index: ccstools.src/setlevel.c
 ===================================================================
---- ccstools.src/setlevel.c	(リビジョン 1537)
-+++ ccstools.src/setlevel.c	(作業コピー)
+--- ccstools.src/setlevel.c	(revision 1551)
++++ ccstools.src/setlevel.c	(working copy)
 @@ -3,31 +3,37 @@
   *
   * TOMOYO Linux's utilities.
@@ -1579,7 +1683,7 @@ Index: ccstools.src/setlevel.c
 + * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.5.1   2007/10/19
-+ * Version: 1.6.4+   2008/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  #include "ccstools.h"
@@ -1638,14 +1742,14 @@ Index: ccstools.src/setlevel.c
  			}
 Index: ccstools.src/editpolicy.c
 ===================================================================
---- ccstools.src/editpolicy.c	(リビジョン 1537)
-+++ ccstools.src/editpolicy.c	(作業コピー)
+--- ccstools.src/editpolicy.c	(revision 1551)
++++ ccstools.src/editpolicy.c	(working copy)
 @@ -5,63 +5,76 @@
   *
   * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.6.4+   2008/09/04
-+ * Version: 1.6.4+   2008/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  #include "ccstools.h"
@@ -2003,8 +2107,8 @@ Index: ccstools.src/editpolicy.c
  }
  
 -static int FindDomain(const char *domainname0, const int is_domain_initializer_source, const int is_domain_deleted) {
-+static int find_domain(const char *domainname0, const int is_dis,
-+		       const int is_dd)
++static int find_domain(const char *domainname0, const bool is_dis,
++		       const bool is_dd)
 +{
  	int i;
  	struct path_info domainname;
@@ -2021,8 +2125,8 @@ Index: ccstools.src/editpolicy.c
  }
  
 -static int FindOrAssignNewDomain(const char *domainname, const int is_domain_initializer_source, const int is_domain_deleted) {
-+static int find_or_assign_new_domain(const char *domainname, const int is_dis,
-+				     const int is_dd)
++static int find_or_assign_new_domain(const char *domainname, const bool is_dis,
++				     const bool is_dd)
 +{
  	const struct path_info *saved_domainname;
 -	int index;
@@ -2132,35 +2236,35 @@ Index: ccstools.src/editpolicy.c
  
 -static int IsKeeperDomain(const int index) {
 -	return domain_list[index].is_domain_keeper;
-+static int is_keeper_domain(const int index)
++static bool is_keeper_domain(const int index)
 +{
 +	return domain_list[index].is_dk;
  }
  
 -static int IsInitializerSource(const int index) {
 -	return domain_list[index].is_domain_initializer_source;
-+static int is_initializer_source(const int index)
++static bool is_initializer_source(const int index)
 +{
 +	return domain_list[index].is_dis;
  }
  
 -static int IsInitializerTarget(const int index) {
 -	return domain_list[index].is_domain_initializer_target;
-+static int is_initializer_target(const int index)
++static bool is_initializer_target(const int index)
 +{
 +	return domain_list[index].is_dit;
  }
  
 -static int IsDomainUnreachable(const int index) {
 -	return domain_list[index].is_domain_unreachable;
-+static int is_domain_unreachable(const int index)
++static bool is_domain_unreachable(const int index)
 +{
 +	return domain_list[index].is_du;
  }
  
 -static int IsDeletedDomain(const int index) {
 -	return domain_list[index].is_domain_deleted;
-+static int is_deleted_domain(const int index)
++static bool is_deleted_domain(const int index)
 +{
 +	return domain_list[index].is_dd;
  }
@@ -2177,7 +2281,7 @@ Index: ccstools.src/editpolicy.c
  			fprintf(stderr, "Can't open %s\n", filename);
  			return;
  		}
-@@ -315,82 +415,299 @@
+@@ -315,82 +415,302 @@
  	index = EOF;
  	get();
  	while (freadline(fp)) {
@@ -2280,7 +2384,7 @@ Index: ccstools.src/editpolicy.c
 +	}
 +
 +	for (proc_index = 0; proc_index < domain_list_count; proc_index++) {
-+		int first = 1;
++		bool first = true;
 +		domainname = domain_list[proc_index].domainname;
 +		swap_domain_list();
 +		base_index = find_domain_by_ptr(domainname);
@@ -2306,7 +2410,7 @@ Index: ccstools.src/editpolicy.c
 +				continue;
 +			if (first)
 +				fprintf(diff_fp, "%s\n\n", domainname->name);
-+			first = 0;
++			first = false;
 +			fprintf(diff_fp, "delete %s\n",
 +				base_string_ptr[i]->name);
 +		}
@@ -2315,7 +2419,7 @@ Index: ccstools.src/editpolicy.c
 +				continue;
 +			if (first)
 +				fprintf(diff_fp, "%s\n\n", domainname->name);
-+			first = 0;
++			first = false;
 +			fprintf(diff_fp, "%s\n", proc_string_ptr[i]->name);
 +		}
 +		if (!first)
@@ -2352,22 +2456,21 @@ Index: ccstools.src/editpolicy.c
 -	int first = 1;
 -	int is_domain_policy = 0;
 -	if ((proc_fp = fopen(src, "r")) == NULL) {
--		fprintf(stderr, "Can't open %s\n", src);
-+static int cat_file(const char *path)
++static bool cat_file(const char *path)
 +{
 +	FILE *fp = fopen(path, "r");
-+	int c;
 +	if (!fp) {
 +		fprintf(stderr, "Can't open %s\n", path);
- 		return 0;
- 	}
--	if ((file_fp = dest ? fopen(dest, "w") : stdout) == NULL) {
--		fprintf(stderr, "Can't open %s\n", dest);
--		fclose(proc_fp);
-+	while ((c = fgetc(fp)) != EOF)
++		return false;
++	}
++	while (true) {
++		int c = fgetc(fp);
++		if (c == EOF)
++			break;
 +		putchar(c);
++	}
 +	fclose(fp);
-+	return 1;
++	return true;
 +}
 +
 +static int move_proc_to_file(const char *src, const char *base,
@@ -2383,9 +2486,13 @@ Index: ccstools.src/editpolicy.c
 +	int i;
 +	proc_fp = fopen(src, "r");
 +	if (!proc_fp) {
-+		fprintf(stderr, "Can't open %s\n", src);
+ 		fprintf(stderr, "Can't open %s\n", src);
  		return 0;
  	}
+-	if ((file_fp = dest ? fopen(dest, "w") : stdout) == NULL) {
+-		fprintf(stderr, "Can't open %s\n", dest);
+-		fclose(proc_fp);
+-		return 0;
 +	if (dest) {
 +		file_fp = fopen(dest, "w");
 +		if (!file_fp) {
@@ -2393,7 +2500,7 @@ Index: ccstools.src/editpolicy.c
 +			fclose(proc_fp);
 +			return 0;
 +		}
-+	}
+ 	}
  	get();
 -	while (freadline(proc_fp)) {
 -		if (first) {
@@ -2475,7 +2582,7 @@ Index: ccstools.src/editpolicy.c
 -	struct stat sb1, sb2;
 -	const int fd1 = open(file1, O_RDONLY), fd2 = open(file2, O_RDONLY);
 -	int len1, len2;
-+static int is_identical_file(const char *file1, const char *file2)
++static bool is_identical_file(const char *file1, const char *file2)
 +{
 +	char buffer1[4096];
 +	char buffer2[4096];
@@ -2501,12 +2608,14 @@ Index: ccstools.src/editpolicy.c
  	} while (len1);
  	close(fd1);
  	close(fd2);
- 	return 1;
+-	return 1;
 - out:
++	return true;
 +out:
  	close(fd1);
  	close(fd2);
- 	return 0;
+-	return 0;
++	return false;
  }
  
 -int savepolicy_main(int argc, char *argv[]) {
@@ -2515,7 +2624,7 @@ Index: ccstools.src/editpolicy.c
  	int remount_root = 0;
  	char filename[1024];
  	int write_to_stdout = 0;
-@@ -403,13 +720,18 @@
+@@ -403,13 +723,18 @@
  	time_t now = time(NULL);
  	struct tm *tm = localtime(&now);
  	memset(filename, 0, sizeof(filename));
@@ -2537,7 +2646,7 @@ Index: ccstools.src/editpolicy.c
  	} else {
  		int i;
  		for (i = 1; i < argc; i++) {
-@@ -422,27 +744,26 @@
+@@ -422,27 +747,26 @@
  			char *p = strchr(ptr, 'p');
  			char *m = strchr(ptr, 'm');
  			char *i = strchr(ptr, '-');
@@ -2585,7 +2694,7 @@ Index: ccstools.src/editpolicy.c
  		}
  	}
  	if (chdir(disk_policy_dir)) {
-@@ -450,26 +771,53 @@
+@@ -450,26 +774,53 @@
  		return 1;
  	}
  	if (access(".", W_OK) == EOF) {
@@ -2653,7 +2762,7 @@ Index: ccstools.src/editpolicy.c
  				unlink(filename);
  			} else {
  				unlink("system_policy.conf");
-@@ -477,11 +825,18 @@
+@@ -477,11 +828,18 @@
  			}
  		}
  	}
@@ -2676,7 +2785,7 @@ Index: ccstools.src/editpolicy.c
  				unlink(filename);
  			} else {
  				unlink("exception_policy.conf");
-@@ -489,11 +844,18 @@
+@@ -489,11 +847,18 @@
  			}
  		}
  	}
@@ -2699,7 +2808,7 @@ Index: ccstools.src/editpolicy.c
  				unlink(filename);
  			} else {
  				unlink("domain_policy.conf");
-@@ -501,54 +863,93 @@
+@@ -501,54 +866,93 @@
  			}
  		}
  	}
@@ -2809,7 +2918,7 @@ Index: ccstools.src/editpolicy.c
  	int new_index;
  	int old_index;
  	struct path_info reserved;
-@@ -559,42 +960,61 @@
+@@ -559,42 +963,61 @@
  	}
  	reserved.name = "";
  	fill_path_info(&reserved);
@@ -2894,7 +3003,7 @@ Index: ccstools.src/editpolicy.c
  	int read_from_stdin = 0;
  	int load_profile = 0;
  	int load_manager = 0;
-@@ -603,7 +1023,8 @@
+@@ -603,7 +1026,8 @@
  	int load_domain_policy = 0;
  	int refresh_policy = 0;
  	if (access(proc_policy_dir, F_OK)) {
@@ -2904,7 +3013,7 @@ Index: ccstools.src/editpolicy.c
  		return 0;
  	}
  	if (argc == 1) {
-@@ -620,27 +1041,26 @@
+@@ -620,27 +1044,26 @@
  			char *p = strchr(ptr, 'p');
  			char *m = strchr(ptr, 'm');
  			char *i = strchr(ptr, '-');
@@ -2952,7 +3061,7 @@ Index: ccstools.src/editpolicy.c
  		}
  	}
  	if (chdir(disk_policy_dir)) {
-@@ -648,106 +1068,318 @@
+@@ -648,106 +1071,318 @@
  		return 1;
  	}
  
@@ -3304,7 +3413,7 @@ Index: ccstools.src/editpolicy.c
  	memset(&msg, 0, sizeof(msg));
  	msg.msg_iov = &iov;
  	msg.msg_iovlen = 1;
-@@ -755,13 +1387,15 @@
+@@ -755,13 +1390,15 @@
  	msg.msg_controllen = sizeof(cmsg_buf);
  	cmsg->cmsg_level = SOL_SOCKET;
  	cmsg->cmsg_type = SCM_RIGHTS;
@@ -3322,7 +3431,7 @@ Index: ccstools.src/editpolicy.c
  	if (offline_mode) {
  		char request[1024];
  		int fd[2];
-@@ -770,20 +1404,26 @@
+@@ -770,20 +1407,26 @@
  			fprintf(stderr, "socketpair()\n");
  			exit(1);
  		}
@@ -3355,7 +3464,7 @@ Index: ccstools.src/editpolicy.c
  	if (offline_mode) {
  		char request[1024];
  		int fd[2];
-@@ -791,172 +1431,245 @@
+@@ -791,172 +1434,245 @@
  			fprintf(stderr, "socketpair()\n");
  			exit(1);
  		}
@@ -3381,7 +3490,7 @@ Index: ccstools.src/editpolicy.c
  
 -static char *map_perm_keyword(const u8 forward, const char *line);
 -static int string_acl_compare(const void *a, const void *b);
-+static u8 find_directive(const u8 forward, char *line);
++static u8 find_directive(const bool forward, char *line);
 +static int generic_acl_compare(const void *a, const void *b);
  
 -static void ReadGenericPolicy(void) {
@@ -3434,7 +3543,7 @@ Index: ccstools.src/editpolicy.c
 +				continue;
  		}
 -		fclose(fp);
-+		directive = find_directive(1, shared_buffer);
++		directive = find_directive(true, shared_buffer);
 +		if (directive == (u8) EOF)
 +			continue;
 +		generic_acl_list = realloc(generic_acl_list,
@@ -3460,19 +3569,21 @@ Index: ccstools.src/editpolicy.c
  
 -static int AddDomainInitializerEntry(const char *domainname, const char *program, const int is_not) {
 +static int add_domain_initializer_entry(const char *domainname,
-+					const char *program, const int is_not)
++					const char *program, const bool is_not)
 +{
 +	void *vp;
  	struct domain_initializer_entry *ptr;
- 	int is_last_name = 0;
+-	int is_last_name = 0;
 -	if (!IsCorrectPath(program, 1, 0, -1)) return -EINVAL;
++	bool is_last_name = false;
 +	if (!is_correct_path(program, 1, 0, -1))
 +		return -EINVAL;
  	if (domainname) {
 -		if (IsCorrectPath(domainname, 1, -1, -1)) {
-+		if (is_correct_path(domainname, 1, -1, -1))
- 			is_last_name = 1;
+-			is_last_name = 1;
 -		} else if (!IsCorrectDomain(domainname)) {
++		if (is_correct_path(domainname, 1, -1, -1))
++			is_last_name = true;
 +		else if (!is_correct_domain(domainname))
  			return -EINVAL;
 -		}
@@ -3502,7 +3613,7 @@ Index: ccstools.src/editpolicy.c
  }
  
 -static int AddDomainInitializerPolicy(char *data, const int is_not) {
-+static int add_domain_initializer_policy(char *data, const int is_not)
++static int add_domain_initializer_policy(char *data, const bool is_not)
 +{
  	char *cp = strstr(data, " from ");
  	if (cp) {
@@ -3517,14 +3628,16 @@ Index: ccstools.src/editpolicy.c
  
 -static int AddDomainKeeperEntry(const char *domainname, const char *program, const int is_not) {
 +static int add_domain_keeper_entry(const char *domainname, const char *program,
-+				   const int is_not)
++				   const bool is_not)
 +{
  	struct domain_keeper_entry *ptr;
- 	int is_last_name = 0;
+-	int is_last_name = 0;
 -	if (IsCorrectPath(domainname, 1, -1, -1)) {
-+	if (is_correct_path(domainname, 1, -1, -1))
- 		is_last_name = 1;
+-		is_last_name = 1;
 -	} else if (!IsCorrectDomain(domainname)) {
++	bool is_last_name = false;
++	if (is_correct_path(domainname, 1, -1, -1))
++		is_last_name = true;
 +	else if (!is_correct_domain(domainname))
  		return -EINVAL;
 -	}
@@ -3555,7 +3668,7 @@ Index: ccstools.src/editpolicy.c
  }
  
 -static int AddDomainKeeperPolicy(char *data, const int is_not) {
-+static int add_domain_keeper_policy(char *data, const int is_not)
++static int add_domain_keeper_policy(char *data, const bool is_not)
 +{
  	char *cp = strstr(data, " from ");
  	if (cp) {
@@ -3572,7 +3685,7 @@ Index: ccstools.src/editpolicy.c
 -	const struct path_info *saved_group_name, *saved_member_name;
 -	int i, j;
 +static int add_path_group_entry(const char *group_name, const char *member_name,
-+				const int is_delete)
++				const bool is_delete)
 +{
 +	const struct path_info *saved_group_name;
 +	const struct path_info *saved_member_name;
@@ -3641,7 +3754,7 @@ Index: ccstools.src/editpolicy.c
  }
  
 -static int AddPathGroupPolicy(char *data, const int is_delete) {
-+static int add_path_group_policy(char *data, const int is_delete)
++static int add_path_group_policy(char *data, const bool is_delete)
 +{
  	char *cp = strchr(data, ' ');
 -	if (!cp) return -EINVAL;
@@ -3685,7 +3798,7 @@ Index: ccstools.src/editpolicy.c
  	if (i == 4 || i == 8) {
  		for (j = 0; j < 4; j++) {
  			entry->min[j] = (u8) min[j];
-@@ -965,13 +1678,19 @@
+@@ -965,247 +1681,352 @@
  		return 0;
  	}
  	i = sscanf(address, "%X:%X:%X:%X:%X:%X:%X:%X-%X:%X:%X:%X:%X:%X:%X:%X",
@@ -3708,15 +3821,17 @@ Index: ccstools.src/editpolicy.c
 +			entry->max[j * 2] = (u8) (max[j] >> 8);
 +			entry->max[j * 2 + 1] = (u8) max[j];
  		}
- 		entry->is_ipv6 = 1;
+-		entry->is_ipv6 = 1;
++		entry->is_ipv6 = true;
  		return 0;
-@@ -979,233 +1698,330 @@
+ 	}
  	return -EINVAL;
  }
  
 -static int AddAddressGroupEntry(const char *group_name, const char *member_name, const int is_delete) {
 +static int add_address_group_entry(const char *group_name,
-+				   const char *member_name, const int is_delete)
++				   const char *member_name,
++				   const bool is_delete)
 +{
  	const struct path_info *saved_group_name;
 -	int i, j;
@@ -3788,7 +3903,7 @@ Index: ccstools.src/editpolicy.c
  }
  
 -static int AddAddressGroupPolicy(char *data, const int is_delete) {
-+static int add_address_group_policy(char *data, const int is_delete)
++static int add_address_group_policy(char *data, const bool is_delete)
 +{
  	char *cp = strchr(data, ' ');
 -	if (!cp) return -EINVAL;
@@ -3839,7 +3954,7 @@ Index: ccstools.src/editpolicy.c
 +	const struct domain_info *a0 = a;
 +	const struct domain_info *b0 = b;
 +	const int k = strcmp(a0->domainname->name, b0->domainname->name);
-+	if ((k > 0) || (!k && a0->is_dis < b0->is_dis))
++	if ((k > 0) || (!k && !a0->is_dis && b0->is_dis))
 +		return 1;
  	return k;
  }
@@ -3910,7 +4025,7 @@ Index: ccstools.src/editpolicy.c
 +	}
 +	put();
 +	fclose(fp);
-+ no_exception:
++no_exception:
 +
 +	/* Load all domain list. */
 +	fp = open_read(DOMAIN_POLICY_FILE);
@@ -3962,7 +4077,6 @@ Index: ccstools.src/editpolicy.c
 +
 +	/* Find unreachable domains. */
 +	for (index = 0; index < max_index; index++) {
-+		char *cp;
  		get();
 -		while (freadline(fp)) {
 -			char *cp, *cp2;
@@ -3982,36 +4096,36 @@ Index: ccstools.src/editpolicy.c
 +		memset(shared_buffer, 0, shared_buffer_len);
 +		snprintf(shared_buffer, shared_buffer_len - 1, "%s",
 +			 domain_name(index));
-+		while ((cp = strrchr(shared_buffer, ' ')) != NULL) {
-+			const struct domain_initializer_entry
-+				*domain_initializer;
-+			const struct domain_keeper_entry *domain_keeper;
++		while (true) {
++			const struct domain_initializer_entry *d_i;
++			const struct domain_keeper_entry *d_k;
 +			struct path_info parent;
++			char *cp = strrchr(shared_buffer, ' ');
++			if (!cp)
++				break;
 +			*cp++ = '\0';
 +			parent.name = shared_buffer;
 +			fill_path_info(&parent);
-+			domain_initializer = is_domain_initializer(&parent, cp);
-+			if (domain_initializer) {
++			d_i = is_domain_initializer(&parent, cp);
++			if (d_i) {
 +				/* Initializer under <kernel> is reachable. */
 +				if (parent.total_len == ROOT_NAME_LEN)
 +					break;
-+				domain_list[index].domain_initializer
-+					= domain_initializer;
++				domain_list[index].domain_initializer = d_i;
 +				domain_list[index].domain_keeper = NULL;
 +				continue;
  			}
-+			domain_keeper = is_domain_keeper(&parent, cp);
-+			if (domain_keeper) {
++			d_k = is_domain_keeper(&parent, cp);
++			if (d_k) {
 +				domain_list[index].domain_initializer = NULL;
-+				domain_list[index].domain_keeper
-+					= domain_keeper;
++				domain_list[index].domain_keeper = d_k;
 +			}
  		}
  		put();
 -		fclose(fp);
 +		if (domain_list[index].domain_initializer ||
 +		    domain_list[index].domain_keeper)
-+			domain_list[index].is_du = 1;
++			domain_list[index].is_du = true;
  	}
 -	
 -	{
@@ -4054,7 +4168,7 @@ Index: ccstools.src/editpolicy.c
 +				continue;
 +			if (strcmp(ptr->program->name, cp + 1))
 +				continue;
-+			domain_list[index].is_dit = 1;
++			domain_list[index].is_dit = true;
  		}
 -		
 -		// Find domain initializer target domains.
@@ -4080,13 +4194,13 @@ Index: ccstools.src/editpolicy.c
 +				if (pathcmp(ptr->domainname,
 +					    domain_list[index].domainname))
 +					continue;
-+				domain_list[index].is_dk = 1;
++				domain_list[index].is_dk = true;
 +				continue;
  			}
 +			cp = strrchr(domain_list[index].domainname->name, ' ');
 +			if (!cp || strcmp(ptr->domainname->name, cp + 1))
 +				continue;
-+			domain_list[index].is_dk = 1;
++			domain_list[index].is_dk = true;
  		}
 +	}
  
@@ -4164,12 +4278,14 @@ Index: ccstools.src/editpolicy.c
 -			put();
 +	/* Create missing parent domains. */
 +	for (index = 0; index < max_index; index++) {
-+		char *cp;
 +		get();
 +		memset(shared_buffer, 0, shared_buffer_len);
 +		snprintf(shared_buffer, shared_buffer_len - 1, "%s",
 +			 domain_name(index));
-+		while ((cp = strrchr(shared_buffer, ' ')) != NULL) {
++		while (true) {
++			char *cp = strrchr(shared_buffer, ' ');
++			if (!cp)
++				break;
 +			*cp = '\0';
 +			if (find_domain(shared_buffer, 0, 0) != EOF)
 +				continue;
@@ -4202,7 +4318,7 @@ Index: ccstools.src/editpolicy.c
  				domain_list[index].number = -1;
  				unnumbered_domain_count++;
  			} else {
-@@ -1215,14 +2031,18 @@
+@@ -1215,14 +2036,18 @@
  	}
  
  	domain_list_selected = realloc(domain_list_selected, domain_list_count);
@@ -4225,7 +4341,7 @@ Index: ccstools.src/editpolicy.c
  
  static const int header_lines = 3;
  static int body_lines = 0;
-@@ -1230,516 +2050,729 @@
+@@ -1230,516 +2055,734 @@
  static int max_eat_col[MAXSCREEN];
  static int eat_col = 0;
  static int max_col = 0;
@@ -4250,7 +4366,6 @@ Index: ccstools.src/editpolicy.c
 +	const struct domain_initializer_entry *domain_initializer;
 +	const struct domain_keeper_entry *domain_keeper;
 +	const char *sp;
-+	const char *cp;
 +	const int number = domain_list[index].number;
 +	int redirect_index;
 +	if (number >= 0)
@@ -4265,7 +4380,10 @@ Index: ccstools.src/editpolicy.c
 +		mvprintw(header_lines + i, 0, "              ");
 +	tmp_col += 14;
 +	sp = domain_name(index);
-+	while ((cp = strchr(sp, ' ')) != NULL) {
++	while (true) {
++		const char *cp = strchr(sp, ' ');
++		if (!cp)
++			break;
 +		printw("%s", eat("    "));
 +		tmp_col += 4;
 +		sp = cp + 1;
@@ -4807,10 +4925,14 @@ Index: ccstools.src/editpolicy.c
  	arg1->name = data;
  	cp = strstr(data, " if ");
  	if (cp) {
- 		char *cp2;
+-		char *cp2;
 -		while ((cp2 = strstr(cp + 3, " if ")) != NULL) cp = cp2;
-+		while ((cp2 = strstr(cp + 3, " if ")) != NULL)
++		while (true) {
++			char *cp2 = strstr(cp + 3, " if ");
++			if (!cp2)
++				break;
 +			cp = cp2;
++		}
  		*cp++ = '\0';
 -	} else if ((cp = strstr(data, " ; set ")) != NULL) {
 +		goto ok;
@@ -4912,7 +5034,7 @@ Index: ccstools.src/editpolicy.c
 -		a0 += directive_list_len[i];
 -		break;
 +	struct path_group_entry *group;
-+	u8 may_use_pattern = !darg->is_patterned
++	bool may_use_pattern = !darg->is_patterned
 +		&& (directive != DIRECTIVE_1)
 +		&& (directive != DIRECTIVE_3)
 +		&& (directive != DIRECTIVE_5)
@@ -5304,7 +5426,7 @@ Index: ccstools.src/editpolicy.c
  			switch (sscanf(sarg2.name, "%u-%u", &smin, &smax)) {
  			case 1:
  				smax = smin;
-@@ -1756,32 +2789,279 @@
+@@ -1756,33 +2799,280 @@
  			default:
  				continue;
  			}
@@ -5436,13 +5558,13 @@ Index: ccstools.src/editpolicy.c
 +			goto out;
 +		if (current_screen == SCREEN_ACL_LIST)
 +			fprintf(fp, "select %s\n", current_domain);
-+		directive = find_directive(0, line);
++		directive = find_directive(false, line);
 +		if (directive != (u8) EOF)
 +			fprintf(fp, "%s ", directives[directive].original);
 +		fprintf(fp, "%s\n", line);
 +		fclose(fp);
 +	}
-+ out:
++out:
 +	free(line);
 +}
 +
@@ -5484,7 +5606,7 @@ Index: ccstools.src/editpolicy.c
 +		break;
 +	}
 +	goto out;
-+ backward_search:
++backward_search:
 +	for (index = current - 1; index >= 0; index--) {
 +		const char *cp;
 +		if (current_screen == SCREEN_DOMAIN_LIST)
@@ -5496,7 +5618,7 @@ Index: ccstools.src/editpolicy.c
 +		set_cursor_pos(index);
 +		break;
 +	}
-+ out:
++out:
 +	free(line);
 +	show_list();
 +}
@@ -5572,7 +5694,7 @@ Index: ccstools.src/editpolicy.c
 +	       "for scroll.\n\n"
 +	       "Press '?' to escape from this help.\n");
 +	refresh();
-+	while (1) {
++	while (true) {
 +		c = getch2();
 +		if (c == '?' || c == EOF)
 +			break;
@@ -5584,7 +5706,8 @@ Index: ccstools.src/editpolicy.c
 +	static struct readline_data rl;
  	static int saved_current_y[MAXSCREEN];
  	static int saved_current_item_index[MAXSCREEN];
- 	static int first = 1;
+-	static int first = 1;
++	static bool first = true;
  	if (first) {
 -		readline_history = malloc(max_readline_history * sizeof(const char *));
 +		memset(&rl, 0, sizeof(rl));
@@ -5593,12 +5716,14 @@ Index: ccstools.src/editpolicy.c
  		memset(saved_current_y, 0, sizeof(saved_current_y));
 -		memset(saved_current_item_index, 0, sizeof(saved_current_item_index));
 -		memset(search_buffer, 0, sizeof(search_buffer));
+-		first = 0;
 +		memset(saved_current_item_index, 0,
 +		       sizeof(saved_current_item_index));
- 		first = 0;
++		first = false;
  	}
  	if (current_screen == SCREEN_SYSTEM_LIST) {
-@@ -1795,252 +3075,168 @@
+ 		policy_file = SYSTEM_POLICY_FILE;
+@@ -1795,252 +3085,168 @@
  		list_caption = "Domain Policy";
  	} else {
  		policy_file = DOMAIN_POLICY_FILE;
@@ -5628,6 +5753,8 @@ Index: ccstools.src/editpolicy.c
 -		mvprintw(1, 0, "ERROR: %s", last_error); clrtoeol(); refresh();
 -		free(last_error); last_error = NULL;
 -	}	
+-	while (1) {
+-		const int current = GetCurrent();
 +start2:
 +	show_list();
 +	if (rl.last_error && current_screen == SCREEN_DOMAIN_LIST) {
@@ -5637,8 +5764,7 @@ Index: ccstools.src/editpolicy.c
 +		free(rl.last_error);
 +		rl.last_error = NULL;
 +	}
- 	while (1) {
--		const int current = GetCurrent();
++	while (true) {
 +		const int current = get_current();
  		const int c = getch2();
 -		saved_current_item_index[current_screen] = current_item_index[current_screen];
@@ -5962,7 +6088,7 @@ Index: ccstools.src/editpolicy.c
  			goto start2;
  		case KEY_RIGHT:
  			max_eat_col[current_screen]++;
-@@ -2052,63 +3248,49 @@
+@@ -2052,63 +3258,49 @@
  			max_eat_col[current_screen] = max_col;
  			goto start2;
  		case KEY_IC:
@@ -6032,10 +6158,11 @@ Index: ccstools.src/editpolicy.c
 +{
  	get();
 -	FindOrAssignNewDomain(ROOT_NAME, 0, 0);
-+	find_or_assign_new_domain(ROOT_NAME, 0, 0);
- 	while (1) {
+-	while (1) {
 -		static const struct path_info **exception_list = NULL, **system_list = NULL;
 -		static int exception_list_count = 0, system_list_count = 0;
++	find_or_assign_new_domain(ROOT_NAME, 0, 0);
++	while (true) {
 +		static const struct path_info **exception_list = NULL;
 +		static const struct path_info **system_list = NULL;
 +		static int exception_list_count = 0;
@@ -6052,7 +6179,7 @@ Index: ccstools.src/editpolicy.c
  			char cmsg_buf[CMSG_SPACE(sizeof(int))];
  			struct cmsghdr *cmsg = (struct cmsghdr *) cmsg_buf;
  			memset(&msg, 0, sizeof(msg));
-@@ -2123,8 +3305,9 @@
+@@ -2123,8 +3315,9 @@
  				cmsg->cmsg_level == SOL_SOCKET &&
  				cmsg->cmsg_type == SCM_RIGHTS &&
  				cmsg->cmsg_len == CMSG_LEN(sizeof(int))) {
@@ -6064,7 +6191,7 @@ Index: ccstools.src/editpolicy.c
  					close(fd);
  					continue;
  				}
-@@ -2132,98 +3315,144 @@
+@@ -2132,98 +3325,145 @@
  				break;
  			}
  		}
@@ -6145,12 +6272,13 @@ Index: ccstools.src/editpolicy.c
 +			goto not_domain_policy1;
 +		index = EOF;
 +		while (freadline(fp)) {
-+			int is_delete = 0, is_select = 0;
++			bool is_delete = false;
++			bool is_select = false;
 +			unsigned int profile;
 +			if (str_starts(shared_buffer, "delete "))
-+				is_delete = 1;
++				is_delete = true;
 +			else if (str_starts(shared_buffer, "select "))
-+				is_select = 1;
++				is_select = true;
 +			if (!is_domain_def(shared_buffer))
 +				goto not_domain_def;
 +			if (is_delete) {
@@ -6298,11 +6426,35 @@ Index: ccstools.src/editpolicy.c
  		fclose(fp);
  	}
  	put();
-@@ -2232,15 +3461,19 @@
+@@ -2232,15 +3472,43 @@
  
  static void init_keyword_map(void);
  
 -int editpolicy_main(int argc, char *argv[]) {
++static void copy_fd_to_fp(int fd, FILE *fp)
++{
++	char buffer[1024];
++	while (true) {
++		const int len = read(fd, buffer, sizeof(buffer));
++		if (len <= 0)
++			break;
++		fwrite(buffer, len, 1, fp);
++	}	
++}
++
++static bool copy_fp_to_fd(FILE *fp, int fd)
++{
++	char buffer[1024];
++	while (true) {
++		int len = fread(buffer, 1, sizeof(buffer), fp);
++		if (len <= 0)
++			break;
++		if (write(fd, buffer, len) != len)
++			return false;
++	}
++	return true;
++}
++				
 +int editpolicy_main(int argc, char *argv[])
 +{
  	memset(current_y, 0, sizeof(current_y));
@@ -6322,7 +6474,7 @@ Index: ccstools.src/editpolicy.c
  		else {
  			printf("Usage: %s [s|e|d]\n", argv[0]);
  			return 1;
-@@ -2249,14 +3482,18 @@
+@@ -2249,14 +3517,18 @@
  	init_keyword_map();
  	{
  		char *cp = strrchr(argv[0], '/');
@@ -6345,52 +6497,47 @@ Index: ccstools.src/editpolicy.c
  			return 1;
  		}
  		if (socketpair(PF_UNIX, SOCK_STREAM, 0, fd)) {
-@@ -2276,42 +3513,65 @@
+@@ -2276,42 +3548,54 @@
  		close(fd[1]);
  		persistent_fd = fd[0];
  		{
 -			int fd, len;
-+			int fd;
-+			int len;
- 			FILE *fp;
- 			get();
+-			FILE *fp;
+-			get();
 -			if ((fd = open(disk_policy_system_policy, O_RDONLY)) != EOF) {
-+			fd = open(disk_policy_system_policy, O_RDONLY);
-+			if (fd != EOF) {
- 				fp = open_write(SYSTEM_POLICY_FILE);
+-				fp = open_write(SYSTEM_POLICY_FILE);
 -				while ((len = read(fd, shared_buffer, shared_buffer_len)) > 0) fwrite(shared_buffer, len, 1, fp);
 -				fclose(fp); close(fd);
-+				while ((len = read(fd, shared_buffer,
-+						   shared_buffer_len)) > 0)
-+					fwrite(shared_buffer, len, 1, fp);
++			int fd = open(disk_policy_system_policy, O_RDONLY);
++			if (fd != EOF) {
++				FILE *fp = open_write(SYSTEM_POLICY_FILE);
++				copy_fd_to_fp(fd, fp);
 +				fclose(fp);
 +				close(fd);
  			}
 -			if ((fd = open(disk_policy_exception_policy, O_RDONLY)) != EOF) {
-+			fd = open(disk_policy_exception_policy, O_RDONLY);
-+			if (fd != EOF) {
- 				fp = open_write(EXCEPTION_POLICY_FILE);
+-				fp = open_write(EXCEPTION_POLICY_FILE);
 -				while ((len = read(fd, shared_buffer, shared_buffer_len)) > 0) fwrite(shared_buffer, len, 1, fp);
 -				fclose(fp); close(fd);
-+				while ((len = read(fd, shared_buffer,
-+						   shared_buffer_len)) > 0)
-+					fwrite(shared_buffer, len, 1, fp);
++			fd = open(disk_policy_exception_policy, O_RDONLY);
++			if (fd != EOF) {
++				FILE *fp = open_write(EXCEPTION_POLICY_FILE);
++				copy_fd_to_fp(fd, fp);
 +				fclose(fp);
 +				close(fd);
  			}
 -			if ((fd = open(disk_policy_domain_policy, O_RDONLY)) != EOF) {
-+			fd = open(disk_policy_domain_policy, O_RDONLY);
-+			if (fd != EOF) {
- 				fp = open_write(DOMAIN_POLICY_FILE);
+-				fp = open_write(DOMAIN_POLICY_FILE);
 -				while ((len = read(fd, shared_buffer, shared_buffer_len)) > 0) fwrite(shared_buffer, len, 1, fp);
 -				fclose(fp); close(fd);
-+				while ((len = read(fd, shared_buffer,
-+						   shared_buffer_len)) > 0)
-+					fwrite(shared_buffer, len, 1, fp);
++			fd = open(disk_policy_domain_policy, O_RDONLY);
++			if (fd != EOF) {
++				FILE *fp = open_write(DOMAIN_POLICY_FILE);
++				copy_fd_to_fp(fd, fp);
 +				fclose(fp);
 +				close(fd);
  			}
- 			put();
+-			put();
  		}
  	} else {
  		if (chdir(proc_policy_dir)) {
@@ -6427,7 +6574,7 @@ Index: ccstools.src/editpolicy.c
  	cbreak();
  	noecho();
  	nonl();
-@@ -2320,53 +3580,85 @@
+@@ -2320,53 +3604,89 @@
  	getmaxyx(stdscr, window_height, window_width);
  	while (current_screen < MAXSCREEN) {
  		if (!offline_mode) {
@@ -6459,34 +6606,36 @@ Index: ccstools.src/editpolicy.c
  	endwin();
  	if (offline_mode) {
 -		int fd, len;
+-		FILE *fp;
 +		int fd;
-+		int len;
- 		FILE *fp;
  		time_t now = time(NULL);
  		struct tm *tm = localtime(&now);
 -		char filename[1024], buffer[1024];
 +		char filename[1024];
-+		char buffer[1024];
  		memset(filename, 0, sizeof(filename));
 -		snprintf(filename, sizeof(filename) - 1, "system_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 -		if ((fd = open(filename, O_WRONLY | O_CREAT, 0600)) != EOF) {
 -			if ((fp = open_read(SYSTEM_POLICY_FILE)) != NULL) {
 -				while ((len = fread(buffer, 1, sizeof(buffer), fp)) > 0) write(fd, buffer, len);
 -				close(fd); fclose(fp);
+-				unlink(disk_policy_system_policy);
+-				symlink(filename, "system_policy.conf");
 +		snprintf(filename, sizeof(filename) - 1,
 +			 "system_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf",
 +			 tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday,
 +			 tm->tm_hour, tm->tm_min, tm->tm_sec);
-+		fd = open(filename, O_WRONLY | O_CREAT, 0600);
++		fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0600);
 +		if (fd != EOF) {
-+			fp = open_read(SYSTEM_POLICY_FILE);
++			FILE *fp = open_read(SYSTEM_POLICY_FILE);
 +			if (fp) {
-+				while ((len = fread(buffer, 1, sizeof(buffer),
-+						    fp)) > 0)
-+					write(fd, buffer, len);
++				bool success = copy_fp_to_fd(fp, fd);
 +				fclose(fp);
- 				unlink(disk_policy_system_policy);
- 				symlink(filename, "system_policy.conf");
++				if (success) {
++					unlink(disk_policy_system_policy);
++					symlink(filename, "system_policy.conf");
++				} else {
++					unlink(filename);
++				}
  			}
 +			close(fd);
  		}
@@ -6495,20 +6644,25 @@ Index: ccstools.src/editpolicy.c
 -			if ((fp = open_read(EXCEPTION_POLICY_FILE)) != NULL) {
 -				while ((len = fread(buffer, 1, sizeof(buffer), fp)) > 0) write(fd, buffer, len);
 -				close(fd); fclose(fp);
+-				unlink(disk_policy_exception_policy);
+-				symlink(filename, "exception_policy.conf");
 +		snprintf(filename, sizeof(filename) - 1,
 +			 "exception_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf",
 +			 tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday,
 +			 tm->tm_hour, tm->tm_min, tm->tm_sec);
-+		fd = open(filename, O_WRONLY | O_CREAT, 0600);
++		fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0600);
 +		if (fd != EOF) {
-+			fp = open_read(EXCEPTION_POLICY_FILE);
++			FILE *fp = open_read(EXCEPTION_POLICY_FILE);
 +			if (fp) {
-+				while ((len = fread(buffer, 1, sizeof(buffer),
-+						    fp)) > 0)
-+					write(fd, buffer, len);
++				bool success = copy_fp_to_fd(fp, fd);
 +				fclose(fp);
- 				unlink(disk_policy_exception_policy);
- 				symlink(filename, "exception_policy.conf");
++				if (success) {
++					unlink(disk_policy_exception_policy);
++					symlink(filename,
++						"exception_policy.conf");
++				} else {
++					unlink(filename);
++				}
  			}
 +			close(fd);
  		}
@@ -6517,26 +6671,30 @@ Index: ccstools.src/editpolicy.c
 -			if ((fp = open_read(DOMAIN_POLICY_FILE)) != NULL) {
 -				while ((len = fread(buffer, 1, sizeof(buffer), fp)) > 0) write(fd, buffer, len);
 -				close(fd); fclose(fp);
+-				unlink(disk_policy_domain_policy);
+-				symlink(filename, "domain_policy.conf");
 +		snprintf(filename, sizeof(filename) - 1,
 +			 "domain_policy.%02d-%02d-%02d.%02d:%02d:%02d.conf",
 +			 tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday,
 +			 tm->tm_hour, tm->tm_min, tm->tm_sec);
-+		fd = open(filename, O_WRONLY | O_CREAT, 0600);
++		fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0600);
 +		if (fd != EOF) {
-+			fp = open_read(DOMAIN_POLICY_FILE);
++			FILE *fp = open_read(DOMAIN_POLICY_FILE);
 +			if (fp) {
-+				while ((len = fread(buffer, 1, sizeof(buffer),
-+						    fp)) > 0)
-+					write(fd, buffer, len);
++				bool success = copy_fp_to_fd(fp, fd);
 +				fclose(fp);
- 				unlink(disk_policy_domain_policy);
- 				symlink(filename, "domain_policy.conf");
++				if (success) {
++					unlink(disk_policy_domain_policy);
++					symlink(filename, "domain_policy.conf");
++				} else {
++					unlink(filename);
++				}
  			}
 +			close(fd);
  		}
  	}
  	return 0;
-@@ -2374,77 +3666,71 @@
+@@ -2374,77 +3694,71 @@
  
  /* keyword mapping */
  
@@ -6547,7 +6705,7 @@ Index: ccstools.src/editpolicy.c
 -		memmove(cp, s, len);
 -		cp[len] = ' ';
 -		cp[len + 1] = '\0'; 
-+static u8 find_directive(const u8 forward, char *line)
++static u8 find_directive(const bool forward, char *line)
 +{
 +	u8 i;
 +	for (i = 0; i < MAX_DIRECTIVE_INDEX; i++) {
@@ -6658,7 +6816,7 @@ Index: ccstools.src/editpolicy.c
  	fclose(fp);
 -	for (i = 0; i < max_optimize_directive_index; i++) {
 -		directive_list_len[i] = strlen(directive_list[i]);
-+ use_default:
++use_default:
 +	for (i = 0; i < MAX_DIRECTIVE_INDEX; i++) {
 +		if (!directives[i].alias)
 +			directives[i].alias = directives[i].original;
@@ -6669,8 +6827,8 @@ Index: ccstools.src/editpolicy.c
  
 Index: ccstools.src/patternize.c
 ===================================================================
---- ccstools.src/patternize.c	(リビジョン 1537)
-+++ ccstools.src/patternize.c	(作業コピー)
+--- ccstools.src/patternize.c	(revision 1551)
++++ ccstools.src/patternize.c	(working copy)
 @@ -3,9 +3,9 @@
   *
   * TOMOYO Linux's utilities.
@@ -6679,7 +6837,7 @@ Index: ccstools.src/patternize.c
 + * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.4.1   2007/06/05
-+ * Version: 1.6.4+   2008/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  #include "ccstools.h"
@@ -6698,7 +6856,7 @@ Index: ccstools.src/patternize.c
 +		char c;
 +		char d;
 +		char e;
-+		while (1) {
++		while (true) {
 +			c = *filename++;
 +			if (!c)
 +				break;
@@ -6725,7 +6883,7 @@ Index: ccstools.src/patternize.c
  			}
  			return 1;
  		}
-@@ -35,77 +49,64 @@
+@@ -35,78 +49,68 @@
  	return 0;
  }
  
@@ -6780,12 +6938,16 @@ Index: ccstools.src/patternize.c
 -		int first = 1;
 -		int check_second = 0;
 -		int disabled = 0;
+-		while ((cp = strsep(&sp, " ")) != NULL) {
+-		check:
 +		char *sp = shared_buffer;
 +		const char *cp;
-+		bool first = 1;
-+		bool disabled = 0;
- 		while ((cp = strsep(&sp, " ")) != NULL) {
--		check:
++		bool first = true;
++		bool disabled = false;
++		while (true) {
++			cp = strsep(&sp, " ");
++			if (!cp)
++				break;
  			if (first) {
 -				unsigned int perm;
 -				if (sscanf(cp, "%u", &perm) == 1 && (perm & 1) == 1) {
@@ -6795,12 +6957,13 @@ Index: ccstools.src/patternize.c
 -						   || strcmp(cp, "allow_capability") == 0 || strcmp(cp, "allow_signal") == 0 ||
 -						   strcmp(cp, "allow_network") == 0) {
 -					/* This entry is not pathname related permission. I don't convert. */
+-					disabled = 1;
 +				if (!strcmp(cp, "allow_execute") ||
 +				    !strcmp(cp, "1") || !strcmp(cp, "3") ||
 +				    !strcmp(cp, "5") || !strcmp(cp, "7")) {
 +					/* This entry is an execute permission.
 +					   I don't convert. */
- 					disabled = 1;
++					disabled = true;
 +				} else if (!strcmp(cp, "<kernel>") ||
 +					   !strcmp(cp, "use_profile") ||
 +					   !strcmp(cp, "allow_capability") ||
@@ -6808,7 +6971,7 @@ Index: ccstools.src/patternize.c
 +					   !strcmp(cp, "allow_network")) {
 +					/* This entry is not pathname related
 +					   permission. I don't convert. */
-+					disabled = 1;
++					disabled = true;
  				}
  			} else if (disabled) {
 -				// Nothing to do.
@@ -6823,7 +6986,7 @@ Index: ccstools.src/patternize.c
 +				/* Nothing to do. */
 +			} else if (!strcmp(cp, "if")) {
  				/* Don't convert after condition part. */
- 				disabled = 1;
+-				disabled = 1;
 -			} else if (!PathContainsPattern(cp)) {
 -				int i;
 -				struct path_info cp2;
@@ -6834,25 +6997,28 @@ Index: ccstools.src/patternize.c
 -						cp = argv[i]; break;
 -					}
 -				}
++				disabled = true;
 +			} else if (!path_contains_pattern(cp)) {
 +				cp = patternize(cp, argc, argv, pattern_list);
  			}
 -			if (!first) putchar(' ');
+-			first = 0;
 +			if (!first)
 +				putchar(' ');
- 			first = 0;
++			first = false;
  			printf("%s", cp);
  		}
+ 		putchar('\n');
 Index: ccstools.src/findtemp.c
 ===================================================================
---- ccstools.src/findtemp.c	(リビジョン 1537)
-+++ ccstools.src/findtemp.c	(作業コピー)
+--- ccstools.src/findtemp.c	(revision 1551)
++++ ccstools.src/findtemp.c	(working copy)
 @@ -5,40 +5,53 @@
   *
   * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.6.2   2008/06/25
-+ * Version: 1.6.4+   2008/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  #include "ccstools.h"
@@ -6918,8 +7084,8 @@ Index: ccstools.src/findtemp.c
  }
 Index: ccstools.src/ccstree.c
 ===================================================================
---- ccstools.src/ccstree.c	(リビジョン 1537)
-+++ ccstools.src/ccstree.c	(作業コピー)
+--- ccstools.src/ccstree.c	(revision 1551)
++++ ccstools.src/ccstree.c	(working copy)
 @@ -3,63 +3,76 @@
   *
   * TOMOYO Linux's utilities.
@@ -6928,7 +7094,7 @@ Index: ccstools.src/ccstree.c
 + * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.5.0   2007/09/20
-+ * Version: 1.6.4+   2008/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  #include "ccstools.h"
@@ -7077,7 +7243,7 @@ Index: ccstools.src/ccstree.c
  		printf("%3d %s (%u) %s\n", profile, name, pid, info);
  		put();
  		free(name);
-@@ -110,11 +131,13 @@
+@@ -110,48 +131,59 @@
  	}
  }
  
@@ -7093,7 +7259,11 @@ Index: ccstools.src/ccstree.c
  		return 1;
  	}
  	if (argc > 1) {
-@@ -125,33 +148,42 @@
+-		if (strcmp(argv[1], "-a") == 0) {
++		if (!strcmp(argv[1], "-a")) {
+ 			show_all = 1;
+ 		} else {
+ 			fprintf(stderr, "Usage: %s [-a]\n", argv[0]);
  			return 0;
  		}
  	}
@@ -7154,14 +7324,14 @@ Index: ccstools.src/ccstree.c
  }
 Index: ccstools.src/ccstools.c
 ===================================================================
---- ccstools.src/ccstools.c	(リビジョン 1537)
-+++ ccstools.src/ccstools.c	(作業コピー)
-@@ -5,50 +5,102 @@
+--- ccstools.src/ccstools.c	(revision 1551)
++++ ccstools.src/ccstools.c	(working copy)
+@@ -5,50 +5,104 @@
   *
   * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.6.4+   2008/09/04
-+ * Version: 1.6.4+   2008/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  #include "ccstools.h"
@@ -7177,13 +7347,15 @@ Index: ccstools.src/ccstools.c
  
 -void NormalizeLine(unsigned char *line) {
 -	unsigned char *sp = line, *dp = line;
+-	int first = 1;
+-	while (*sp && (*sp <= 32 || 127 <= *sp)) sp++;
 +bool str_starts(char *str, const const char *begin)
 +{
 +	const int len = strlen(begin);
 +	if (strncmp(str, begin, len))
-+		return 0;
++		return false;
 +	memmove(str, str + len, strlen(str + len) + 1);
-+	return 1;
++	return true;
 +}
 +
 +static bool is_byte_range(const char *str)
@@ -7219,17 +7391,17 @@ Index: ccstools.src/ccstools.c
 +{
 +	unsigned char *sp = line;
 +	unsigned char *dp = line;
- 	int first = 1;
--	while (*sp && (*sp <= 32 || 127 <= *sp)) sp++;
++	bool first = true;
 +	while (*sp && (*sp <= 32 || 127 <= *sp))
 +		sp++;
  	while (*sp) {
 -		if (!first) *dp++ = ' ';
-+		if (!first)
-+			*dp++ = ' ';
- 		first = 0;
+-		first = 0;
 -		while (32 < *sp && *sp < 127) *dp++ = *sp++;
 -		while (*sp && (*sp <= 32 || 127 <= *sp)) sp++;
++		if (!first)
++			*dp++ = ' ';
++		first = false;
 +		while (32 < *sp && *sp < 127)
 +			*dp++ = *sp++;
 +		while (*sp && (*sp <= 32 || 127 <= *sp))
@@ -7241,14 +7413,16 @@ Index: ccstools.src/ccstools.c
  /* Copied from kernel source. */
 -static inline unsigned long partial_name_hash(unsigned long c, unsigned long prevhash) {
 +static inline unsigned long partial_name_hash(unsigned long c,
-+					      unsigned long prevhash) {
++					      unsigned long prevhash)
++{
  	return (prevhash + (c << 4) + (c >> 4)) * 11;
  }
  
  /* Copied from kernel source. */
 -static inline unsigned int full_name_hash(const unsigned char *name, unsigned int len) {
 +static inline unsigned int full_name_hash(const unsigned char *name,
-+					  unsigned int len) {
++					  unsigned int len)
++{
  	unsigned long hash = 0;
 -	while (len--) hash = partial_name_hash(*name++, hash);
 +	while (len--)
@@ -7257,7 +7431,7 @@ Index: ccstools.src/ccstools.c
  }
  
 -static char *alloc_element(const unsigned int size) {
-+static char *alloc_element(const unsigned int size)
++static void *alloc_element(const unsigned int size)
 +{
  	static char *buf = NULL;
  	static unsigned int buf_used_len = PAGE_SIZE;
@@ -7273,7 +7447,7 @@ Index: ccstools.src/ccstools.c
  		buf = ptr;
  		memset(buf, 0, PAGE_SIZE);
  		buf_used_len = size;
-@@ -57,37 +109,55 @@
+@@ -57,37 +111,59 @@
  		int i;
  		ptr = buf + buf_used_len;
  		buf_used_len += size;
@@ -7310,13 +7484,19 @@ Index: ccstools.src/ccstools.c
  	int len = 0;
  	if (filename) {
  		char c;
- 		while ((c = *filename++) != '\0') {
+-		while ((c = *filename++) != '\0') {
 -			if (c != '\\') { len++; continue; }
+-			switch (c = *filename++) {
++		while (true) {
++			c = *filename++;
++			if (!c)
++				break;
 +			if (c != '\\') {
 +				len++;
 +				continue;
 +			}
- 			switch (c = *filename++) {
++			c = *filename++;
++			switch (c) {
  			case '\\':  /* "\\" */
 -				len += 2; continue;
 +				len += 2;
@@ -7337,7 +7517,7 @@ Index: ccstools.src/ccstools.c
  			}
  			break;
  		}
-@@ -95,35 +165,55 @@
+@@ -95,35 +171,55 @@
  	return len;
  }
  
@@ -7345,7 +7525,7 @@ Index: ccstools.src/ccstools.c
 -	return strncmp(domainname, ROOT_NAME, ROOT_NAME_LEN) == 0 && (domainname[ROOT_NAME_LEN] == '\0' || domainname[ROOT_NAME_LEN] == ' ');
 +bool is_domain_def(const unsigned char *domainname)
 +{
-+	return strncmp(domainname, ROOT_NAME, ROOT_NAME_LEN) == 0 &&
++	return !strncmp(domainname, ROOT_NAME, ROOT_NAME_LEN) &&
 +		(domainname[ROOT_NAME_LEN] == '\0'
 +		 || domainname[ROOT_NAME_LEN] == ' ');
  }
@@ -7363,7 +7543,7 @@ Index: ccstools.src/ccstools.c
  	domainname += ROOT_NAME_LEN;
 -	if (!*domainname) return 1;
 +	if (!*domainname)
-+		return 1;
++		return true;
  	do {
 -		if (*domainname++ != ' ') goto out;
 -		if (*domainname++ != '/') goto out;
@@ -7372,7 +7552,7 @@ Index: ccstools.src/ccstools.c
 +			goto out;
 +		if (*domainname++ != '/')
 +			goto out;
-+		while (1) {
++		while (true) {
 +			c = *domainname;
 +			if (!c || c == ' ')
 +				break;
@@ -7410,13 +7590,16 @@ Index: ccstools.src/ccstools.c
  				}
  				goto out;
  			} else if (c < ' ' || c >= 127) {
-@@ -132,28 +222,41 @@
+@@ -131,29 +227,42 @@
+ 			}
  		}
  	} while (*domainname);
- 	return 1;
+-	return 1;
 - out:
+-	return 0;
++	return true;
 +out:
- 	return 0;
++	return false;
  }
  
 -void fprintf_encoded(FILE *fp, const char *pathname) {
@@ -7424,7 +7607,7 @@ Index: ccstools.src/ccstools.c
 +{
  	unsigned char c;
 -	while ((c = * (const unsigned char *) pathname++) != 0) {
-+	while (1) {
++	while (true) {
 +		c = *(const unsigned char *) pathname++;
 +		if (!c)
 +			break;
@@ -7444,12 +7627,12 @@ Index: ccstools.src/ccstools.c
 -int decode(const char *ascii, char *bin) {
 -	char c, d, e;
 -	while ((c = *bin++ = *ascii++) != '\0') {
-+int decode(const char *ascii, char *bin)
++bool decode(const char *ascii, char *bin)
 +{
 +	char c;
 +	char d;
 +	char e;
-+	while (1) {
++	while (true) {
 +		c = *ascii++;
 +		*bin++ = c;
 +		if (!c)
@@ -7459,7 +7642,7 @@ Index: ccstools.src/ccstools.c
  			c = *ascii++;
  			switch (c) {
  			case '\\':      /* "\\" */
-@@ -162,15 +265,18 @@
+@@ -162,48 +271,61 @@
  			case '1':
  			case '2':
  			case '3':
@@ -7486,18 +7669,21 @@ Index: ccstools.src/ccstools.c
 +					continue; /* pattern is not \000 */
  				}
  			}
- 			return 0;
-@@ -181,25 +287,36 @@
- 	return 1;
+-			return 0;
++			return false;
+ 		} else if (c <= ' ' || c >= 127) {
+-			return 0;
++			return false;
+ 		}
+ 	}
+-	return 1;
++	return true;
  }
  
 -void RemoveHeader(char *line, const int len) {
 -	memmove(line, line + len, strlen(line + len) + 1); 
-+void remove_header(char *line, const int len)
-+{
-+	memmove(line, line + len, strlen(line + len) + 1);
- }
- 
+-}
+-
 -int IsCorrectPath(const char *filename, const int start_type, const int pattern_type, const int end_type) {
 -	int contains_pattern = 0;
 -	char c, d, e;
@@ -7533,9 +7719,19 @@ Index: ccstools.src/ccstools.c
 +		if (c == '/')
 +			goto out;
  	}
- 	while ((c = *filename++) != '\0') {
+-	while ((c = *filename++) != '\0') {
++	while (true) {
++		c = *filename++;
++		if (!c)
++			break;
  		if (c == '\\') {
-@@ -216,20 +333,23 @@
+-			switch ((c = *filename++)) {
++			c = *filename++;
++			switch (c) {
+ 			case '\\':  /* "\\" */
+ 				continue;
+ 			case '$':   /* "\$" */
+@@ -216,20 +338,23 @@
  			case 'a':   /* "\a" */
  			case 'A':   /* "\A" */
  			case '-':   /* "\-" */
@@ -7568,7 +7764,7 @@ Index: ccstools.src/ccstools.c
  			}
  			goto out;
  		} else if (c <= ' ' || c >= 127) {
-@@ -237,127 +357,207 @@
+@@ -237,127 +362,204 @@
  		}
  	}
  	if (pattern_type == 1) { /* Must contain pattern */
@@ -7577,17 +7773,17 @@ Index: ccstools.src/ccstools.c
 +			goto out;
  	}
 -	return 1;
-+	return true;
-  out:
+- out:
 -	return 0;
++	return true;
++out:
 +	return false;
  }
  
 -static int FileMatchesToPattern2(const char *filename, const char *filename_end, const char *pattern, const char *pattern_end) {
 +static bool file_matches_pattern2(const char *filename,
 +				  const char *filename_end,
-+				  const char *pattern,
-+				  const char *pattern_end)
++				  const char *pattern, const char *pattern_end)
 +{
  	while (filename < filename_end && pattern < pattern_end) {
 +		char c;
@@ -7653,7 +7849,7 @@ Index: ccstools.src/ccstools.c
 +		case '2':
 +		case '3':
 +			if (c == '\\' && is_byte_range(filename + 1)
-+			    && strncmp(filename + 1, pattern, 3) == 0) {
++			    && !strncmp(filename + 1, pattern, 3)) {
 +				filename += 3;
 +				pattern += 2;
  				break;
@@ -7774,10 +7970,8 @@ Index: ccstools.src/ccstools.c
  }
  
 -int FileMatchesToPattern(const char *filename, const char *filename_end, const char *pattern, const char *pattern_end) {
-+bool file_matches_pattern(const char *filename,
-+			  const char *filename_end,
-+			  const char *pattern,
-+			  const char *pattern_end)
++bool file_matches_pattern(const char *filename, const char *filename_end,
++			  const char *pattern, const char *pattern_end)
 +{
  	const char *pattern_start = pattern;
 -	int first = 1;
@@ -7814,8 +8008,8 @@ Index: ccstools.src/ccstools.c
 +			  const struct path_info *pattern)
 +{
 +	/*
-+	  if (!filename || !pattern)
-+	  return false;
++	if (!filename || !pattern)
++		return false;
 +	*/
 +	const char *f = filename->name;
 +	const char *p = pattern->name;
@@ -7823,7 +8017,7 @@ Index: ccstools.src/ccstools.c
 +	/* If @pattern doesn't contain pattern, I can use strcmp(). */
 +	if (!pattern->is_patterned)
 +		return !pathcmp(filename, pattern);
-+	/* Dont compare if the number of '/' differs. */
++	/* Don't compare if the number of '/' differs. */
 +	if (filename->depth != pattern->depth)
 +		return false;
 +	/* Compare the initial length without patterns. */
@@ -7861,7 +8055,7 @@ Index: ccstools.src/ccstools.c
 +	return strcmp(*(char **) a, *(char **) b);
 +}
 +
-+int pathcmp(const struct path_info *a, const struct path_info *b)
++bool pathcmp(const struct path_info *a, const struct path_info *b)
 +{
  	return a->hash != b->hash || strcmp(a->name, b->name);
  }
@@ -7872,7 +8066,7 @@ Index: ccstools.src/ccstools.c
  	const char *name = ptr->name;
  	const int len = strlen(name);
  	ptr->total_len = len;
-@@ -365,21 +565,25 @@
+@@ -365,52 +567,66 @@
  	ptr->is_dir = len && (name[len - 1] == '/');
  	ptr->is_patterned = (ptr->const_len < len);
  	ptr->hash = full_name_hash(name, len);
@@ -7893,8 +8087,9 @@ Index: ccstools.src/ccstools.c
  	unsigned int hash;
  	struct free_memory_block_list *fmb = &fmb_list;
  	int len;
- 	static int first_call = 1;
+-	static int first_call = 1;
 -	if (!name) return NULL;
++	static bool first_call = true;
 +	if (!name)
 +		return NULL;
  	len = strlen(name) + 1;
@@ -7904,7 +8099,12 @@ Index: ccstools.src/ccstools.c
  		return NULL;
  	}
  	hash = full_name_hash((const unsigned char *) name, len - 1);
-@@ -391,26 +595,38 @@
+ 	if (first_call) {
+ 		int i;
+-		first_call = 0;
++		first_call = false;
+ 		memset(&name_list, 0, sizeof(name_list));
+ 		for (i = 0; i < SAVENAME_MAX_HASH; i++) {
  			name_list[i].entry.name = "/";
  			fill_path_info(&name_list[i].entry);
  		}
@@ -7937,8 +8137,7 @@ Index: ccstools.src/ccstools.c
 +		cp = malloc(PAGE_SIZE);
 +		if (!cp)
 +			out_of_memory();
-+		fmb->next = (struct free_memory_block_list *)
-+			alloc_element(sizeof(struct free_memory_block_list));
++		fmb->next = alloc_element(sizeof(*fmb->next));
 +		if (!fmb->next)
 +			out_of_memory();
 +		memset(cp, 0, PAGE_SIZE);
@@ -7947,16 +8146,18 @@ Index: ccstools.src/ccstools.c
 +		fmb->len = PAGE_SIZE;
  	}
 -	if ((ptr = (struct savename_entry *) alloc_element(sizeof(struct savename_entry))) == NULL) OutOfMemory();
-+	ptr = (struct savename_entry *)
-+		alloc_element(sizeof(struct savename_entry));
++	ptr = alloc_element(sizeof(*ptr));
 +	if (!ptr)
 +		out_of_memory();
  	memset(ptr, 0, sizeof(struct savename_entry));
  	ptr->entry.name = fmb->ptr;
  	memmove(fmb->ptr, name, len);
-@@ -420,137 +636,219 @@
+@@ -418,139 +634,221 @@
+ 	fmb->ptr += len;
+ 	fmb->len -= len;
  	prev->next = ptr; /* prev != NULL because name_list is not empty. */
- 	if (fmb->len == 0) {
+-	if (fmb->len == 0) {
++	if (!fmb->len) {
  		struct free_memory_block_list *ptr = &fmb_list;
 -		while (ptr->next != fmb) ptr = ptr->next; ptr->next = fmb->next;
 +		while (ptr->next != fmb)
@@ -8003,14 +8204,15 @@ Index: ccstools.src/ccstools.c
 -	if (fgets(shared_buffer, shared_buffer_len - 1, fp) == NULL ||
 -		(cp = strchr(shared_buffer, '\n')) == NULL) return 0;
 +	if (!fgets(shared_buffer, shared_buffer_len - 1, fp))
-+		return 0;
++		return false;
 +	cp = strchr(shared_buffer, '\n');
 +	if (!cp)
-+		return 0;
++		return false;
  	*cp = '\0';
 -	NormalizeLine(shared_buffer);
+-	return 1;
 +	normalize_line(shared_buffer);
- 	return 1;
++	return true;
  }
  
  /***** UTILITY FUNCTIONS END *****/
@@ -8061,7 +8263,7 @@ Index: ccstools.src/ccstools.c
  		fprintf(stderr, "Function not specified.\n");
  		return 1;
  	}
- 	if (access("/sys/kernel/security/tomoyo/", F_OK) == 0) {
+-	if (access("/sys/kernel/security/tomoyo/", F_OK) == 0) {
 -		proc_policy_dir              = "/sys/kernel/security/tomoyo/";
 -		disk_policy_dir              = "/etc/tomoyo/";
 -		proc_policy_domain_policy    = "/sys/kernel/security/tomoyo/domain_policy";
@@ -8079,6 +8281,25 @@ Index: ccstools.src/ccstools.c
 -		proc_policy_reject_log       = "/sys/kernel/security/tomoyo/reject_log";
 -		proc_policy_domain_status    = "/sys/kernel/security/tomoyo/.domain_status";
 -		proc_policy_process_status   = "/sys/kernel/security/tomoyo/.process_status";
+-	} else if (access("/proc/tomoyo/", F_OK) == 0) {
+-		proc_policy_dir              = "/proc/tomoyo/";
+-		disk_policy_dir              = "/etc/tomoyo/";
+-		proc_policy_domain_policy    = "/proc/tomoyo/domain_policy";
+-		disk_policy_domain_policy    = "/etc/tomoyo/domain_policy.conf";
+-		proc_policy_exception_policy = "/proc/tomoyo/exception_policy";
+-		disk_policy_exception_policy = "/etc/tomoyo/exception_policy.conf";
+-		proc_policy_system_policy    = "/proc/tomoyo/system_policy";
+-		disk_policy_system_policy    = "/etc/tomoyo/system_policy.conf";
+-		proc_policy_profile          = "/proc/tomoyo/profile";
+-		disk_policy_profile          = "/etc/tomoyo/profile.conf";
+-		proc_policy_manager          = "/proc/tomoyo/manager";
+-		disk_policy_manager          = "/etc/tomoyo/manager.conf";
+-		proc_policy_query            = "/proc/tomoyo/query";
+-		proc_policy_grant_log        = "/proc/tomoyo/grant_log";
+-		proc_policy_reject_log       = "/proc/tomoyo/reject_log";
+-		proc_policy_domain_status    = "/proc/tomoyo/.domain_status";
+-		proc_policy_process_status   = "/proc/tomoyo/.process_status";
++	if (!access("/sys/kernel/security/tomoyo/", F_OK)) {
 +		proc_policy_dir
 +			= "/sys/kernel/security/tomoyo/";
 +		disk_policy_dir
@@ -8123,24 +8344,7 @@ Index: ccstools.src/ccstools.c
 +			= "/sys/kernel/security/tomoyo/.domain_status";
 +		proc_policy_process_status
 +			= "/sys/kernel/security/tomoyo/.process_status";
- 	} else if (access("/proc/tomoyo/", F_OK) == 0) {
--		proc_policy_dir              = "/proc/tomoyo/";
--		disk_policy_dir              = "/etc/tomoyo/";
--		proc_policy_domain_policy    = "/proc/tomoyo/domain_policy";
--		disk_policy_domain_policy    = "/etc/tomoyo/domain_policy.conf";
--		proc_policy_exception_policy = "/proc/tomoyo/exception_policy";
--		disk_policy_exception_policy = "/etc/tomoyo/exception_policy.conf";
--		proc_policy_system_policy    = "/proc/tomoyo/system_policy";
--		disk_policy_system_policy    = "/etc/tomoyo/system_policy.conf";
--		proc_policy_profile          = "/proc/tomoyo/profile";
--		disk_policy_profile          = "/etc/tomoyo/profile.conf";
--		proc_policy_manager          = "/proc/tomoyo/manager";
--		disk_policy_manager          = "/etc/tomoyo/manager.conf";
--		proc_policy_query            = "/proc/tomoyo/query";
--		proc_policy_grant_log        = "/proc/tomoyo/grant_log";
--		proc_policy_reject_log       = "/proc/tomoyo/reject_log";
--		proc_policy_domain_status    = "/proc/tomoyo/.domain_status";
--		proc_policy_process_status   = "/proc/tomoyo/.process_status";
++	} else if (!access("/proc/tomoyo/", F_OK)) {
 +		proc_policy_dir
 +			= "/proc/tomoyo/";
 +		disk_policy_dir
@@ -8204,38 +8408,39 @@ Index: ccstools.src/ccstools.c
 -	if (strcmp(argv0, "ccs-queryd") == 0) return ccsqueryd_main(argc, argv);
 -	if (strcmp(argv0, "ccs-auditd") == 0) return ccsauditd_main(argc, argv);
 -	if (strcmp(argv0, "patternize") == 0) return patternize_main(argc, argv);
-+	if (strcmp(argv0, "sortpolicy") == 0)
+-	if (strncmp(argv0, "ccs-", 4) == 0) {
++	if (!strcmp(argv0, "sortpolicy"))
 +		return sortpolicy_main(argc, argv);
-+	if (strcmp(argv0, "setprofile") == 0)
++	if (!strcmp(argv0, "setprofile"))
 +		return setprofile_main(argc, argv);
-+	if (strcmp(argv0, "setlevel") == 0)
++	if (!strcmp(argv0, "setlevel"))
 +		return setlevel_main(argc, argv);
-+	if (strcmp(argv0, "diffpolicy") == 0)
++	if (!strcmp(argv0, "diffpolicy"))
 +		return diffpolicy_main(argc, argv);
-+	if (strcmp(argv0, "savepolicy") == 0)
++	if (!strcmp(argv0, "savepolicy"))
 +		return savepolicy_main(argc, argv);
-+	if (strcmp(argv0, "pathmatch") == 0)
++	if (!strcmp(argv0, "pathmatch"))
 +		return pathmatch_main(argc, argv);
-+	if (strcmp(argv0, "loadpolicy") == 0)
++	if (!strcmp(argv0, "loadpolicy"))
 +		return loadpolicy_main(argc, argv);
-+	if (strcmp(argv0, "ld-watch") == 0)
++	if (!strcmp(argv0, "ld-watch"))
 +		return ldwatch_main(argc, argv);
-+	if (strcmp(argv0, "findtemp") == 0)
++	if (!strcmp(argv0, "findtemp"))
 +		return findtemp_main(argc, argv);
-+	if (strcmp(argv0, "editpolicy") == 0 ||
-+	    strcmp(argv0, "editpolicy_offline") == 0)
++	if (!strcmp(argv0, "editpolicy") ||
++	    !strcmp(argv0, "editpolicy_offline"))
 +		return editpolicy_main(argc, argv);
-+	if (strcmp(argv0, "checkpolicy") == 0)
++	if (!strcmp(argv0, "checkpolicy"))
 +		return checkpolicy_main(argc, argv);
-+	if (strcmp(argv0, "ccstree") == 0)
++	if (!strcmp(argv0, "ccstree"))
 +		return ccstree_main(argc, argv);
-+	if (strcmp(argv0, "ccs-queryd") == 0)
++	if (!strcmp(argv0, "ccs-queryd"))
 +		return ccsqueryd_main(argc, argv);
-+	if (strcmp(argv0, "ccs-auditd") == 0)
++	if (!strcmp(argv0, "ccs-auditd"))
 +		return ccsauditd_main(argc, argv);
-+	if (strcmp(argv0, "patternize") == 0)
++	if (!strcmp(argv0, "patternize"))
 +		return patternize_main(argc, argv);
- 	if (strncmp(argv0, "ccs-", 4) == 0) {
++	if (!strncmp(argv0, "ccs-", 4)) {
  		argv0 += 4;
  		goto retry;
  	}
@@ -8250,14 +8455,14 @@ Index: ccstools.src/ccstools.c
 +	 * "hard links".
  	 */
 -	printf("ccstools version 1.6.4+ build 2008/09/04\n");
-+	printf("ccstools version 1.6.4+ build 2008/09/06\n");
++	printf("ccstools version 1.6.4+ build 2008/09/08\n");
  	fprintf(stderr, "Function %s not implemented.\n", argv0);
  	return 1;
  }
 Index: ccstools.src/pathmatch.c
 ===================================================================
---- ccstools.src/pathmatch.c	(リビジョン 1537)
-+++ ccstools.src/pathmatch.c	(作業コピー)
+--- ccstools.src/pathmatch.c	(revision 1551)
++++ ccstools.src/pathmatch.c	(working copy)
 @@ -3,17 +3,19 @@
   *
   * TOMOYO Linux's utilities.
@@ -8266,7 +8471,7 @@ Index: ccstools.src/pathmatch.c
 + * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.4.1   2007/06/05
-+ * Version: 1.6.4+   2008/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  #include "ccstools.h"
@@ -8302,7 +8507,7 @@ Index: ccstools.src/pathmatch.c
 -	while ((c = *cp++) != '\0') {
 +	if (strlen(cp) > 255)
 +		return 0;
-+	while (1) {
++	while (true) {
 +		c = *cp++;
 +		if (!c)
 +			break;
@@ -8323,7 +8528,7 @@ Index: ccstools.src/pathmatch.c
  }
  
 -static int scandir_target_is_dir = 0; 
-+static int scandir_target_is_dir = 0;
++static bool scandir_target_is_dir = false;
  static int scandir_target_depth = 0;
  static char **scandir_target_part = NULL;
  
@@ -8450,14 +8655,14 @@ Index: ccstools.src/pathmatch.c
  	return 0;
 Index: ccstools.src/setprofile.c
 ===================================================================
---- ccstools.src/setprofile.c	(リビジョン 1537)
-+++ ccstools.src/setprofile.c	(作業コピー)
+--- ccstools.src/setprofile.c	(revision 1551)
++++ ccstools.src/setprofile.c	(working copy)
 @@ -5,39 +5,48 @@
   *
   * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.6.1   2008/05/10
-+ * Version: 1.6.4+   2008/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  #include "ccstools.h"
@@ -8556,25 +8761,25 @@ Index: ccstools.src/setprofile.c
  }
 Index: ccstools.src/checkpolicy.c
 ===================================================================
---- ccstools.src/checkpolicy.c	(リビジョン 1537)
-+++ ccstools.src/checkpolicy.c	(作業コピー)
-@@ -5,54 +5,69 @@
+--- ccstools.src/checkpolicy.c	(revision 1551)
++++ ccstools.src/checkpolicy.c	(working copy)
+@@ -5,54 +5,75 @@
   *
   * Copyright (C) 2005-2008  NTT DATA CORPORATION
   *
 - * Version: 1.6.2   2008/06/25
-+ * Version: 1.6.4+   2008/09/07
++ * Version: 1.6.4+   2008/09/08
   *
   */
  #include "ccstools.h"
  
 -static int strendswith(const char *name, const char *tail) {
-+static int strendswith(const char *name, const char *tail)
++static bool strendswith(const char *name, const char *tail)
 +{
  	int len;
 -	if (!name || !tail) return 0;
 +	if (!name || !tail)
-+		return 0;
++		return false;
  	len = strlen(name) - strlen(tail);
 -	return len >= 0 && strcmp(name + len, tail) == 0;
 +	return len >= 0 && !strcmp(name + len, tail);
@@ -8617,8 +8822,12 @@ Index: ccstools.src/checkpolicy.c
 +	char *cp2;
  	if (cp) {
 -		while ((cp2 = strstr(cp + 3, " if ")) != NULL) cp = cp2;
-+		while ((cp2 = strstr(cp + 3, " if ")) != NULL)
++		while (true) {
++			cp2 = strstr(cp + 3, " if ");
++			if (!cp2)
++				break;
 +			cp = cp2;
++		}
  		*cp++ = '\0';
 -	} else if ((cp = strstr(data, " ; set ")) != NULL) {
 -		*cp++ = '\0';
@@ -8630,7 +8839,10 @@ Index: ccstools.src/checkpolicy.c
  	return cp;
  }
  
- static unsigned int line = 0, errors = 0, warnings = 0;
+-static unsigned int line = 0, errors = 0, warnings = 0;
++static unsigned int line = 0;
++static unsigned int errors = 0;
++static unsigned int warnings = 0;
  
 -static int CheckCondition(char *condition) {
 -	enum { TASK_UID, TASK_EUID, TASK_SUID, TASK_FSUID, TASK_GID, TASK_EGID, TASK_SGID, TASK_FSGID,
@@ -8648,7 +8860,7 @@ Index: ccstools.src/checkpolicy.c
  	static struct {
  		const char *keyword;
  		const int keyword_len; /* strlen(keyword) */
-@@ -85,223 +100,334 @@
+@@ -85,223 +106,332 @@
  		[TASK_STATE_2]     = { "task.state[2]",     13 },
  	};
  	char *start = condition;
@@ -8667,13 +8879,14 @@ Index: ccstools.src/checkpolicy.c
 +	if (condition) {
  		*condition = '\0';
  		condition += 6;
- 		while (1) {
+-		while (1) {
 -			while (*condition == ' ') condition++;
 -			if (!*condition) break;
 -			if (strncmp(condition, "task.state[0]=", 14) == 0) i = 0;
 -			else if (strncmp(condition, "task.state[1]=", 14) == 0) i = 1;
 -			else if (strncmp(condition, "task.state[2]=", 14) == 0) i = 2;
 -			else goto out;
++		while (true) {
 +			while (*condition == ' ')
 +				condition++;
 +			if (!*condition)
@@ -8706,9 +8919,10 @@ Index: ccstools.src/checkpolicy.c
 +	else if (*condition)
 +		goto out;
  	start = condition;
- 	while (1) {
+-	while (1) {
 -		while (*condition == ' ') condition++;
 -		if (!*condition) break;
++	while (true) {
 +		while (*condition == ' ')
 +			condition++;
 +		if (!*condition)
@@ -8735,7 +8949,8 @@ Index: ccstools.src/checkpolicy.c
 +				goto out;
  		} else if (left == EXEC_ENVP) {
  			char *tmp = condition;
- 			while (1) {
+-			while (1) {
++			while (true) {
  				const char c = *condition;
  				/*
 -				 * Since environment variable names don't contain '=',
@@ -8775,7 +8990,7 @@ Index: ccstools.src/checkpolicy.c
 -		else if (*condition == '=') condition++;
 -		else goto out;
 -		if (left == EXEC_ENVP && strncmp(condition, "NULL", 4) == 0) {
-+		if (strncmp(condition, "!=", 2) == 0)
++		if (!strncmp(condition, "!=", 2))
 +			condition += 2;
 +		else if (*condition == '=')
 +			condition++;
@@ -8796,7 +9011,8 @@ Index: ccstools.src/checkpolicy.c
 +			if (*condition++ != '"')
 +				goto out;
  			tmp = condition;
- 			while (1) {
+-			while (1) {
++			while (true) {
  				c = *condition++;
 -				if (!c || c == ' ') goto out;
 -				if (c != '"') continue;
@@ -9048,19 +9264,17 @@ Index: ccstools.src/checkpolicy.c
 +		       &min_address[3], &max_address[0], &max_address[1],
 +		       &max_address[2], &max_address[3]);
 +	if (count == 4 || count == 8) {
-+		u32 *p = (u32 *) min_address;
 +		u32 ip = htonl((((u8) min_address[0]) << 24) +
 +			       (((u8) min_address[1]) << 16) +
 +			       (((u8) min_address[2]) << 8) +
 +			       (u8) min_address[3]);
-+		*p = ip;
-+		p = (u32 *) max_address;
++		memmove(min_address, &ip, sizeof(ip));
 +		if (count == 8)
 +			ip = htonl((((u8) max_address[0]) << 24) +
 +				   (((u8) max_address[1]) << 16) +
 +				   (((u8) max_address[2]) << 8) +
 +				   (u8) max_address[3]);
-+		*p = ip;
++		memmove(max_address, &ip, sizeof(ip));
 +		goto next;
 +	}
 +	if (*cp2 != '@') /* Don't reject address_group. */
@@ -9093,7 +9307,7 @@ Index: ccstools.src/checkpolicy.c
  	static const struct {
  		const char * const keyword;
  		const int paths;
-@@ -329,166 +455,429 @@
+@@ -329,166 +459,429 @@
  	char *cp;
  	unsigned int perm;
  	if (!filename) {
@@ -9200,8 +9414,9 @@ Index: ccstools.src/checkpolicy.c
 +		errors++;
  	}
  	return;
-  out:
+- out:
 -	printf("%u: ERROR: Too few parameters.\n", line); errors++;
++out:
 +	printf("%u: ERROR: Too few parameters.\n", line);
 +	errors++;
  }
@@ -9228,8 +9443,9 @@ Index: ccstools.src/checkpolicy.c
 +		errors++;
  	}
  	return;
-  out:
+- out:
 -	printf("%u: ERROR: Too few parameters.\n", line); errors++;
++out:
 +	printf("%u: ERROR: Too few parameters.\n", line);
 +	errors++;
  }
@@ -9257,8 +9473,9 @@ Index: ccstools.src/checkpolicy.c
 +		errors++;
  		return;
  	}
-  out:
+- out:
 -	printf("%u: ERROR: '%s' is a bad port number.\n", line, data); errors++;
++out:
 +	printf("%u: ERROR: '%s' is a bad port number.\n", line, data);
 +	errors++;
  }
@@ -9402,15 +9619,15 @@ Index: ccstools.src/checkpolicy.c
 +static void check_domain_policy(int *domain0)
 +{
 +	int domain = *domain0;
-+	int is_delete = 0;
-+	int is_select = 0;
-+	int is_undelete = 0;
++	bool is_delete = false;
++	bool is_select = false;
++	bool is_undelete = false;
 +	if (str_starts(shared_buffer, KEYWORD_DELETE))
-+		is_delete = 1;
++		is_delete = true;
 +	else if (str_starts(shared_buffer, KEYWORD_SELECT))
-+		is_select = 1;
++		is_select = true;
 +	else if (str_starts(shared_buffer, KEYWORD_UNDELETE))
-+		is_undelete = 1;
++		is_undelete = true;
 +	if (is_domain_def(shared_buffer)) {
 +		if (!is_correct_domain(shared_buffer) ||
 +		    strlen(shared_buffer) >= CCS_MAX_PATHNAME_LEN) {
@@ -9599,7 +9816,7 @@ Index: ccstools.src/checkpolicy.c
  	int policy_type = POLICY_TYPE_UNKNOWN;
  	if (argc > 1) {
  		switch (argv[1][0]) {
-@@ -508,188 +897,49 @@
+@@ -508,188 +901,49 @@
  		return 0;
  	}
  	get();
@@ -9813,8 +10030,8 @@ Index: ccstools.src/checkpolicy.c
  }
 Index: ccs-init
 ===================================================================
---- ccs-init	(リビジョン 1537)
-+++ ccs-init	(作業コピー)
+--- ccs-init	(revision 1551)
++++ ccs-init	(working copy)
 @@ -111,10 +111,15 @@
  
  # Load policy.
@@ -9833,8 +10050,8 @@ Index: ccs-init
      elif [ "x$PROFILE" != "xdisable" ]; then
 Index: tomoyo-init
 ===================================================================
---- tomoyo-init	(リビジョン 1537)
-+++ tomoyo-init	(作業コピー)
+--- tomoyo-init	(revision 1551)
++++ tomoyo-init	(working copy)
 @@ -131,10 +131,15 @@
  
  # Load policy.
