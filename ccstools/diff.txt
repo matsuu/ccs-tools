@@ -1,6 +1,6 @@
 Index: ccstools.src/ccstools.h
 ===================================================================
---- ccstools.src/ccstools.h	(revision 1551)
+--- ccstools.src/ccstools.h	(revision 1556)
 +++ ccstools.src/ccstools.h	(working copy)
 @@ -5,7 +5,7 @@
   *
@@ -198,7 +198,7 @@ Index: ccstools.src/ccstools.h
  void fill_path_info(struct path_info *ptr);
 -const struct path_info *SaveName(const char *name);
 +const struct path_info *savename(const char *name);
-+bool str_starts(char *str, const const char *begin);
++bool str_starts(char *str, const char *begin);
 +bool path_matches_pattern(const struct path_info *pathname0,
 +			  const struct path_info *pattern0);
  
@@ -260,7 +260,7 @@ Index: ccstools.src/ccstools.h
  	*proc_policy_reject_log,
 Index: ccstools.src/ccs-queryd.c
 ===================================================================
---- ccstools.src/ccs-queryd.c	(revision 1551)
+--- ccstools.src/ccs-queryd.c	(revision 1556)
 +++ ccstools.src/ccs-queryd.c	(working copy)
 @@ -5,12 +5,13 @@
   *
@@ -956,7 +956,7 @@ Index: ccstools.src/ccs-queryd.c
  	return 0;
 Index: ccstools.src/ccs-auditd.c
 ===================================================================
---- ccstools.src/ccs-auditd.c	(revision 1551)
+--- ccstools.src/ccs-auditd.c	(revision 1556)
 +++ ccstools.src/ccs-auditd.c	(working copy)
 @@ -3,40 +3,51 @@
   *
@@ -1130,7 +1130,7 @@ Index: ccstools.src/ccs-auditd.c
  	return 0;
 Index: ccstools.src/ld-watch.c
 ===================================================================
---- ccstools.src/ld-watch.c	(revision 1551)
+--- ccstools.src/ld-watch.c	(revision 1556)
 +++ ccstools.src/ld-watch.c	(working copy)
 @@ -3,102 +3,124 @@
   *
@@ -1351,7 +1351,7 @@ Index: ccstools.src/ld-watch.c
  }
 Index: ccstools.src/readline.c
 ===================================================================
---- ccstools.src/readline.c	(revision 1551)
+--- ccstools.src/readline.c	(revision 1556)
 +++ ccstools.src/readline.c	(working copy)
 @@ -5,33 +5,62 @@
   *
@@ -1673,7 +1673,7 @@ Index: ccstools.src/readline.c
  }
 Index: ccstools.src/setlevel.c
 ===================================================================
---- ccstools.src/setlevel.c	(revision 1551)
+--- ccstools.src/setlevel.c	(revision 1556)
 +++ ccstools.src/setlevel.c	(working copy)
 @@ -3,31 +3,37 @@
   *
@@ -1742,7 +1742,7 @@ Index: ccstools.src/setlevel.c
  			}
 Index: ccstools.src/editpolicy.c
 ===================================================================
---- ccstools.src/editpolicy.c	(revision 1551)
+--- ccstools.src/editpolicy.c	(revision 1556)
 +++ ccstools.src/editpolicy.c	(working copy)
 @@ -5,63 +5,76 @@
   *
@@ -2281,7 +2281,7 @@ Index: ccstools.src/editpolicy.c
  			fprintf(stderr, "Can't open %s\n", filename);
  			return;
  		}
-@@ -315,82 +415,302 @@
+@@ -315,82 +415,303 @@
  	index = EOF;
  	get();
  	while (freadline(fp)) {
@@ -2351,7 +2351,8 @@ Index: ccstools.src/editpolicy.c
 +	}
 +	read_domain_policy(proc);
 +	swap_domain_list();
-+	read_domain_policy(base);
++	if (!access(base, R_OK))
++		read_domain_policy(base);
 +	swap_domain_list();
 +
 +	swap_domain_list();
@@ -2624,7 +2625,7 @@ Index: ccstools.src/editpolicy.c
  	int remount_root = 0;
  	char filename[1024];
  	int write_to_stdout = 0;
-@@ -403,13 +723,18 @@
+@@ -403,13 +724,18 @@
  	time_t now = time(NULL);
  	struct tm *tm = localtime(&now);
  	memset(filename, 0, sizeof(filename));
@@ -2646,7 +2647,7 @@ Index: ccstools.src/editpolicy.c
  	} else {
  		int i;
  		for (i = 1; i < argc; i++) {
-@@ -422,27 +747,26 @@
+@@ -422,27 +748,26 @@
  			char *p = strchr(ptr, 'p');
  			char *m = strchr(ptr, 'm');
  			char *i = strchr(ptr, '-');
@@ -2694,7 +2695,7 @@ Index: ccstools.src/editpolicy.c
  		}
  	}
  	if (chdir(disk_policy_dir)) {
-@@ -450,26 +774,53 @@
+@@ -450,26 +775,53 @@
  		return 1;
  	}
  	if (access(".", W_OK) == EOF) {
@@ -2762,7 +2763,7 @@ Index: ccstools.src/editpolicy.c
  				unlink(filename);
  			} else {
  				unlink("system_policy.conf");
-@@ -477,11 +828,18 @@
+@@ -477,11 +829,18 @@
  			}
  		}
  	}
@@ -2785,7 +2786,7 @@ Index: ccstools.src/editpolicy.c
  				unlink(filename);
  			} else {
  				unlink("exception_policy.conf");
-@@ -489,11 +847,18 @@
+@@ -489,11 +848,18 @@
  			}
  		}
  	}
@@ -2808,7 +2809,7 @@ Index: ccstools.src/editpolicy.c
  				unlink(filename);
  			} else {
  				unlink("domain_policy.conf");
-@@ -501,54 +866,93 @@
+@@ -501,54 +867,93 @@
  			}
  		}
  	}
@@ -2918,7 +2919,7 @@ Index: ccstools.src/editpolicy.c
  	int new_index;
  	int old_index;
  	struct path_info reserved;
-@@ -559,42 +963,61 @@
+@@ -559,42 +964,61 @@
  	}
  	reserved.name = "";
  	fill_path_info(&reserved);
@@ -3003,7 +3004,7 @@ Index: ccstools.src/editpolicy.c
  	int read_from_stdin = 0;
  	int load_profile = 0;
  	int load_manager = 0;
-@@ -603,7 +1026,8 @@
+@@ -603,7 +1027,8 @@
  	int load_domain_policy = 0;
  	int refresh_policy = 0;
  	if (access(proc_policy_dir, F_OK)) {
@@ -3013,7 +3014,7 @@ Index: ccstools.src/editpolicy.c
  		return 0;
  	}
  	if (argc == 1) {
-@@ -620,27 +1044,26 @@
+@@ -620,27 +1045,26 @@
  			char *p = strchr(ptr, 'p');
  			char *m = strchr(ptr, 'm');
  			char *i = strchr(ptr, '-');
@@ -3061,7 +3062,7 @@ Index: ccstools.src/editpolicy.c
  		}
  	}
  	if (chdir(disk_policy_dir)) {
-@@ -648,106 +1071,320 @@
+@@ -648,106 +1072,320 @@
  		return 1;
  	}
  
@@ -3416,7 +3417,7 @@ Index: ccstools.src/editpolicy.c
  	memset(&msg, 0, sizeof(msg));
  	msg.msg_iov = &iov;
  	msg.msg_iovlen = 1;
-@@ -755,13 +1392,15 @@
+@@ -755,13 +1393,15 @@
  	msg.msg_controllen = sizeof(cmsg_buf);
  	cmsg->cmsg_level = SOL_SOCKET;
  	cmsg->cmsg_type = SCM_RIGHTS;
@@ -3434,7 +3435,7 @@ Index: ccstools.src/editpolicy.c
  	if (offline_mode) {
  		char request[1024];
  		int fd[2];
-@@ -770,20 +1409,26 @@
+@@ -770,20 +1410,26 @@
  			fprintf(stderr, "socketpair()\n");
  			exit(1);
  		}
@@ -3467,7 +3468,7 @@ Index: ccstools.src/editpolicy.c
  	if (offline_mode) {
  		char request[1024];
  		int fd[2];
-@@ -791,172 +1436,245 @@
+@@ -791,172 +1437,245 @@
  			fprintf(stderr, "socketpair()\n");
  			exit(1);
  		}
@@ -3801,7 +3802,7 @@ Index: ccstools.src/editpolicy.c
  	if (i == 4 || i == 8) {
  		for (j = 0; j < 4; j++) {
  			entry->min[j] = (u8) min[j];
-@@ -965,247 +1683,352 @@
+@@ -965,247 +1684,352 @@
  		return 0;
  	}
  	i = sscanf(address, "%X:%X:%X:%X:%X:%X:%X:%X-%X:%X:%X:%X:%X:%X:%X:%X",
@@ -4321,7 +4322,7 @@ Index: ccstools.src/editpolicy.c
  				domain_list[index].number = -1;
  				unnumbered_domain_count++;
  			} else {
-@@ -1215,14 +2038,18 @@
+@@ -1215,14 +2039,18 @@
  	}
  
  	domain_list_selected = realloc(domain_list_selected, domain_list_count);
@@ -4344,7 +4345,7 @@ Index: ccstools.src/editpolicy.c
  
  static const int header_lines = 3;
  static int body_lines = 0;
-@@ -1230,516 +2057,734 @@
+@@ -1230,516 +2058,734 @@
  static int max_eat_col[MAXSCREEN];
  static int eat_col = 0;
  static int max_col = 0;
@@ -5429,7 +5430,7 @@ Index: ccstools.src/editpolicy.c
  			switch (sscanf(sarg2.name, "%u-%u", &smin, &smax)) {
  			case 1:
  				smax = smin;
-@@ -1756,33 +2801,276 @@
+@@ -1756,33 +2802,276 @@
  			default:
  				continue;
  			}
@@ -5575,7 +5576,7 @@ Index: ccstools.src/editpolicy.c
 +		       struct readline_data *rl)
 +{
 +	int index = current;
-+	char *line;
++	char *line = NULL;
 +	if (current == EOF)
 +		return;
 +	if (!input)
@@ -5722,7 +5723,7 @@ Index: ccstools.src/editpolicy.c
  	}
  	if (current_screen == SCREEN_SYSTEM_LIST) {
  		policy_file = SYSTEM_POLICY_FILE;
-@@ -1795,252 +3083,168 @@
+@@ -1795,252 +3084,168 @@
  		list_caption = "Domain Policy";
  	} else {
  		policy_file = DOMAIN_POLICY_FILE;
@@ -6087,7 +6088,7 @@ Index: ccstools.src/editpolicy.c
  			goto start2;
  		case KEY_RIGHT:
  			max_eat_col[current_screen]++;
-@@ -2052,177 +3256,222 @@
+@@ -2052,177 +3257,222 @@
  			max_eat_col[current_screen] = max_col;
  			goto start2;
  		case KEY_IC:
@@ -6463,7 +6464,7 @@ Index: ccstools.src/editpolicy.c
  		}
  		fclose(fp);
  	}
-@@ -2232,15 +3481,43 @@
+@@ -2232,15 +3482,43 @@
  
  static void init_keyword_map(void);
  
@@ -6511,7 +6512,7 @@ Index: ccstools.src/editpolicy.c
  		else {
  			printf("Usage: %s [s|e|d]\n", argv[0]);
  			return 1;
-@@ -2249,14 +3526,18 @@
+@@ -2249,14 +3527,18 @@
  	init_keyword_map();
  	{
  		char *cp = strrchr(argv[0], '/');
@@ -6534,7 +6535,7 @@ Index: ccstools.src/editpolicy.c
  			return 1;
  		}
  		if (socketpair(PF_UNIX, SOCK_STREAM, 0, fd)) {
-@@ -2276,42 +3557,54 @@
+@@ -2276,42 +3558,54 @@
  		close(fd[1]);
  		persistent_fd = fd[0];
  		{
@@ -6611,7 +6612,7 @@ Index: ccstools.src/editpolicy.c
  	cbreak();
  	noecho();
  	nonl();
-@@ -2320,53 +3613,89 @@
+@@ -2320,53 +3614,89 @@
  	getmaxyx(stdscr, window_height, window_width);
  	while (current_screen < MAXSCREEN) {
  		if (!offline_mode) {
@@ -6731,7 +6732,7 @@ Index: ccstools.src/editpolicy.c
  		}
  	}
  	return 0;
-@@ -2374,77 +3703,71 @@
+@@ -2374,77 +3704,71 @@
  
  /* keyword mapping */
  
@@ -6864,7 +6865,7 @@ Index: ccstools.src/editpolicy.c
  
 Index: ccstools.src/patternize.c
 ===================================================================
---- ccstools.src/patternize.c	(revision 1551)
+--- ccstools.src/patternize.c	(revision 1556)
 +++ ccstools.src/patternize.c	(working copy)
 @@ -3,9 +3,9 @@
   *
@@ -7048,7 +7049,7 @@ Index: ccstools.src/patternize.c
  		putchar('\n');
 Index: ccstools.src/findtemp.c
 ===================================================================
---- ccstools.src/findtemp.c	(revision 1551)
+--- ccstools.src/findtemp.c	(revision 1556)
 +++ ccstools.src/findtemp.c	(working copy)
 @@ -5,40 +5,53 @@
   *
@@ -7121,7 +7122,7 @@ Index: ccstools.src/findtemp.c
  }
 Index: ccstools.src/ccstree.c
 ===================================================================
---- ccstools.src/ccstree.c	(revision 1551)
+--- ccstools.src/ccstree.c	(revision 1556)
 +++ ccstools.src/ccstree.c	(working copy)
 @@ -3,63 +3,76 @@
   *
@@ -7361,7 +7362,7 @@ Index: ccstools.src/ccstree.c
  }
 Index: ccstools.src/ccstools.c
 ===================================================================
---- ccstools.src/ccstools.c	(revision 1551)
+--- ccstools.src/ccstools.c	(revision 1556)
 +++ ccstools.src/ccstools.c	(working copy)
 @@ -5,50 +5,104 @@
   *
@@ -7386,7 +7387,7 @@ Index: ccstools.src/ccstools.c
 -	unsigned char *sp = line, *dp = line;
 -	int first = 1;
 -	while (*sp && (*sp <= 32 || 127 <= *sp)) sp++;
-+bool str_starts(char *str, const const char *begin)
++bool str_starts(char *str, const char *begin)
 +{
 +	const int len = strlen(begin);
 +	if (strncmp(str, begin, len))
@@ -8498,7 +8499,7 @@ Index: ccstools.src/ccstools.c
  }
 Index: ccstools.src/pathmatch.c
 ===================================================================
---- ccstools.src/pathmatch.c	(revision 1551)
+--- ccstools.src/pathmatch.c	(revision 1556)
 +++ ccstools.src/pathmatch.c	(working copy)
 @@ -3,17 +3,19 @@
   *
@@ -8692,7 +8693,7 @@ Index: ccstools.src/pathmatch.c
  	return 0;
 Index: ccstools.src/setprofile.c
 ===================================================================
---- ccstools.src/setprofile.c	(revision 1551)
+--- ccstools.src/setprofile.c	(revision 1556)
 +++ ccstools.src/setprofile.c	(working copy)
 @@ -5,39 +5,48 @@
   *
@@ -8798,7 +8799,7 @@ Index: ccstools.src/setprofile.c
  }
 Index: ccstools.src/checkpolicy.c
 ===================================================================
---- ccstools.src/checkpolicy.c	(revision 1551)
+--- ccstools.src/checkpolicy.c	(revision 1556)
 +++ ccstools.src/checkpolicy.c	(working copy)
 @@ -5,54 +5,75 @@
   *
@@ -10067,7 +10068,7 @@ Index: ccstools.src/checkpolicy.c
  }
 Index: ccs-init
 ===================================================================
---- ccs-init	(revision 1551)
+--- ccs-init	(revision 1556)
 +++ ccs-init	(working copy)
 @@ -111,10 +111,15 @@
  
@@ -10087,7 +10088,7 @@ Index: ccs-init
      elif [ "x$PROFILE" != "xdisable" ]; then
 Index: Makefile
 ===================================================================
---- Makefile	(revision 1551)
+--- Makefile	(revision 1556)
 +++ Makefile	(working copy)
 @@ -31,7 +31,7 @@
  
@@ -10100,7 +10101,7 @@ Index: Makefile
  	@echo "/usr/include/curses.h is missing."
 Index: tomoyo-init
 ===================================================================
---- tomoyo-init	(revision 1551)
+--- tomoyo-init	(revision 1556)
 +++ tomoyo-init	(working copy)
 @@ -131,10 +131,15 @@
  
