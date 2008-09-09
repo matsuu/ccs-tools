@@ -220,7 +220,7 @@ static bool handle_query_new_format(unsigned int serial)
 	refresh();
 
 	/* Append to domain policy. */
-	if (c != 'A' || c != 'a')
+	if (c != 'A' && c != 'a')
 		goto not_append;
 	getyx(stdscr, y, x);
 	cp = strrchr(buffer, '\n');
@@ -261,11 +261,12 @@ write_answer:
 	refresh();
 	return true;
 not_domain_query:
-	printw("Allow? ('Y'es/'N'o):");
+	printw("Allow? ('Y'es/'N'o/'R'etry):");
 	refresh();
 	while (true) {
 		c = getch2();
-		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
+		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
+		    c == 'R' || c == 'r')
 			break;
 		write(query_fd, "\n", 1);
 	}
