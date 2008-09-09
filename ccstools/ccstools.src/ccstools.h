@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/09/08
+ * Version: 1.6.4+   2008/09/09
  *
  */
 
@@ -101,7 +101,7 @@
 #define KEYWORD_NO_KEEP_DOMAIN           "no_" KEYWORD_KEEP_DOMAIN
 #define KEYWORD_EXECUTE_HANDLER          "execute_handler "
 #define KEYWORD_DENIED_EXECUTE_HANDLER   "denied_execute_handler "
-#define KEYWORD_ALLOW_EXECUTE            "allow_executer "
+#define KEYWORD_ALLOW_EXECUTE            "allow_execute "
 
 #define CCS_AUDITD_MAX_FILES             2
 #define SAVENAME_MAX_HASH                256
