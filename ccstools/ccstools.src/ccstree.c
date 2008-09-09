@@ -3,63 +3,76 @@
  *
  * TOMOYO Linux's utilities.
  *
- * Copyright (C) 2005-2007  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.5.0   2007/09/20
+ * Version: 1.6.4+   2008/09/08
  *
  */
 #include "ccstools.h"
 
-static pid_t GetPPID(const pid_t pid) {
+static pid_t get_ppid(const pid_t pid)
+{
 	char buffer[1024];
 	FILE *fp;
 	pid_t ppid = 1;
 	memset(buffer, 0, sizeof(buffer));
 	snprintf(buffer, sizeof(buffer) - 1, "/proc/%u/status", pid);
-	if ((fp = fopen(buffer, "r")) != NULL) {
-		while (memset(buffer, 0, sizeof(buffer)), fgets(buffer, sizeof(buffer) - 1, fp)) {
-			if (sscanf(buffer, "PPid: %u", &ppid) == 1) break;
+	fp = fopen(buffer, "r");
+	if (fp) {
+		while (memset(buffer, 0, sizeof(buffer)),
+		       fgets(buffer, sizeof(buffer) - 1, fp)) {
+			if (sscanf(buffer, "PPid: %u", &ppid) == 1)
+				break;
 		}
 		fclose(fp);
 	}
 	return ppid;
 }
 
-static char *GetName(const pid_t pid) {
+static char *get_name(const pid_t pid)
+{
 	char buffer[1024];
 	FILE *fp;
 	memset(buffer, 0, sizeof(buffer));
 	snprintf(buffer, sizeof(buffer) - 1, "/proc/%u/status", pid);
-	if ((fp = fopen(buffer, "r")) != NULL) {
-		while (memset(buffer, 0, sizeof(buffer)), fgets(buffer, sizeof(buffer) - 1, fp)) {
-			if (strncmp(buffer, "Name:", 5) == 0) {
+	fp = fopen(buffer, "r");
+	if (fp) {
+		while (memset(buffer, 0, sizeof(buffer)),
+		       fgets(buffer, sizeof(buffer) - 1, fp)) {
+			if (!strncmp(buffer, "Name:", 5)) {
 				char *cp = buffer + 5;
-				while (*cp == ' ' || *cp == '\t') cp++;
+				while (*cp == ' ' || *cp == '\t')
+					cp++;
 				memmove(buffer, cp, strlen(cp) + 1);
-				if ((cp = strchr(buffer, '\n')) != NULL) *cp = '\0';
+				cp = strchr(buffer, '\n');
+				if (cp)
+					*cp = '\0';
 				break;
 			}
 		}
 		fclose(fp);
-		if (buffer[0]) return strdup(buffer);
+		if (buffer[0])
+			return strdup(buffer);
 	}
 	return NULL;
 }
 
 static int status_fd = EOF;
 
-static const char *ReadInfo(const pid_t pid, int *profile) {
+static const char *read_info(const pid_t pid, int *profile)
+{
 	char *cp; /* caller must use get()/put(). */
 	memset(shared_buffer, 0, shared_buffer_len);
 	snprintf(shared_buffer, shared_buffer_len - 1, "%d\n", pid);
 	write(status_fd, shared_buffer, strlen(shared_buffer));
 	memset(shared_buffer, 0, shared_buffer_len);
 	read(status_fd, shared_buffer, shared_buffer_len - 1);
-	if ((cp = strchr(shared_buffer, ' ')) != NULL) {
+	cp = strchr(shared_buffer, ' ');
+	if (cp) {
 		*profile = atoi(cp + 1);
-		if ((cp = strchr(cp + 1, ' ')) != NULL) {
+		cp = strchr(cp + 1, ' ');
+		if (cp)
 			return cp + 1;
-		}
 	}
 	*profile = -1;
 	return "<UNKNOWN>";
@@ -68,41 +81,49 @@ static const char *ReadInfo(const pid_t pid, int *profile) {
 static struct task_entry *task_list = NULL;
 static int task_list_len = 0;
 
-static void Dump(const pid_t pid, const int depth) {
+static void dump(const pid_t pid, const int depth)
+{
 	int i;
 	for (i = 0; i < task_list_len; i++) {
 		const char *info;
 		char *name;
-		int j, profile;
-		if (pid != task_list[i].pid) continue;
-		name = GetName(pid);
+		int j;
+		int profile;
+		if (pid != task_list[i].pid)
+			continue;
+		name = get_name(pid);
 		get();
-		info = ReadInfo(pid, &profile);
+		info = read_info(pid, &profile);
 		printf("%3d", profile);
-		for (j = 0; j < depth - 1; j++) printf("    ");
-		for (; j < depth; j++) printf("  +-");
+		for (j = 0; j < depth - 1; j++)
+			printf("    ");
+		for (; j < depth; j++)
+			printf("  +-");
 		printf(" %s (%u) %s\n", name, pid, info);
 		put();
 		free(name);
 		task_list[i].done = 1;
 	}
 	for (i = 0; i < task_list_len; i++) {
-		if (pid != task_list[i].ppid) continue;
-		Dump(task_list[i].pid, depth + 1);
+		if (pid != task_list[i].ppid)
+			continue;
+		dump(task_list[i].pid, depth + 1);
 	}
 }
 
-static void DumpUnprocessed(void) {
+static void dump_unprocessed(void)
+{
 	int i;
 	for (i = 0; i < task_list_len; i++) {
 		const char *info;
 		char *name;
 		int profile;
 		const pid_t pid = task_list[i].pid;
-		if (task_list[i].done) continue;
-		name = GetName(task_list[i].pid);
+		if (task_list[i].done)
+			continue;
+		name = get_name(task_list[i].pid);
 		get();
-		info = ReadInfo(pid, &profile);
+		info = read_info(pid, &profile);
 		printf("%3d %s (%u) %s\n", profile, name, pid, info);
 		put();
 		free(name);
@@ -110,48 +131,59 @@ static void DumpUnprocessed(void) {
 	}
 }
 
-int ccstree_main(int argc, char *argv[]) {
+int ccstree_main(int argc, char *argv[])
+{
 	const char *policy_file = proc_policy_process_status;
 	static int show_all = 0;
 	if (access(proc_policy_dir, F_OK)) {
-		fprintf(stderr, "You can't use this command for this kernel.\n");
+		fprintf(stderr, "You can't use this command "
+			"for this kernel.\n");
 		return 1;
 	}
 	if (argc > 1) {
-		if (strcmp(argv[1], "-a") == 0) {
+		if (!strcmp(argv[1], "-a")) {
 			show_all = 1;
 		} else {
 			fprintf(stderr, "Usage: %s [-a]\n", argv[0]);
 			return 0;
 		}
 	}
-	if ((status_fd = open(policy_file, O_RDWR)) == EOF) {
+	status_fd = open(policy_file, O_RDWR);
+	if (status_fd == EOF) {
 		fprintf(stderr, "Can't open %s\n", policy_file);
 		return 1;
 	}
 	{
 		struct dirent **namelist;
-		int i, n = scandir("/proc/", &namelist, 0, 0);
+		int i;
+		int n = scandir("/proc/", &namelist, 0, 0);
 		for (i = 0; i < n; i++) {
 			pid_t pid;
-			if (sscanf(namelist[i]->d_name, "%u", &pid) == 1) {
-				char buffer[128], test[16];
-				memset(buffer, 0, sizeof(buffer));
-				snprintf(buffer, sizeof(buffer) - 1, "/proc/%u/exe", pid);
-				if (show_all || readlink(buffer, test, sizeof(test)) > 0) {
-					task_list = (struct task_entry *) realloc(task_list, (task_list_len + 1) * sizeof(struct task_entry));
-					task_list[task_list_len].pid = pid;
-					task_list[task_list_len].ppid = GetPPID(pid);
-					task_list[task_list_len].done = 0;
-					task_list_len++;
-				}
+			char buffer[128];
+			char test[16];
+			if (sscanf(namelist[i]->d_name, "%u", &pid) != 1)
+				goto skip;
+			memset(buffer, 0, sizeof(buffer));
+			snprintf(buffer, sizeof(buffer) - 1, "/proc/%u/exe",
+				 pid);
+			if (show_all ||
+			    readlink(buffer, test, sizeof(test)) > 0) {
+				task_list = realloc(task_list,
+						    (task_list_len + 1) *
+						    sizeof(struct task_entry));
+				task_list[task_list_len].pid = pid;
+				task_list[task_list_len].ppid = get_ppid(pid);
+				task_list[task_list_len].done = 0;
+				task_list_len++;
 			}
+skip:
 			free((void *) namelist[i]);
 		}
-		if (n >= 0) free((void *) namelist);
+		if (n >= 0)
+			free((void *) namelist);
 	}
-	Dump(1, 0);
-	DumpUnprocessed();
+	dump(1, 0);
+	dump_unprocessed();
 	close(status_fd);
 	return 0;
 }

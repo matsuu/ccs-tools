@@ -3,9 +3,9 @@
  *
  * TOMOYO Linux's utilities.
  *
- * Copyright (C) 2005-2007  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.4.1   2007/06/05
+ * Version: 1.6.4+   2008/09/08
  *
  */
 #include "ccstools.h"
@@ -14,20 +14,34 @@
  * Check whether the given filename is patterened.
  * Returns nonzero if patterned, zero otherwise.
  */
-static int PathContainsPattern(const char *filename) {
+static _Bool path_contains_pattern(const char *filename)
+{
 	if (filename) {
-		char c, d, e;
-		while ((c = *filename++) != '\0') {
-			if (c != '\\') continue;
-			switch (c = *filename++) {
+		char c;
+		char d;
+		char e;
+		while (true) {
+			c = *filename++;
+			if (!c)
+				break;
+			if (c != '\\')
+				continue;
+			c = *filename++;
+			switch (c) {
 			case '\\':  /* "\\" */
 				continue;
 			case '0':   /* "\ooo" */
 			case '1':
 			case '2':
 			case '3':
-				if ((d = *filename++) >= '0' && d <= '7' && (e = *filename++) >= '0' && e <= '7'
-					&& (c != '0' || d != '0' || e != '0')) continue; /* pattern is not \000 */
+				d = *filename++;
+				if (d < '0' || d > '7')
+					break;
+				e = *filename++;
+				if (e < '0' || e > '7')
+					break;
+				if (c != '0' || d != '0' || e != '0')
+					continue; /* pattern is not \000 */
 			}
 			return 1;
 		}
@@ -35,78 +49,68 @@ static int PathContainsPattern(const char *filename) {
 	return 0;
 }
 
-static int PathMatchesToPattern(const struct path_info *pathname0, const struct path_info *pattern0) {
-	//if (!pathname || !pattern) return 0;
-	const char *pathname = pathname0->name, *pattern = pattern0->name;
-	const int len = pattern0->const_len;
-	if (!pattern0->is_patterned) return !pathcmp(pathname0, pattern0);
-	if (pathname0->depth != pattern0->depth) return 0;
-	if (strncmp(pathname, pattern, len)) return 0;
-	pathname += len; pattern += len;
-	while (*pathname && *pattern) {
-		const char *pathname_delimiter = strchr(pathname, '/'), *pattern_delimiter = strchr(pattern, '/');
-		if (!pathname_delimiter) pathname_delimiter = strchr(pathname, '\0');
-		if (!pattern_delimiter) pattern_delimiter = strchr(pattern, '\0');
-		if (!FileMatchesToPattern(pathname, pathname_delimiter, pattern, pattern_delimiter)) return 0;
-		pathname = *pathname_delimiter ? pathname_delimiter + 1 : pathname_delimiter;
-		pattern = *pattern_delimiter ? pattern_delimiter + 1 : pattern_delimiter;
+static const char *patternize(const char *cp, int argc, char *argv[],
+			      struct path_info *pattern_list)
+{
+	int i;
+	struct path_info cp2;
+	cp2.name = cp;
+	fill_path_info(&cp2);
+	for (i = 1; i < argc; i++) {
+		if (path_matches_pattern(&cp2, &pattern_list[i]))
+			return argv[i];
 	}
-	while (*pattern == '\\' && (*(pattern + 1) == '*' || *(pattern + 1) == '@')) pattern += 2;
-	return (!*pathname && !*pattern);
+	return cp;
 }
 
-int patternize_main(int argc, char *argv[]) {
-	struct path_info *pattern_list = malloc(argc * sizeof(struct path_info));
-	if (!pattern_list) OutOfMemory();
+int patternize_main(int argc, char *argv[])
+{
 	int i;
+	struct path_info *pattern_list
+		= malloc(argc * sizeof(struct path_info));
+	if (!pattern_list)
+		out_of_memory();
 	for (i = 0; i < argc; i++) {
 		pattern_list[i].name = argv[i];
 		fill_path_info(&pattern_list[i]);
 	}
 	get();
 	while (freadline(stdin)) {
-		char *sp = shared_buffer, *cp;
-		int first = 1;
-		int check_second = 0;
-		int disabled = 0;
-		while ((cp = strsep(&sp, " ")) != NULL) {
-		check:
+		char *sp = shared_buffer;
+		const char *cp;
+		bool first = true;
+		bool disabled = false;
+		while (true) {
+			cp = strsep(&sp, " ");
+			if (!cp)
+				break;
 			if (first) {
-				unsigned int perm;
-				if (sscanf(cp, "%u", &perm) == 1 && (perm & 1) == 1) {
-					/* Is this entry for a program? */
-					check_second = 1;
-				} else if (strcmp(cp, "<kernel>") == 0 || strcmp(cp, "use_profile") == 0
-						   || strcmp(cp, "allow_capability") == 0 || strcmp(cp, "allow_signal") == 0 ||
-						   strcmp(cp, "allow_network") == 0) {
-					/* This entry is not pathname related permission. I don't convert. */
-					disabled = 1;
+				if (!strcmp(cp, "allow_execute") ||
+				    !strcmp(cp, "1") || !strcmp(cp, "3") ||
+				    !strcmp(cp, "5") || !strcmp(cp, "7")) {
+					/* This entry is an execute permission.
+					   I don't convert. */
+					disabled = true;
+				} else if (!strcmp(cp, "<kernel>") ||
+					   !strcmp(cp, "use_profile") ||
+					   !strcmp(cp, "allow_capability") ||
+					   !strcmp(cp, "allow_signal") ||
+					   !strcmp(cp, "allow_network")) {
+					/* This entry is not pathname related
+					   permission. I don't convert. */
+					disabled = true;
 				}
 			} else if (disabled) {
-				// Nothing to do.
-			} else if (check_second) {
-				check_second = 0;
-				if (*cp == '/' && * (strchr(cp, '\0') - 1) != '/') { /* Don't convert @path_group . */
-					/* This entry is for a program. I don't convert. */
-					disabled = 1;
-				}
-				goto check;
-			} else if (strcmp(cp, "if") == 0) {
+				/* Nothing to do. */
+			} else if (!strcmp(cp, "if")) {
 				/* Don't convert after condition part. */
-				disabled = 1;
-			} else if (!PathContainsPattern(cp)) {
-				int i;
-				struct path_info cp2;
-				cp2.name = cp;
-				fill_path_info(&cp2);
-				for (i = 1; i < argc; i++) {
-					if (PathMatchesToPattern(&cp2, &pattern_list[i])) {
-						cp = argv[i]; break;
-					}
-				}
+				disabled = true;
+			} else if (!path_contains_pattern(cp)) {
+				cp = patternize(cp, argc, argv, pattern_list);
 			}
-			if (!first) putchar(' ');
-			first = 0;
+			if (!first)
+				putchar(' ');
+			first = false;
 			printf("%s", cp);
 		}
 		putchar('\n');

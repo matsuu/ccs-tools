@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.2   2008/06/25
+ * Version: 1.6.4+   2008/09/08
  *
  */
 
@@ -14,6 +14,7 @@
 #define _FILE_OFFSET_BITS 64
 #define _LARGEFILE_SOURCE
 #define _LARGEFILE64_SOURCE
+#define s8 __s8
 #define u8 __u8
 #define u16 __u16
 #define u32 __u32
@@ -38,6 +39,10 @@
 #include <syslog.h>
 #include <time.h>
 #include <unistd.h>
+
+#define bool _Bool
+#define true     1
+#define false    0
 
 #define SYSTEM_POLICY_FILE    "system_policy"
 #define EXCEPTION_POLICY_FILE "exception_policy"
@@ -68,57 +73,35 @@
 #define NETWORK_ACL_RAW_CONNECT 7
 
 #define KEYWORD_AGGREGATOR               "aggregator "
-#define KEYWORD_AGGREGATOR_LEN           (sizeof(KEYWORD_AGGREGATOR) - 1)
 #define KEYWORD_ALIAS                    "alias "
-#define KEYWORD_ALIAS_LEN                (sizeof(KEYWORD_ALIAS) - 1)
 #define KEYWORD_ALLOW_ARGV0              "allow_argv0 "
-#define KEYWORD_ALLOW_ARGV0_LEN          (sizeof(KEYWORD_ALLOW_ARGV0) - 1)
 #define KEYWORD_ALLOW_ENV                "allow_env "
-#define KEYWORD_ALLOW_ENV_LEN            (sizeof(KEYWORD_ALLOW_ENV) - 1)
 #define KEYWORD_ALLOW_CAPABILITY         "allow_capability "
-#define KEYWORD_ALLOW_CAPABILITY_LEN     (sizeof(KEYWORD_ALLOW_CAPABILITY) - 1)
 #define KEYWORD_ALLOW_CHROOT             "allow_chroot "
-#define KEYWORD_ALLOW_CHROOT_LEN         (sizeof(KEYWORD_ALLOW_CHROOT) - 1)
 #define KEYWORD_ALLOW_MOUNT              "allow_mount "
-#define KEYWORD_ALLOW_MOUNT_LEN          (sizeof(KEYWORD_ALLOW_MOUNT) - 1)
 #define KEYWORD_ALLOW_NETWORK            "allow_network "
-#define KEYWORD_ALLOW_NETWORK_LEN        (sizeof(KEYWORD_ALLOW_NETWORK) - 1)
 #define KEYWORD_ALLOW_PIVOT_ROOT         "allow_pivot_root "
-#define KEYWORD_ALLOW_PIVOT_ROOT_LEN     (sizeof(KEYWORD_ALLOW_PIVOT_ROOT) - 1)
 #define KEYWORD_ALLOW_READ               "allow_read "
-#define KEYWORD_ALLOW_READ_LEN           (sizeof(KEYWORD_ALLOW_READ) - 1)
 #define KEYWORD_ALLOW_SIGNAL             "allow_signal "
-#define KEYWORD_ALLOW_SIGNAL_LEN         (sizeof(KEYWORD_ALLOW_SIGNAL) - 1)
 #define KEYWORD_DELETE                   "delete "
-#define KEYWORD_DELETE_LEN               (sizeof(KEYWORD_DELETE) - 1)
 #define KEYWORD_DENY_AUTOBIND            "deny_autobind "
-#define KEYWORD_DENY_AUTOBIND_LEN        (sizeof(KEYWORD_DENY_AUTOBIND) - 1)
 #define KEYWORD_DENY_REWRITE             "deny_rewrite "
-#define KEYWORD_DENY_REWRITE_LEN         (sizeof(KEYWORD_DENY_REWRITE) - 1)
 #define KEYWORD_DENY_UNMOUNT             "deny_unmount "
-#define KEYWORD_DENY_UNMOUNT_LEN         (sizeof(KEYWORD_DENY_UNMOUNT) - 1)
 #define KEYWORD_FILE_PATTERN             "file_pattern "
-#define KEYWORD_FILE_PATTERN_LEN         (sizeof(KEYWORD_FILE_PATTERN) - 1)
 #define KEYWORD_MAC_FOR_CAPABILITY       "MAC_FOR_CAPABILITY::"
-#define KEYWORD_MAC_FOR_CAPABILITY_LEN   (sizeof(KEYWORD_MAC_FOR_CAPABILITY) - 1)
 #define KEYWORD_SELECT                   "select "
-#define KEYWORD_SELECT_LEN               (sizeof(KEYWORD_SELECT) - 1)
 #define KEYWORD_UNDELETE                 "undelete "
-#define KEYWORD_UNDELETE_LEN             (sizeof(KEYWORD_UNDELETE) - 1)
 #define KEYWORD_USE_PROFILE              "use_profile "
 #define KEYWORD_USE_PROFILE_LEN          (sizeof(KEYWORD_USE_PROFILE) - 1)
 #define KEYWORD_INITIALIZE_DOMAIN        "initialize_domain "
-#define KEYWORD_INITIALIZE_DOMAIN_LEN    (sizeof(KEYWORD_INITIALIZE_DOMAIN) - 1)
 #define KEYWORD_KEEP_DOMAIN              "keep_domain "
-#define KEYWORD_KEEP_DOMAIN_LEN          (sizeof(KEYWORD_KEEP_DOMAIN) - 1)
 #define KEYWORD_PATH_GROUP               "path_group "
-#define KEYWORD_PATH_GROUP_LEN           (sizeof(KEYWORD_PATH_GROUP) - 1)
 #define KEYWORD_ADDRESS_GROUP            "address_group "
-#define KEYWORD_ADDRESS_GROUP_LEN        (sizeof(KEYWORD_ADDRESS_GROUP) - 1)
 #define KEYWORD_NO_INITIALIZE_DOMAIN     "no_" KEYWORD_INITIALIZE_DOMAIN
-#define KEYWORD_NO_INITIALIZE_DOMAIN_LEN (sizeof(KEYWORD_NO_INITIALIZE_DOMAIN) - 1)
 #define KEYWORD_NO_KEEP_DOMAIN           "no_" KEYWORD_KEEP_DOMAIN
-#define KEYWORD_NO_KEEP_DOMAIN_LEN       (sizeof(KEYWORD_NO_KEEP_DOMAIN) - 1)
+#define KEYWORD_EXECUTE_HANDLER          "execute_handler "
+#define KEYWORD_DENIED_EXECUTE_HANDLER   "denied_execute_handler "
+#define KEYWORD_ALLOW_EXECUTE            "allow_executer "
 
 #define CCS_AUDITD_MAX_FILES             2
 #define SAVENAME_MAX_HASH                256
@@ -137,12 +120,12 @@
 
 struct path_info {
 	const char *name;
-	u32 hash;        /* = full_name_hash(name, strlen(name)) */
-	u16 total_len;   /* = strlen(name)                       */
-	u16 const_len;   /* = const_part_length(name)            */
-	u8 is_dir;       /* = strendswith(name, "/")             */
-	u8 is_patterned; /* = PathContainsPattern(name)          */
-	u16 depth;       /* = PathDepth(name)                    */
+	u32 hash;          /* = full_name_hash(name, strlen(name)) */
+	u16 total_len;     /* = strlen(name)                       */
+	u16 const_len;     /* = const_part_length(name)            */
+	bool is_dir;       /* = strendswith(name, "/")             */
+	bool is_patterned; /* = path_contains_pattern(name)        */
+	u16 depth;         /* = path_depth(name)                   */
 };
 
 struct path_group_entry {
@@ -154,7 +137,7 @@ struct path_group_entry {
 struct ip_address_entry {
 	u8 min[16];
 	u8 max[16];
-	u8 is_ipv6;
+	bool is_ipv6;
 };
 
 struct address_group_entry {
@@ -182,77 +165,111 @@ struct dll_pathname_entry {
 struct domain_initializer_entry {
 	const struct path_info *domainname;    /* This may be NULL */
 	const struct path_info *program;
-	unsigned char is_not:1;
-	unsigned char is_last_name:1;
+	bool is_not;
+	bool is_last_name;
 };
 
 struct domain_keeper_entry {
 	const struct path_info *domainname;
 	const struct path_info *program;       /* This may be NULL */
-	unsigned char is_not:1;
-	unsigned char is_last_name:1;
+	bool is_not;
+	bool is_last_name;
 };
 
 struct domain_info {
 	const struct path_info *domainname;
-	const struct domain_initializer_entry *domain_initializer; /* This may be NULL */
-	const struct domain_keeper_entry *domain_keeper;           /* This may be NULL */
+	/* This may be NULL */
+	const struct domain_initializer_entry *domain_initializer;
+	/* This may be NULL */
+	const struct domain_keeper_entry *domain_keeper;
 	const struct path_info **string_ptr;
 	int string_count;
-	int number; /* domain number (-1 if is_domain_initializer_source or is_domain_deleted) */ 
+	int number; /* domain number (-1 if is_dis or is_dd) */
 	u8 profile;
-	unsigned char is_domain_initializer_source:1;
-	unsigned char is_domain_initializer_target:1;
-	unsigned char is_domain_keeper:1;
-	unsigned char is_domain_unreachable:1;
-	unsigned char is_domain_deleted:1;
+	bool is_dis; /* domain initializer source */
+	bool is_dit; /* domain initializer target */
+	bool is_dk;  /* domain keeper */
+	bool is_du;  /* unreachable domain */
+	bool is_dd;  /* deleted domain */
 };
 
 struct task_entry {
 	pid_t pid;
 	pid_t ppid;
-	u8 done;
+	bool done;
 };
 
 /***** STRUCTURES DEFINITION END *****/
 
 /***** PROTOTYPES DEFINITION START *****/
 
-void OutOfMemory(void);
-void NormalizeLine(unsigned char *line);
-int IsDomainDef(const unsigned char *domainname);
-int IsCorrectDomain(const unsigned char *domainname);
+void out_of_memory(void);
+void normalize_line(unsigned char *line);
+bool is_domain_def(const unsigned char *domainname);
+bool is_correct_domain(const unsigned char *domainname);
 void fprintf_encoded(FILE *fp, const char *pathname);
-int decode(const char *ascii, char *bin);
-void RemoveHeader(char *line, const int len);
-int IsCorrectPath(const char *filename, const int start_type, const int pattern_type, const int end_type);
-int FileMatchesToPattern(const char *filename, const char *filename_end, const char *pattern, const char *pattern_end);
+bool decode(const char *ascii, char *bin);
+bool is_correct_path(const char *filename, const s8 start_type,
+		     const s8 pattern_type, const s8 end_type);
+bool file_matches_pattern(const char *filename, const char *filename_end,
+			  const char *pattern, const char *pattern_end);
 int string_compare(const void *a, const void *b);
-int pathcmp(const struct path_info *a, const struct path_info *b);
+bool pathcmp(const struct path_info *a, const struct path_info *b);
 void fill_path_info(struct path_info *ptr);
-const struct path_info *SaveName(const char *name);
+const struct path_info *savename(const char *name);
+bool str_starts(char *str, const char *begin);
+bool path_matches_pattern(const struct path_info *pathname0,
+			  const struct path_info *pattern0);
+char *make_filename(const char *prefix, const time_t time);
 
-extern char *shared_buffer;
+int sortpolicy_main(int argc, char *argv[]);
+int setprofile_main(int argc, char *argv[]);
+int setlevel_main(int argc, char *argv[]);
+int diffpolicy_main(int argc, char *argv[]);
+int savepolicy_main(int argc, char *argv[]);
+int pathmatch_main(int argc, char *argv[]);
+int loadpolicy_main(int argc, char *argv[]);
+int ldwatch_main(int argc, char *argv[]);
+int findtemp_main(int argc, char *argv[]);
+int editpolicy_main(int argc, char *argv[]);
+int checkpolicy_main(int argc, char *argv[]);
+int ccstree_main(int argc, char *argv[]);
+int ccsqueryd_main(int argc, char *argv[]);
+int ccsauditd_main(int argc, char *argv[]);
+int patternize_main(int argc, char *argv[]);
+
+char *shared_buffer;
 void get(void);
 void put(void);
-int freadline(FILE *fp);
+bool freadline(FILE *fp);
 
-char *simple_readline(const int start_y, const int start_x, const char *prompt, const char *history[], const int history_count, const int max_length, const int scroll_width);
-int simple_add_history(const char *buffer, const char **history, const int history_count, const int max_history);
+char *simple_readline(const int start_y, const int start_x, const char *prompt,
+		      const char *history[], const int history_count,
+		      const int max_length, const int scroll_width);
+int simple_add_history(const char *buffer, const char **history,
+		       const int history_count, const int max_history);
 int getch2(void);
 
-extern const char *proc_policy_dir,
+int query_fd;
+char *initial_readline_data;
+
+const char *proc_policy_dir,
 	*disk_policy_dir,
 	*proc_policy_domain_policy,
 	*disk_policy_domain_policy,
+	*base_policy_domain_policy,
 	*proc_policy_exception_policy,
 	*disk_policy_exception_policy,
+	*base_policy_exception_policy,
 	*proc_policy_system_policy,
 	*disk_policy_system_policy,
+	*base_policy_system_policy,
 	*proc_policy_profile,
 	*disk_policy_profile,
+	*base_policy_profile,
 	*proc_policy_manager,
 	*disk_policy_manager,
+	*base_policy_manager,
 	*proc_policy_query,
 	*proc_policy_grant_log,
 	*proc_policy_reject_log,

@@ -31,7 +31,7 @@ install: all
 
 CC=gcc
 
-CFLAGS=-Wall -O2 ${shell $(CC) -Wno-pointer-sign -S -o /dev/null -x c - < /dev/null > /dev/null 2>&1 && echo "-Wno-pointer-sign"}
+CFLAGS=-Wall -g -O2 ${shell $(CC) -Wno-pointer-sign -S -o /dev/null -x c - < /dev/null > /dev/null 2>&1 && echo "-Wno-pointer-sign"}
 
 /usr/include/curses.h:
 	@echo "/usr/include/curses.h is missing."
