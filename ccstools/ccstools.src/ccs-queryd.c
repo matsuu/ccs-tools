@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/09/08
+ * Version: 1.6.4+   2008/09/09
  *
  */
 #include "ccstools.h"
@@ -207,12 +207,12 @@ static bool handle_query_new_format(unsigned int serial)
 	/* Is this domain query? */
 	if (strstr(buffer, "\n#"))
 		goto not_domain_query;
-	printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o):");
+	printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o/'R'etry):");
 	refresh();
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
-		    c == 'A' || c == 'a')
+		    c == 'A' || c == 'a' || c == 'R' || c == 'r')
 			break;
 		write(query_fd, "\n", 1);
 	}
@@ -254,7 +254,8 @@ not_append:
 write_answer:
 	/* Write answer. */
 	snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial,
-		 c == 'Y' || c == 'y' || c == 'A' || c == 'a' ? 1 : 2);
+		 c == 'Y' || c == 'y' || c == 'A' || c == 'a' ? 1 :
+		 c == 'R' || c == 'r' ? 3 : 2);
 	write(query_fd, buffer, strlen(buffer));
 	printw("\n");
 	refresh();
