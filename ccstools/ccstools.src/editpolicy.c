@@ -958,7 +958,8 @@ static void update_domain_policy(const char *base, const char *src,
 	}
 	reserved.name = "";
 	fill_path_info(&reserved);
-	read_domain_policy(base, NULL);
+	if (!access(base, R_OK))
+		read_domain_policy(base, NULL);
 	read_domain_policy(src, NULL);
 	swap_domain_list();
 	read_domain_policy(dest, NULL);
@@ -1449,6 +1450,20 @@ out:
 static u8 find_directive(const bool forward, char *line);
 static int generic_acl_compare(const void *a, const void *b);
 
+static int generic_acl_compare0(const void *a, const void *b)
+{
+	const struct generic_acl *a0 = (struct generic_acl *) a;
+	const struct generic_acl *b0 = (struct generic_acl *) b;
+	const char *a1 = directives[a0->directive].alias;
+	const char *b1 = directives[b0->directive].alias;
+	const char *a2 = a0->operand;
+	const char *b2 = b0->operand;
+	const int ret = strcmp(a1, b1);
+	if (ret)
+		return ret;
+	return strcmp(a2, b2);
+}
+
 static void read_generic_policy(void)
 {
 	FILE *fp;
@@ -1492,8 +1507,13 @@ static void read_generic_policy(void)
 		generic_acl_list[generic_acl_list_count++].operand = cp;
 	}
 	put();
-	qsort(generic_acl_list, generic_acl_list_count,
-	      sizeof(struct generic_acl), generic_acl_compare);
+	if (current_screen == SCREEN_ACL_LIST)
+		qsort(generic_acl_list, generic_acl_list_count,
+		      sizeof(struct generic_acl), generic_acl_compare);
+	else
+		qsort(generic_acl_list, generic_acl_list_count,
+		      sizeof(struct generic_acl), generic_acl_compare0);
+
 	fclose(fp);
 }
 
