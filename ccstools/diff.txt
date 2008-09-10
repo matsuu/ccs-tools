@@ -17,7 +17,7 @@ Index: ccstools.src/ccstools.h
  	int number; /* domain number (-1 if is_dis or is_dd) */
 Index: ccstools.src/editpolicy.c
 ===================================================================
---- ccstools.src/editpolicy.c	(revision 1571)
+--- ccstools.src/editpolicy.c	(revision 1574)
 +++ ccstools.src/editpolicy.c	(working copy)
 @@ -5,15 +5,13 @@
   *
@@ -1070,7 +1070,91 @@ Index: ccstools.src/editpolicy.c
  		} else {
  			generic_acl_list[current].selected ^= 1;
  		}
-@@ -2835,9 +2839,9 @@
+@@ -2549,8 +2553,8 @@
+ 	}
+ }
+ 
+-static _Bool compare_path(struct path_info *sarg, struct path_info *darg,
+-			  u8 directive)
++static bool compare_path(struct path_info *sarg, struct path_info *darg,
++			 u8 directive)
+ {
+ 	int i;
+ 	struct path_group_entry *group;
+@@ -2561,9 +2565,9 @@
+ 		&& (directive != DIRECTIVE_7)
+ 		&& (directive != DIRECTIVE_ALLOW_EXECUTE);
+ 	if (!pathcmp(sarg, darg))
+-		return 1;
++		return true;
+ 	if (darg->name[0] == '@')
+-		return 0;
++		return false;
+ 	if (sarg->name[0] != '@') {
+ 		/* Pathname component. */
+ 		return may_use_pattern && path_matches_pattern(darg, sarg);
+@@ -2571,48 +2575,48 @@
+ 	/* path_group component. */
+ 	group = find_path_group(sarg->name + 1);
+ 	if (!group)
+-		return 0;
++		return false;
+ 	for (i = 0; i < group->member_name_len; i++) {
+ 		const struct path_info *member_name;
+ 		member_name = group->member_name[i];
+ 		if (!pathcmp(member_name, darg))
+-			return 1;
++			return true;
+ 		if (may_use_pattern && path_matches_pattern(darg, member_name))
+-			return 1;
++			return true;
+ 	}
+-	return 0;
++	return false;
+ }
+ 
+-static _Bool compare_address(struct path_info *sarg, struct path_info *darg)
++static bool compare_address(struct path_info *sarg, struct path_info *darg)
+ {
+ 	int i;
+ 	struct ip_address_entry sentry;
+ 	struct ip_address_entry dentry;
+ 	struct address_group_entry *group;
+ 	if (parse_ip(darg->name, &dentry))
+-		return 0;
++		return false;
+ 	if (sarg->name[0] != '@') {
+ 		/* IP address component. */
+ 		if (parse_ip(sarg->name, &sentry))
+-			return 0;
++			return false;
+ 		if (sentry.is_ipv6 != dentry.is_ipv6 ||
+ 		    memcmp(dentry.min, sentry.min, 16) < 0 ||
+ 		    memcmp(sentry.max, dentry.max, 16) < 0)
+-			return 0;
+-		return 1;
++			return false;
++		return true;
+ 	}
+ 	/* IP address group component. */
+ 	group = find_address_group(sarg->name + 1);
+ 	if (!group)
+-		return 0;
++		return false;
+ 	for (i = 0; i < group->member_name_len; i++) {
+ 		struct ip_address_entry *sentry = &group->member_name[i];
+ 		if (sentry->is_ipv6 == dentry.is_ipv6
+ 		    && memcmp(sentry->min, dentry.min, 16) <= 0
+ 		    && memcmp(dentry.max, sentry->max, 16) <= 0)
+-			return 1;
++			return true;
+ 	}
+-	return 0;
++	return false;
+ }
+ 
+ static void try_optimize(const int current)
+@@ -2836,9 +2840,9 @@
  {
  	int c;
  	move(1, 0);
@@ -1082,7 +1166,7 @@ Index: ccstools.src/editpolicy.c
  		if (!c)
  			c = select_item(current);
  		if (!c)
-@@ -2855,7 +2859,7 @@
+@@ -2856,7 +2860,7 @@
  			printw("Delete selected entr%s? ('Y'es/'N'o)",
  			       c > 1 ? "ies" : "y");
  	}
@@ -1091,7 +1175,7 @@ Index: ccstools.src/editpolicy.c
  	clrtoeol();
  	refresh();
  	if (!c)
-@@ -2873,8 +2877,8 @@
+@@ -2874,8 +2878,8 @@
  		FILE *fp = open_write(DOMAIN_POLICY_FILE);
  		if (!fp)
  			return;
@@ -1102,7 +1186,7 @@ Index: ccstools.src/editpolicy.c
  				continue;
  			fprintf(fp, "delete %s\n", domain_name(index));
  		}
-@@ -2910,11 +2914,10 @@
+@@ -2911,11 +2915,10 @@
  static void add_entry(struct readline_data *rl)
  {
  	char *line;
@@ -1117,7 +1201,7 @@ Index: ccstools.src/editpolicy.c
  	if (!line || !*line)
  		goto out;
  	rl->count = simple_add_history(line, rl->history, rl->count, rl->max);
-@@ -2952,10 +2955,10 @@
+@@ -2953,10 +2956,10 @@
  		return;
  	if (!input)
  		goto start_search;
@@ -1130,7 +1214,7 @@ Index: ccstools.src/editpolicy.c
  	if (!line || !*line)
  		goto out;
  	rl->count = simple_add_history(line, rl->history, rl->count, rl->max);
-@@ -3001,24 +3004,24 @@
+@@ -3002,24 +3005,24 @@
  	char *line;
  	if (current_screen != SCREEN_DOMAIN_LIST)
  		return;
@@ -1160,7 +1244,7 @@ Index: ccstools.src/editpolicy.c
  			continue;
  		fprintf(fp, "select %s\n" KEYWORD_USE_PROFILE "%s\n",
  			domain_name(index), line);
-@@ -3106,7 +3109,7 @@
+@@ -3107,7 +3110,7 @@
  start:
  	if (current_screen == SCREEN_DOMAIN_LIST) {
  		read_domain_and_exception_policy();
@@ -1169,7 +1253,7 @@ Index: ccstools.src/editpolicy.c
  	} else {
  		read_generic_policy();
  		adjust_cursor_pos(generic_acl_list_count);
-@@ -3169,16 +3172,17 @@
+@@ -3170,16 +3173,17 @@
  				break;
  			if (current_screen == SCREEN_DOMAIN_LIST) {
  				const u8 selected
@@ -1190,7 +1274,7 @@ Index: ccstools.src/editpolicy.c
  				}
  			} else {
  				const u8 selected
-@@ -3228,8 +3232,8 @@
+@@ -3229,8 +3233,8 @@
  				snprintf(shared_buffer, shared_buffer_len - 1,
  					 ROOT_NAME "%s",
  					 strrchr(domain_name(current), ' '));
@@ -1201,7 +1285,7 @@ Index: ccstools.src/editpolicy.c
  				put();
  				if (redirect_index == EOF)
  					break;
-@@ -3321,24 +3325,27 @@
+@@ -3322,24 +3326,27 @@
  			is_select = true;
  		if (is_domain_def(shared_buffer)) {
  			if (is_delete) {
@@ -1234,7 +1318,7 @@ Index: ccstools.src/editpolicy.c
  		else if (is_delete)
  			del_string_entry(shared_buffer, index);
  		else
-@@ -3346,12 +3353,13 @@
+@@ -3347,12 +3354,13 @@
  	}
  	return;
  read_policy:
@@ -1252,7 +1336,7 @@ Index: ccstools.src/editpolicy.c
  		for (j = 0; j < string_count; j++)
  			fprintf(fp, "%s\n", string_ptr[j]->name);
  		fprintf(fp, "\n");
-@@ -3445,7 +3453,7 @@
+@@ -3446,7 +3454,7 @@
  static void policy_daemon(void)
  {
  	get();
@@ -1261,3 +1345,124 @@ Index: ccstools.src/editpolicy.c
  	while (true) {
  		FILE *fp;
  		struct msghdr msg;
+Index: diff.txt
+===================================================================
+--- diff.txt	(revision 1573)
++++ diff.txt	(working copy)
+@@ -17,7 +17,7 @@
+  	int number; /* domain number (-1 if is_dis or is_dd) */
+ Index: ccstools.src/editpolicy.c
+ ===================================================================
+---- ccstools.src/editpolicy.c	(revision 1571)
++--- ccstools.src/editpolicy.c	(revision 1574)
+ +++ ccstools.src/editpolicy.c	(working copy)
+ @@ -5,15 +5,13 @@
+   *
+@@ -1070,7 +1070,7 @@
+  		} else {
+  			generic_acl_list[current].selected ^= 1;
+  		}
+-@@ -2835,9 +2839,9 @@
++@@ -2836,9 +2840,9 @@
+  {
+  	int c;
+  	move(1, 0);
+@@ -1082,7 +1082,7 @@
+  		if (!c)
+  			c = select_item(current);
+  		if (!c)
+-@@ -2855,7 +2859,7 @@
++@@ -2856,7 +2860,7 @@
+  			printw("Delete selected entr%s? ('Y'es/'N'o)",
+  			       c > 1 ? "ies" : "y");
+  	}
+@@ -1091,7 +1091,7 @@
+  	clrtoeol();
+  	refresh();
+  	if (!c)
+-@@ -2873,8 +2877,8 @@
++@@ -2874,8 +2878,8 @@
+  		FILE *fp = open_write(DOMAIN_POLICY_FILE);
+  		if (!fp)
+  			return;
+@@ -1102,7 +1102,7 @@
+  				continue;
+  			fprintf(fp, "delete %s\n", domain_name(index));
+  		}
+-@@ -2910,11 +2914,10 @@
++@@ -2911,11 +2915,10 @@
+  static void add_entry(struct readline_data *rl)
+  {
+  	char *line;
+@@ -1117,7 +1117,7 @@
+  	if (!line || !*line)
+  		goto out;
+  	rl->count = simple_add_history(line, rl->history, rl->count, rl->max);
+-@@ -2952,10 +2955,10 @@
++@@ -2953,10 +2956,10 @@
+  		return;
+  	if (!input)
+  		goto start_search;
+@@ -1130,7 +1130,7 @@
+  	if (!line || !*line)
+  		goto out;
+  	rl->count = simple_add_history(line, rl->history, rl->count, rl->max);
+-@@ -3001,24 +3004,24 @@
++@@ -3002,24 +3005,24 @@
+  	char *line;
+  	if (current_screen != SCREEN_DOMAIN_LIST)
+  		return;
+@@ -1160,7 +1160,7 @@
+  			continue;
+  		fprintf(fp, "select %s\n" KEYWORD_USE_PROFILE "%s\n",
+  			domain_name(index), line);
+-@@ -3106,7 +3109,7 @@
++@@ -3107,7 +3110,7 @@
+  start:
+  	if (current_screen == SCREEN_DOMAIN_LIST) {
+  		read_domain_and_exception_policy();
+@@ -1169,7 +1169,7 @@
+  	} else {
+  		read_generic_policy();
+  		adjust_cursor_pos(generic_acl_list_count);
+-@@ -3169,16 +3172,17 @@
++@@ -3170,16 +3173,17 @@
+  				break;
+  			if (current_screen == SCREEN_DOMAIN_LIST) {
+  				const u8 selected
+@@ -1190,7 +1190,7 @@
+  				}
+  			} else {
+  				const u8 selected
+-@@ -3228,8 +3232,8 @@
++@@ -3229,8 +3233,8 @@
+  				snprintf(shared_buffer, shared_buffer_len - 1,
+  					 ROOT_NAME "%s",
+  					 strrchr(domain_name(current), ' '));
+@@ -1201,7 +1201,7 @@
+  				put();
+  				if (redirect_index == EOF)
+  					break;
+-@@ -3321,24 +3325,27 @@
++@@ -3322,24 +3326,27 @@
+  			is_select = true;
+  		if (is_domain_def(shared_buffer)) {
+  			if (is_delete) {
+@@ -1234,7 +1234,7 @@
+  		else if (is_delete)
+  			del_string_entry(shared_buffer, index);
+  		else
+-@@ -3346,12 +3353,13 @@
++@@ -3347,12 +3354,13 @@
+  	}
+  	return;
+  read_policy:
+@@ -1252,7 +1252,7 @@
+  		for (j = 0; j < string_count; j++)
+  			fprintf(fp, "%s\n", string_ptr[j]->name);
+  		fprintf(fp, "\n");
+-@@ -3445,7 +3453,7 @@
++@@ -3446,7 +3454,7 @@
+  static void policy_daemon(void)
+  {
+  	get();
