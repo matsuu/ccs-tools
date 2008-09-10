@@ -5,18 +5,18 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/09/08
+ * Version: 1.6.4+   2008/09/10
  *
  */
 #include "ccstools.h"
 
-static int print_path_needs_separator = 0;
+static bool print_path_needs_separator = false;
 
 static void print_path(const char *dir, const char *file, const char *trailer)
 {
 	if (print_path_needs_separator)
 		putchar(' ');
-	print_path_needs_separator = 1;
+	print_path_needs_separator = true;
 	fprintf_encoded(stdout, dir);
 	fprintf_encoded(stdout, file);
 	fprintf_encoded(stdout, trailer);
@@ -34,6 +34,7 @@ static int scandir_filter(const struct dirent *buf)
 		if (!strcmp(cp, ".") || !strcmp(cp, ".."))
 			return 0;
 	}
+	/* Make sure strlen(cp) * 4 + 1 < sizeof(buffer). */
 	if (strlen(cp) > 255)
 		return 0;
 	while (true) {
@@ -120,6 +121,8 @@ static void do_pathmatch_main(char *target)
 			scandir_target_part = realloc(scandir_target_part,
 						      (scandir_target_depth + 1)
 						      * sizeof(char *));
+			if (!scandir_target_part)
+				out_of_memory();
 			if (target + i != cp)
 				scandir_target_part[scandir_target_depth++]
 					= cp;
@@ -131,7 +134,7 @@ static void do_pathmatch_main(char *target)
 		for (i = 0; i < target_depth; i++)
 			printf("%d %s\n", i, scandir_target_part[i]);
 		*/
-		print_path_needs_separator = 0;
+		print_path_needs_separator = false;
 		scan_dir("/", 0);
 		putchar('\n');
 	}

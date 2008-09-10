@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/09/08
+ * Version: 1.6.4+   2008/09/10
  *
  */
 #include "ccstools.h"
@@ -14,12 +14,12 @@ int setprofile_main(int argc, char *argv[])
 {
 	FILE *fp_in;
 	FILE *fp_out;
-	int profile = 0;
-	bool recursive = 0;
+	unsigned int profile = 0;
+	bool recursive = false;
 	int i;
 	int start = 2;
 	if (argc > 1 && !strcmp(argv[1], "-r")) {
-		recursive = 1;
+		recursive = true;
 		start = 3;
 	}
 	if (argc <= start || sscanf(argv[start - 1], "%u", &profile) != 1) {
@@ -44,21 +44,21 @@ int setprofile_main(int argc, char *argv[])
 		close(fd);
 	}
 	{
-		int profile_found = 0;
-		fp_in = fopen(proc_policy_profile, "r");
-		if (!fp_in) {
+		bool profile_found = false;
+		FILE *fp = fopen(proc_policy_profile, "r");
+		if (!fp) {
 			fprintf(stderr, "Can't open policy file.\n");
 			exit(1);
 		}
 		get();
-		while (freadline(fp_in)) {
-			if (atoi(shared_buffer) == profile) {
-				profile_found = 1;
-				break;
-			}
+		while (freadline(fp)) {
+			if (atoi(shared_buffer) != profile)
+				continue;
+			profile_found = true;
+			break;
 		}
 		put();
-		fclose(fp_in);
+		fclose(fp);
 		if (!profile_found) {
 			fprintf(stderr, "Profile %u not defined.\n", profile);
 			exit(1);
@@ -87,8 +87,8 @@ int setprofile_main(int argc, char *argv[])
 				if (cp[len] && cp[len] != ' ')
 					continue;
 			}
-			fprintf(fp_out, "%d %s\n", profile, cp);
-			printf("%d %s\n", profile, cp);
+			fprintf(fp_out, "%u %s\n", profile, cp);
+			printf("%u %s\n", profile, cp);
 		}
 	}
 	put();

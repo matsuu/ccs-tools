@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/09/08
+ * Version: 1.6.4+   2008/09/10
  *
  */
 #include "ccstools.h"
@@ -43,10 +43,10 @@ static _Bool path_contains_pattern(const char *filename)
 				if (c != '0' || d != '0' || e != '0')
 					continue; /* pattern is not \000 */
 			}
-			return 1;
+			return true;
 		}
 	}
-	return 0;
+	return false;
 }
 
 static const char *patternize(const char *cp, int argc, char *argv[],
@@ -79,33 +79,36 @@ int patternize_main(int argc, char *argv[])
 		char *sp = shared_buffer;
 		const char *cp;
 		bool first = true;
-		bool disabled = false;
+		u8 count = 0;
 		while (true) {
 			cp = strsep(&sp, " ");
 			if (!cp)
 				break;
 			if (first) {
-				if (!strcmp(cp, "allow_execute") ||
-				    !strcmp(cp, "1") || !strcmp(cp, "3") ||
-				    !strcmp(cp, "5") || !strcmp(cp, "7")) {
-					/* This entry is an execute permission.
-					   I don't convert. */
-					disabled = true;
-				} else if (!strcmp(cp, "<kernel>") ||
-					   !strcmp(cp, "use_profile") ||
-					   !strcmp(cp, "allow_capability") ||
-					   !strcmp(cp, "allow_signal") ||
-					   !strcmp(cp, "allow_network")) {
-					/* This entry is not pathname related
-					   permission. I don't convert. */
-					disabled = true;
-				}
-			} else if (disabled) {
-				/* Nothing to do. */
-			} else if (!strcmp(cp, "if")) {
-				/* Don't convert after condition part. */
-				disabled = true;
-			} else if (!path_contains_pattern(cp)) {
+				if (!strcmp(cp, "allow_read") ||
+				    !strcmp(cp, "allow_write") ||
+				    !strcmp(cp, "allow_read/write") ||
+				    !strcmp(cp, "allow_create") ||
+				    !strcmp(cp, "allow_unlink") ||
+				    !strcmp(cp, "allow_mkdir") ||
+				    !strcmp(cp, "allow_rmdir") ||
+				    !strcmp(cp, "allow_mkfifo") ||
+				    !strcmp(cp, "allow_mksock") ||
+				    !strcmp(cp, "allow_mkblock") ||
+				    !strcmp(cp, "allow_mkchar") ||
+				    !strcmp(cp, "allow_truncate") ||
+				    !strcmp(cp, "allow_symlink") ||
+				    !strcmp(cp, "allow_rewrite") ||
+				    !strcmp(cp, "2") || !strcmp(cp, "4") ||
+				    !strcmp(cp, "6"))
+					count = 1;
+				else if (!strcmp(cp, "allow_link") ||
+					 !strcmp(cp, "allow_rename"))
+					count = 2;
+				else
+					count = 0;
+			} else if (count && count-- && *cp != '@' &&
+				   !path_contains_pattern(cp)) {
 				cp = patternize(cp, argc, argv, pattern_list);
 			}
 			if (!first)

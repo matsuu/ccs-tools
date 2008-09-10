@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/09/08
+ * Version: 1.6.4+   2008/09/10
  *
  */
 #include "ccstools.h"
@@ -63,8 +63,12 @@ static void update_ld_list(int argc, char *argv[], FILE *fp_policy)
 		}
 		/* Add an entry. */
 		pathname = strdup(cp);
+		if (!pathname)
+			out_of_memory();
 		entry_list = realloc(entry_list, (entry_list_count + 1) *
 				     sizeof(struct dll_pathname_entry));
+		if (!entry_list)
+			out_of_memory();
 		entry_list[entry_list_count].pathname = pathname;
 		entry_list[entry_list_count++].real_pathname = real_pathname;
 		printf("Added %s : %s\n", pathname, real_pathname);

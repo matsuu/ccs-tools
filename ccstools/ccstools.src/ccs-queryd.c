@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/09/09
+ * Version: 1.6.4+   2008/09/10
  *
  */
 #include "ccstools.h"
@@ -33,10 +33,10 @@ static void do_check_update(FILE *fp_out)
 		pathnames = realloc(pathnames, sizeof(char *) *
 				    (pathnames_len + 1));
 		if (!pathnames)
-			return;
+			out_of_memory();
 		pathnames[pathnames_len] = strdup(buffer);
 		if (!pathnames[pathnames_len])
-			return;
+			out_of_memory();
 		pathnames_len++;
 	}
 	fclose(fp_in);
@@ -91,10 +91,10 @@ static void do_check_update(FILE *fp_out)
 				pathnames = realloc(pathnames, sizeof(char *) *
 						    (pathnames_len + 1));
 				if (!pathnames)
-					return;
+					out_of_memory();
 				cp = strdup(real_pathname);
 				if (!cp)
-					return;
+					out_of_memory();
 				pathnames[pathnames_len++] = cp;
 				fprintf(fp_out, "+");
 				fprintf_encoded(fp_out, pathnames[i]);
@@ -145,7 +145,7 @@ static void handle_update(const int fd)
 	refresh();
 	while (true) {
 		c = getch2();
-		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
+		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' || c == EOF)
 			break;
 		write(query_fd, "\n", 1);
 	}
@@ -195,7 +195,7 @@ static bool handle_query_new_format(unsigned int serial)
 	}
 	if (sscanf(buffer, "#timestamp=%lu", &stamp) == 1) {
 		cp = strchr(buffer, ' ');
-		if (!cp) {
+		if (cp) {
 			struct tm *tm = localtime(&stamp);
 			printw("#%04d-%02d-%02d %02d:%02d:%02d#",
 			       tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
@@ -212,7 +212,7 @@ static bool handle_query_new_format(unsigned int serial)
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
-		    c == 'A' || c == 'a' || c == 'R' || c == 'r')
+		    c == 'A' || c == 'a' || c == 'R' || c == 'r' || c == EOF)
 			break;
 		write(query_fd, "\n", 1);
 	}
@@ -233,7 +233,7 @@ static bool handle_query_new_format(unsigned int serial)
 						    max_readline_history);
 	line = simple_readline(y, 0, "Enter new entry> ", readline_history,
 			       readline_history_count, 4000, 8);
-	scrollok(stdscr, 1);
+	scrollok(stdscr, TRUE);
 	printw("\n");
 	refresh();
 	if (!line || !*line) {
@@ -253,9 +253,13 @@ not_append:
 	free(line);
 write_answer:
 	/* Write answer. */
-	snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial,
-		 c == 'Y' || c == 'y' || c == 'A' || c == 'a' ? 1 :
-		 c == 'R' || c == 'r' ? 3 : 2);
+	if (c == 'Y' || c == 'y' || c == 'A' || c == 'a')
+		c = 1;
+	else if (c == 'R' || c == 'r')
+		c = 3;
+	else
+		c = 2;
+	snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial, c);
 	write(query_fd, buffer, strlen(buffer));
 	printw("\n");
 	refresh();
@@ -266,7 +270,7 @@ not_domain_query:
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
-		    c == 'R' || c == 'r')
+		    c == 'R' || c == 'r' || c == EOF)
 			break;
 		write(query_fd, "\n", 1);
 	}
@@ -311,7 +315,7 @@ static bool handle_query_old_format(unsigned int serial)
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
-		    c == 'A' || c == 'a')
+		    c == 'A' || c == 'a' || c == EOF)
 			break;
 		write(query_fd, "\n", 1);
 	}
@@ -332,7 +336,7 @@ static bool handle_query_old_format(unsigned int serial)
 						    max_readline_history);
 	line = simple_readline(y, 0, "Enter new entry> ", readline_history,
 			       readline_history_count, 4000, 8);
-	scrollok(stdscr, 1);
+	scrollok(stdscr, TRUE);
 	printw("\n");
 	refresh();
 	if (!line || !*line) {
@@ -353,8 +357,11 @@ write_answer:
 	refresh();
 	printw("\n");
 	/* Write answer. */
-	snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial,
-		 c == 'Y' || c == 'y' || c == 'A' || c == 'a' ? 1 : 2);
+	if (c == 'Y' || c == 'y' || c == 'A' || c == 'a')
+		c = 1;
+	else
+		c = 2;
+	snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial, c);
 	write(query_fd, buffer, strlen(buffer));
 	return true;
 not_domain_query:
@@ -365,7 +372,7 @@ not_domain_query:
 	refresh();
 	while (true) {
 		c = getch2();
-		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
+		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' || c == EOF)
 			break;
 		write(query_fd, "\n", 1);
 	}
@@ -409,7 +416,7 @@ int ccsqueryd_main(int argc, char *argv[])
 			"run this program.\n", proc_policy_manager);
 		return 1;
 	}
-	if (check_update) {
+	if (check_update != GLOBALLY_READABLE_FILES_UPDATE_NONE) {
 		pipe(pipe_fd);
 		switch (fork()) {
 		case 0:
@@ -426,6 +433,8 @@ int ccsqueryd_main(int argc, char *argv[])
 		pipe_fd[1] = EOF;
 	}
 	readline_history = malloc(max_readline_history * sizeof(const char *));
+	if (!readline_history)
+		out_of_memory();
 	write(query_fd, "\n", 1);
 	initscr();
 	cbreak();
@@ -435,7 +444,7 @@ int ccsqueryd_main(int argc, char *argv[])
 	keypad(stdscr, TRUE);
 	clear();
 	refresh();
-	scrollok(stdscr, 1);
+	scrollok(stdscr, TRUE);
 	while (true) {
 		static bool first = true;
 		static unsigned int prev_serial = 0;

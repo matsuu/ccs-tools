@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/09/08
+ * Version: 1.6.4+   2008/09/10
  *
  */
 #include "ccstools.h"
@@ -102,7 +102,7 @@ static void dump(const pid_t pid, const int depth)
 		printf(" %s (%u) %s\n", name, pid, info);
 		put();
 		free(name);
-		task_list[i].done = 1;
+		task_list[i].done = true;
 	}
 	for (i = 0; i < task_list_len; i++) {
 		if (pid != task_list[i].ppid)
@@ -127,14 +127,14 @@ static void dump_unprocessed(void)
 		printf("%3d %s (%u) %s\n", profile, name, pid, info);
 		put();
 		free(name);
-		task_list[i].done = 1;
+		task_list[i].done = true;
 	}
 }
 
 int ccstree_main(int argc, char *argv[])
 {
 	const char *policy_file = proc_policy_process_status;
-	static int show_all = 0;
+	static bool show_all = false;
 	if (access(proc_policy_dir, F_OK)) {
 		fprintf(stderr, "You can't use this command "
 			"for this kernel.\n");
@@ -142,7 +142,7 @@ int ccstree_main(int argc, char *argv[])
 	}
 	if (argc > 1) {
 		if (!strcmp(argv[1], "-a")) {
-			show_all = 1;
+			show_all = true;
 		} else {
 			fprintf(stderr, "Usage: %s [-a]\n", argv[0]);
 			return 0;
@@ -171,9 +171,11 @@ int ccstree_main(int argc, char *argv[])
 				task_list = realloc(task_list,
 						    (task_list_len + 1) *
 						    sizeof(struct task_entry));
+				if (!task_list)
+					out_of_memory();
 				task_list[task_list_len].pid = pid;
 				task_list[task_list_len].ppid = get_ppid(pid);
-				task_list[task_list_len].done = 0;
+				task_list[task_list_len].done = false;
 				task_list_len++;
 			}
 skip:

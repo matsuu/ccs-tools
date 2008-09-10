@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/09/08
+ * Version: 1.6.4+   2008/09/10
  *
  */
 #include "ccstools.h"
@@ -61,15 +61,15 @@ void normalize_line(unsigned char *line)
 	unsigned char *sp = line;
 	unsigned char *dp = line;
 	bool first = true;
-	while (*sp && (*sp <= 32 || 127 <= *sp))
+	while (*sp && (*sp <= ' ' || 127 <= *sp))
 		sp++;
 	while (*sp) {
 		if (!first)
 			*dp++ = ' ';
 		first = false;
-		while (32 < *sp && *sp < 127)
+		while (' ' < *sp && *sp < 127)
 			*dp++ = *sp++;
-		while (*sp && (*sp <= 32 || 127 <= *sp))
+		while (*sp && (*sp <= ' ' || 127 <= *sp))
 			sp++;
 	}
 	*dp = '\0';
@@ -150,9 +150,8 @@ static int const_part_length(const char *filename)
 {
 	int len = 0;
 	if (filename) {
-		char c;
 		while (true) {
-			c = *filename++;
+			char c = *filename++;
 			if (!c)
 				break;
 			if (c != '\\') {
@@ -192,9 +191,6 @@ bool is_domain_def(const unsigned char *domainname)
 
 bool is_correct_domain(const unsigned char *domainname)
 {
-	unsigned char c;
-	unsigned char d;
-	unsigned char e;
 	if (!domainname || strncmp(domainname, ROOT_NAME, ROOT_NAME_LEN))
 		goto out;
 	domainname += ROOT_NAME_LEN;
@@ -206,11 +202,13 @@ bool is_correct_domain(const unsigned char *domainname)
 		if (*domainname++ != '/')
 			goto out;
 		while (true) {
-			c = *domainname;
+			unsigned char c = *domainname;
 			if (!c || c == ' ')
 				break;
 			domainname++;
 			if (c == '\\') {
+				unsigned char d;
+				unsigned char e;
 				u8 f;
 				c = *domainname++;
 				switch (c) {
@@ -246,15 +244,14 @@ out:
 
 void fprintf_encoded(FILE *fp, const char *pathname)
 {
-	unsigned char c;
 	while (true) {
-		c = *(const unsigned char *) pathname++;
+		unsigned char c = *(const unsigned char *) pathname++;
 		if (!c)
 			break;
 		if (c == '\\') {
 			fputc('\\', fp);
 			fputc('\\', fp);
-		} else if (c > 32 && c < 127) {
+		} else if (c > ' ' && c < 127) {
 			fputc(c, fp);
 		} else {
 			fprintf(fp, "\\%c%c%c", (c >> 6) + '0',
@@ -265,15 +262,14 @@ void fprintf_encoded(FILE *fp, const char *pathname)
 
 bool decode(const char *ascii, char *bin)
 {
-	char c;
-	char d;
-	char e;
 	while (true) {
-		c = *ascii++;
+		char c = *ascii++;
 		*bin++ = c;
 		if (!c)
 			break;
 		if (c == '\\') {
+			char d;
+			char e;
 			u8 f;
 			c = *ascii++;
 			switch (c) {
@@ -310,8 +306,6 @@ bool is_correct_path(const char *filename, const s8 start_type,
 {
 	bool contains_pattern = false;
 	unsigned char c;
-	unsigned char d;
-	unsigned char e;
 	if (!filename)
 		goto out;
 	c = *filename;
@@ -336,6 +330,8 @@ bool is_correct_path(const char *filename, const s8 start_type,
 		if (!c)
 			break;
 		if (c == '\\') {
+			unsigned char d;
+			unsigned char e;
 			c = *filename++;
 			switch (c) {
 			case '\\':  /* "\\" */
@@ -860,7 +856,7 @@ retry:
 	 * You should use either "symbolic links with 'alias' directive" or
 	 * "hard links".
 	 */
-	printf("ccstools version 1.6.4+ build 2008/09/08\n");
+	printf("ccstools version 1.6.4+ build 2008/09/10\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }

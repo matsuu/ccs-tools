@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/09/08
+ * Version: 1.6.4+   2008/09/10
  *
  */
 #include "ccstools.h"
@@ -109,12 +109,12 @@ char *simple_readline(const int start_y, const int start_x, const char *prompt,
 		      const char *history[], const int history_count,
 		      const int max_length, const int scroll_width)
 {
-	const int prompt_len = prompt && *prompt ? strlen(prompt) : 0;
+	const int prompt_len = prompt ? strlen(prompt) : 0;
 	int buffer_len = 0;
 	int line_pos = 0;
 	int cur_pos = 0;
 	int history_pos = 0;
-	int tmp_saved = 0;
+	bool tmp_saved = false;
 	static char *buffer = NULL;
 	static char *tmp_buffer = NULL;
 	{
@@ -125,16 +125,16 @@ char *simple_readline(const int start_y, const int start_x, const char *prompt,
 	}
 	{
 		char *tmp;
-		tmp = realloc(buffer, max_length);
+		tmp = realloc(buffer, max_length + 1);
 		if (!tmp)
 			return NULL;
 		buffer = tmp;
-		tmp = realloc(tmp_buffer, max_length);
+		tmp = realloc(tmp_buffer, max_length + 1);
 		if (!tmp)
 			return NULL;
 		tmp_buffer = tmp;
-		memset(buffer, 0, max_length);
-		memset(tmp_buffer, 0, max_length);
+		memset(buffer, 0, max_length + 1);
+		memset(tmp_buffer, 0, max_length + 1);
 	}
 	move(start_y, start_x);
 	history_pos = history_count;
@@ -177,11 +177,11 @@ char *simple_readline(const int start_y, const int start_x, const char *prompt,
 				buffer_len = -1;
 			break;
 		} else if (c == KEY_IC) {
-			scrollok(stdscr, 1);
+			scrollok(stdscr, TRUE);
 			printw("\n");
 			for (i = 0; i < history_count; i++)
 				printw("%d: '%s'\n", i, history[i]);
-			scrollok(stdscr, 0);
+			scrollok(stdscr, FALSE);
 		} else if (c >= 0x20 && c <= 0x7E &&
 			   buffer_len < max_length - 1) {
 			for (i = buffer_len - 1; i >= line_pos + cur_pos; i--)
@@ -221,7 +221,7 @@ char *simple_readline(const int start_y, const int start_x, const char *prompt,
 		} else if (c == KEY_UP) {
 			if (history_pos) {
 				if (!tmp_saved) {
-					tmp_saved = 1;
+					tmp_saved = true;
 					strncpy(tmp_buffer, buffer, max_length);
 				}
 				history_pos--;
@@ -238,7 +238,7 @@ char *simple_readline(const int start_y, const int start_x, const char *prompt,
 				buffer_len = strlen(buffer);
 				goto end_key;
 			} else if (tmp_saved) {
-				tmp_saved = 0;
+				tmp_saved = false;
 				history_pos = history_count;
 				strncpy(buffer, tmp_buffer, max_length);
 				buffer_len = strlen(buffer);
