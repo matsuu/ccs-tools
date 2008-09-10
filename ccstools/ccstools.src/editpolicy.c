@@ -1175,8 +1175,8 @@ usage:
 #define DIRECTIVE_ALLOW_REWRITE                    24
 #define DIRECTIVE_ALLOW_ARGV0                      25
 #define DIRECTIVE_ALLOW_SIGNAL                     26
-#define DIRECTIVE_ALLOW_NETWORK_UDIRECTIVE_BIND    27
-#define DIRECTIVE_ALLOW_NETWORK_UDIRECTIVE_CONNECT 28
+#define DIRECTIVE_ALLOW_NETWORK_UDP_BIND           27
+#define DIRECTIVE_ALLOW_NETWORK_UDP_CONNECT        28
 #define DIRECTIVE_ALLOW_NETWORK_TCP_BIND           29
 #define DIRECTIVE_ALLOW_NETWORK_TCP_LISTEN         30
 #define DIRECTIVE_ALLOW_NETWORK_TCP_CONNECT        31
@@ -1241,9 +1241,9 @@ static struct {
 	[DIRECTIVE_ALLOW_REWRITE]    = { "allow_rewrite", NULL, 0, 0 },
 	[DIRECTIVE_ALLOW_ARGV0]      = { "allow_argv0", NULL, 0, 0 },
 	[DIRECTIVE_ALLOW_SIGNAL]     = { "allow_signal", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_NETWORK_UDIRECTIVE_BIND] = {
+	[DIRECTIVE_ALLOW_NETWORK_UDP_BIND] = {
 		"allow_network UDP bind", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_NETWORK_UDIRECTIVE_CONNECT] = {
+	[DIRECTIVE_ALLOW_NETWORK_UDP_CONNECT] = {
 		"allow_network UDP connect", NULL, 0, 0 },
 	[DIRECTIVE_ALLOW_NETWORK_TCP_BIND] = {
 		"allow_network TCP bind", NULL, 0, 0 },
@@ -2599,6 +2599,7 @@ static _Bool compare_address(struct path_info *sarg, struct path_info *darg)
 		    memcmp(dentry.min, sentry.min, 16) < 0 ||
 		    memcmp(sentry.max, dentry.max, 16) < 0)
 			return 0;
+		return 1;
 	}
 	/* IP address group component. */
 	group = find_address_group(sarg->name + 1);
@@ -2738,8 +2739,8 @@ static void try_optimize(const int current)
 			if (strcmp(sarg1.name, darg1.name))
 				continue;
 			break;
-		case DIRECTIVE_ALLOW_NETWORK_UDIRECTIVE_BIND:
-		case DIRECTIVE_ALLOW_NETWORK_UDIRECTIVE_CONNECT:
+		case DIRECTIVE_ALLOW_NETWORK_UDP_BIND:
+		case DIRECTIVE_ALLOW_NETWORK_UDP_CONNECT:
 		case DIRECTIVE_ALLOW_NETWORK_TCP_BIND:
 		case DIRECTIVE_ALLOW_NETWORK_TCP_LISTEN:
 		case DIRECTIVE_ALLOW_NETWORK_TCP_CONNECT:
@@ -2791,8 +2792,8 @@ static void try_optimize(const int current)
 			if (c && c != ' ')
 				continue;
 			break;
-		case DIRECTIVE_ALLOW_NETWORK_UDIRECTIVE_BIND:
-		case DIRECTIVE_ALLOW_NETWORK_UDIRECTIVE_CONNECT:
+		case DIRECTIVE_ALLOW_NETWORK_UDP_BIND:
+		case DIRECTIVE_ALLOW_NETWORK_UDP_CONNECT:
 		case DIRECTIVE_ALLOW_NETWORK_TCP_BIND:
 		case DIRECTIVE_ALLOW_NETWORK_TCP_LISTEN:
 		case DIRECTIVE_ALLOW_NETWORK_TCP_CONNECT:
