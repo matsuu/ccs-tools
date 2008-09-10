@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/09/08
+ * Version: 1.6.4+   2008/09/10
  *
  */
 #include "ccstools.h"
@@ -66,7 +66,7 @@ static unsigned int line = 0;
 static unsigned int errors = 0;
 static unsigned int warnings = 0;
 
-static int check_condition(char *condition)
+static bool check_condition(char *condition)
 {
 	enum { TASK_UID, TASK_EUID, TASK_SUID, TASK_FSUID, TASK_GID, TASK_EGID,
 	       TASK_SGID, TASK_FSGID, TASK_PID, TASK_PPID, PATH1_UID,
@@ -254,11 +254,11 @@ static int check_condition(char *condition)
 			}
 		}
 	}
-	return 1;
+	return true;
 out:
 	printf("%u: ERROR: '%s' is a illegal condition.\n", line, start);
 	errors++;
-	return 0;
+	return false;
 }
 
 static void check_capability_policy(char *data)
@@ -436,8 +436,8 @@ static void check_file_policy(char *data)
 		const char * const keyword;
 		const int paths;
 	} acl_type_array[] = {
-		{ "read/write", 1 },
 		{ "execute",    1 },
+		{ "read/write", 1 },
 		{ "read",       1 },
 		{ "write",      1 },
 		{ "create",     1 },
@@ -473,6 +473,10 @@ static void check_file_policy(char *data)
 		}
 		if (!is_correct_path(filename, 0, 0, 0))
 			goto out1;
+		/* "1", "3", "5", "7" don't accept patterns. */
+		if (filename[0] != '@' && (perm & 1) == 1 &&
+		    !is_correct_path(filename, 1, -1, -1))
+			goto out1;
 		return;
 	}
 	if (!strncmp(data, "allow_", 6)) {
@@ -487,6 +491,10 @@ static void check_file_policy(char *data)
 				*cp = '\0';
 			}
 			if (!is_correct_path(filename, 0, 0, 0))
+				break;
+			/* "allow_execute" doesn't accept patterns. */
+			if (!type && filename[0] != '@' &&
+			    !is_correct_path(filename, 1, -1, -1))
 				break;
 			return;
 		}
@@ -688,9 +696,9 @@ static void check_address_group_policy(char *data)
 	errors++;
 }
 
-static void check_domain_policy(int *domain0)
+static void check_domain_policy(void)
 {
-	int domain = *domain0;
+	static int domain = EOF;
 	bool is_delete = false;
 	bool is_select = false;
 	bool is_undelete = false;
@@ -712,7 +720,6 @@ static void check_domain_policy(int *domain0)
 			else
 				domain = 0;
 		}
-		*domain0 = domain;
 	} else if (is_select) {
 		printf("%u: ERROR: Command 'select' is valid for selecting "
 		       "domains only.\n", line);
@@ -903,7 +910,6 @@ int checkpolicy_main(int argc, char *argv[])
 	get();
 	while (memset(shared_buffer, 0, shared_buffer_len),
 	       fgets(shared_buffer, shared_buffer_len - 1, stdin)) {
-		static int domain = EOF;
 		char *cp = strchr(shared_buffer, '\n');
 		line++;
 		if (!cp) {
@@ -931,7 +937,7 @@ int checkpolicy_main(int argc, char *argv[])
 			continue;
 		switch (policy_type) {
 		case POLICY_TYPE_DOMAIN_POLICY:
-			check_domain_policy(&domain);
+			check_domain_policy();
 			break;
 		case POLICY_TYPE_EXCEPTION_POLICY:
 			check_exception_policy();
