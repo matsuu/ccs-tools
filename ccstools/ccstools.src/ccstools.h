@@ -178,10 +178,8 @@ struct domain_keeper_entry {
 
 struct domain_info {
 	const struct path_info *domainname;
-	/* This may be NULL */
-	const struct domain_initializer_entry *domain_initializer;
-	/* This may be NULL */
-	const struct domain_keeper_entry *domain_keeper;
+	const struct domain_initializer_entry *d_i; /* This may be NULL */
+	const struct domain_keeper_entry *d_k; /* This may be NULL */
 	const struct path_info **string_ptr;
 	int string_count;
 	int number; /* domain number (-1 if is_dis or is_dd) */
