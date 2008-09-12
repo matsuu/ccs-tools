@@ -3713,18 +3713,24 @@ static u8 find_directive(const bool forward, char *line)
 		if (forward) {
 			const int len = directives[i].original_len;
 			if (strncmp(line, directives[i].original, len) ||
-			    line[len] != ' ')
+			    (line[len] != ' ' && line[len]))
 				continue;
-			memmove(line, line + len + 1,
-				strlen(line + len + 1) + 1);
+			if (line[len])
+				memmove(line, line + len + 1,
+					strlen(line + len + 1) + 1);
+			else
+				line[0] = '\0';
 			return i;
 		} else {
 			const int len = directives[i].alias_len;
 			if (strncmp(line, directives[i].alias, len) ||
-			    line[len] != ' ')
+			    (line[len] != ' ' && line[len]))
 				continue;
-			memmove(line, line + len + 1,
-				strlen(line + len + 1) + 1);
+			if (line[len])
+				memmove(line, line + len + 1,
+					strlen(line + len + 1) + 1);
+			else
+				line[0] = '\0';
 			return i;
 		}
 	}
