@@ -145,7 +145,7 @@ static void handle_update(const int fd)
 	refresh();
 	while (true) {
 		c = getch2();
-		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' || c == EOF)
+		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
 			break;
 		write(query_fd, "\n", 1);
 	}
@@ -212,7 +212,7 @@ static bool handle_query_new_format(unsigned int serial)
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
-		    c == 'A' || c == 'a' || c == 'R' || c == 'r' || c == EOF)
+		    c == 'A' || c == 'a' || c == 'R' || c == 'r')
 			break;
 		write(query_fd, "\n", 1);
 	}
@@ -270,7 +270,7 @@ not_domain_query:
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
-		    c == 'R' || c == 'r' || c == EOF)
+		    c == 'R' || c == 'r')
 			break;
 		write(query_fd, "\n", 1);
 	}
@@ -315,7 +315,7 @@ static bool handle_query_old_format(unsigned int serial)
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
-		    c == 'A' || c == 'a' || c == EOF)
+		    c == 'A' || c == 'a')
 			break;
 		write(query_fd, "\n", 1);
 	}
@@ -372,7 +372,7 @@ not_domain_query:
 	refresh();
 	while (true) {
 		c = getch2();
-		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' || c == EOF)
+		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
 			break;
 		write(query_fd, "\n", 1);
 	}
