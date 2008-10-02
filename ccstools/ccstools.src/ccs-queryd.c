@@ -5,10 +5,13 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/09/10
+ * Version: 1.6.4+   2008/10/02
  *
  */
 #include "ccstools.h"
+
+static bool has_retry_counter = false;
+static unsigned short int retries = 0;
 
 static void do_check_update(FILE *fp_out)
 {
@@ -207,12 +210,14 @@ static bool handle_query_new_format(unsigned int serial)
 	/* Is this domain query? */
 	if (strstr(buffer, "\n#"))
 		goto not_domain_query;
-	printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o/'R'etry):");
+	printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o%s):",
+	       has_retry_counter ? "/'R'etry" : "");
 	refresh();
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
-		    c == 'A' || c == 'a' || c == 'R' || c == 'r')
+		    c == 'A' || c == 'a' ||
+		    (has_retry_counter && (c == 'R' || c == 'r')))
 			break;
 		write(query_fd, "\n", 1);
 	}
@@ -265,12 +270,12 @@ write_answer:
 	refresh();
 	return true;
 not_domain_query:
-	printw("Allow? ('Y'es/'N'o/'R'etry):");
+	printw("Allow? ('Y'es/'N'o%s):", has_retry_counter ? "/'R'etry" : "");
 	refresh();
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
-		    c == 'R' || c == 'r')
+		    (has_retry_counter && (c == 'R' || c == 'r')))
 			break;
 		write(query_fd, "\n", 1);
 	}
@@ -478,11 +483,18 @@ int ccsqueryd_main(int argc, char *argv[])
 		*cp = '\0';
 
 		/* Get query number. */
-		if (sscanf(buffer, "Q%u", &serial) != 1)
+		switch (sscanf(buffer, "Q%u-%hu", &serial, &retries)) {
+		case 2:
+			has_retry_counter = true;
+			break;
+		case 1:
+			break;
+		default:
 			continue;
+		}
 		memmove(buffer, cp + 1, strlen(cp + 1) + 1);
 
-		if (!first && prev_serial == serial) {
+		if (!first && prev_serial == serial && !has_retry_counter) {
 			sleep(1);
 			write(query_fd, "\n", 1);
 			continue;
