@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.1   2008/05/10
+ * Version: 1.6.5-pre   2008/10/07
  *
  */
 #include "include.h"
@@ -115,7 +115,7 @@ static void rmdir2(const char *pathname) {
 
 static void StageFileTest(void) {
 	char *filename = "";
-	policy = "allow_read /proc/sys/net/ipv4/ip_local_port_range";
+	policy = "allow_read /proc/sys/net/ipv4/ip_local_port_range if task.uid=0 task.gid=0";
 	if (write_policy()) {
 		static int name[] = { CTL_NET, NET_IPV4, NET_IPV4_LOCAL_PORT_RANGE };
 		int buffer[2] = { 32768, 61000 };
@@ -124,7 +124,7 @@ static void StageFileTest(void) {
 		delete_policy();
 		show_result(sysctl(name, 3, buffer, &size, 0, 0), 0);
 	}
-	policy = "allow_write /proc/sys/net/ipv4/ip_local_port_range";
+	policy = "allow_write /proc/sys/net/ipv4/ip_local_port_range if task.euid=0 0=0 1-100=10-1000";
 	if (write_policy()) {
 		static int name[] = { CTL_NET, NET_IPV4, NET_IPV4_LOCAL_PORT_RANGE };
 		int buffer[2] = { 32768, 61000 };
@@ -133,7 +133,7 @@ static void StageFileTest(void) {
 		delete_policy();
 		show_result(sysctl(name, 3, 0, 0, buffer, size), 0);
 	}
-	policy = "allow_read/write /proc/sys/net/ipv4/ip_local_port_range";
+	policy = "allow_read/write /proc/sys/net/ipv4/ip_local_port_range if 1!=10-100";
 	if (write_policy()) {
 		static int name[] = { CTL_NET, NET_IPV4, NET_IPV4_LOCAL_PORT_RANGE };
 		int buffer[2] = { 32768, 61000 };
@@ -143,14 +143,14 @@ static void StageFileTest(void) {
 		show_result(sysctl(name, 3, buffer, &size, buffer, size), 0);
 	}
 
-	policy = "allow_read /bin/true";
+	policy = "allow_read /bin/true if path1.uid=0 path1.parent.uid=0 10=10-100";
 	if (write_policy()) {
 		show_result(uselib("/bin/true"), 1);
 		delete_policy();
 		show_result(uselib("/bin/true"), 0);
 	}
 
-	policy = "allow_execute /bin/true";
+	policy = "allow_execute /bin/true if task.uid!=10 path1.parent.uid=0";
 	if (write_policy()) {
 		int pipe_fd[2] = { EOF, EOF };
 		int err = 0;
@@ -185,7 +185,7 @@ static void StageFileTest(void) {
 		show_result(err ? EOF : 0, 0);
 	}
 
-	policy = "allow_read /dev/null";
+	policy = "allow_read /dev/null if path1.parent.ino=path1.parent.ino";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDONLY);
 		show_result(fd, 1);
@@ -196,7 +196,7 @@ static void StageFileTest(void) {
 		if (fd != EOF) close(fd);
 	}
 
-	policy = "allow_write /dev/null";
+	policy = "allow_write /dev/null if path1.uid=path1.gid";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_WRONLY);
 		show_result(fd, 1);
@@ -207,7 +207,7 @@ static void StageFileTest(void) {
 		if (fd != EOF) close(fd);
 	}
 
-	policy = "allow_read/write /dev/null";
+	policy = "allow_read/write /dev/null if task.uid=path1.parent.uid";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDWR);
 		show_result(fd, 1);
@@ -218,9 +218,9 @@ static void StageFileTest(void) {
 		if (fd != EOF) close(fd);
 	}
 
-	policy = "allow_create /tmp/open_test";
+	policy = "allow_create /tmp/open_test if path1.parent.uid=task.uid";
 	if (write_policy()) {
-		policy = "allow_write /tmp/open_test";
+		policy = "allow_write /tmp/open_test if path1.parent.uid=0";
 		if (write_policy()) {
 			int fd = open("/tmp/open_test", O_WRONLY | O_CREAT | O_EXCL, 0666);
 			show_result(fd, 1);
@@ -232,13 +232,13 @@ static void StageFileTest(void) {
 			if (fd != EOF) close(fd);
 			unlink2("/tmp/open_test");
 		}
-		policy = "allow_create /tmp/open_test\n";
+		policy = "allow_create /tmp/open_test if path1.parent.uid=task.uid\n";
 		delete_policy();
 	}
 
-	policy = "allow_write /tmp/open_test";
+	policy = "allow_write /tmp/open_test if task.uid=0 path1.ino!=0";
 	if (write_policy()) {
-		policy = "allow_create /tmp/open_test";
+		policy = "allow_create /tmp/open_test if 0=0";
 		if (write_policy()) {
 			int fd = open("/tmp/open_test", O_WRONLY | O_CREAT | O_EXCL, 0666);
 			show_result(fd, 1);
@@ -250,16 +250,16 @@ static void StageFileTest(void) {
 			if (fd != EOF) close(fd);
 			unlink2("/tmp/open_test");
 		}
-		policy = "allow_write /tmp/open_test\n";
+		policy = "allow_write /tmp/open_test if task.uid=0 path1.ino!=0\n";
 		delete_policy();
 	}
 
 	filename = "/tmp/truncate_test";
 	create2(filename);
 
-	policy = "allow_truncate /tmp/truncate_test";
+	policy = "allow_truncate /tmp/truncate_test if task.uid=path1.uid";
 	if (write_policy()) {
-		policy = "allow_write /tmp/truncate_test";
+		policy = "allow_write /tmp/truncate_test if 1!=100-1000000";
 		if (write_policy()) {
 			int fd = open(filename, O_WRONLY | O_TRUNC);
 			show_result(fd, 1);
@@ -269,7 +269,7 @@ static void StageFileTest(void) {
 			show_result(fd, 0);
 			if (fd != EOF) close(fd);
 		}
-		policy = "allow_truncate /tmp/truncate_test";
+		policy = "allow_truncate /tmp/truncate_test if task.uid=path1.uid";
 		delete_policy();
 	}
 
