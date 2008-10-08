@@ -502,6 +502,8 @@ static bool save_domain_policy_with_diff(const char *proc, FILE *proc_fp,
 			continue;
 		/* This domain was added by diff policy. */
 		fprintf(diff_fp, "%s\n\n", domainname->name);
+		fprintf(diff_fp, KEYWORD_USE_PROFILE "%u\n",
+			proc_domain_list[proc_index].profile);
 		proc_string_ptr = proc_domain_list[proc_index].string_ptr;
 		proc_string_count = proc_domain_list[proc_index].string_count;
 		for (i = 0; i < proc_string_count; i++)
@@ -546,6 +548,14 @@ static bool save_domain_policy_with_diff(const char *proc, FILE *proc_fp,
 				fprintf(diff_fp, "%s\n\n", domainname->name);
 			first = false;
 			fprintf(diff_fp, "%s\n", proc_string_ptr[i]->name);
+		}
+		if (proc_domain_list[proc_index].profile !=
+		    base_domain_list[base_index].profile) {
+			if (first)
+				fprintf(diff_fp, "%s\n\n", domainname->name);
+			first = false;
+			fprintf(diff_fp, KEYWORD_USE_PROFILE "%u\n",
+				proc_domain_list[proc_index].profile);
 		}
 		if (!first)
 			fprintf(diff_fp, "\n");
