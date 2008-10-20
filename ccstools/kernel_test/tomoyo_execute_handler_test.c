@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/07
+ * Version: 1.6.5-pre   2008/10/20
  *
  */
 #include "include.h"
@@ -17,24 +17,11 @@ int main(int raw_argc, char *raw_argv[]) {
 	Init();
 	fd1 = open(proc_policy_process_status, O_RDWR);
 	memset(buffer, 0, sizeof(buffer));
-	snprintf(buffer, sizeof(buffer) - 1, "%d\n", pid);
+	snprintf(buffer, sizeof(buffer) - 1, "info %d\n", pid);
 	write(fd1, buffer, strlen(buffer));
 	buffer[0] = '\0';
 	read(fd1, buffer, sizeof(buffer) - 1);
-	cp2 = strrchr(buffer, ' ');
-	if (!cp2) {
-		fprintf(stderr, "BUG: Can't get process's domain.\n");
-		return 1;
-	}
-	*cp2++ = '\0';
-	cp2 = strdup(cp2);
-	cp = strchr(buffer, ' ');
-	if (!cp) {
-		fprintf(stderr, "BUG: Can't get process's info.\n");
-		return 1;
-	}
-	*cp = '\0';
-	if (strstr(buffer, "(execute_handler)")) {
+	if (strstr(buffer, " execute_handler=yes")) {
 		int i, argc, envc;
 		char *filename, **argv, **envp;
 		if (raw_argc < 7) return 1;
