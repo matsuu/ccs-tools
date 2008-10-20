@@ -13,14 +13,17 @@
 int main(int raw_argc, char *raw_argv[]) {
 	char buffer[4096];
 	char *cp, *cp2;
-	int fd1 = EOF, fd2 = EOF;
+	FILE *fp;
+	int error;
 	Init();
-	fd1 = open(proc_policy_process_status, O_RDWR);
 	memset(buffer, 0, sizeof(buffer));
-	snprintf(buffer, sizeof(buffer) - 1, "info %d\n", pid);
-	write(fd1, buffer, strlen(buffer));
-	buffer[0] = '\0';
-	read(fd1, buffer, sizeof(buffer) - 1);
+	fp = fopen(proc_policy_process_status, "r+");
+	if (!fp)
+		return 1;
+	fprintf(fp, "info %d\n", pid);
+	fflush(fp);
+	fgets(buffer, sizeof(buffer) - 1, fp);
+	fclose(fp);
 	if (strstr(buffer, " execute_handler=yes")) {
 		int i, argc, envc;
 		char *filename, **argv, **envp;
@@ -38,17 +41,16 @@ int main(int raw_argc, char *raw_argv[]) {
 		/*
 		 * Check parameters passed to execve() request.
 		 */
-		if (1) {
-			openlog(raw_argv[0], LOG_NDELAY, LOG_USER);
-			syslog(LOG_INFO, "Domain = %s\n", raw_argv[1]);
-			syslog(LOG_INFO, "Caller Program = %s\n", raw_argv[2]);
-			syslog(LOG_INFO, "Process Status = %s\n", raw_argv[3]);
-			syslog(LOG_INFO, "Requested Program = %s\n", filename);
-			syslog(LOG_INFO, "argc=%d\n", argc);
-			syslog(LOG_INFO, "envc=%d\n", envc);
-			for (i = 0; i < argc; i++) syslog(LOG_INFO, "argv[%d] = %s\n", i, argv[i]);
-			for (i = 0; i < envc; i++) syslog(LOG_INFO, "envp[%d] = %s\n", i, envp[i]);
-			closelog();
+		if (0) {
+			fprintf(stderr, "Domain = %s\n", raw_argv[1]);
+			fprintf(stderr, "Caller Program = %s\n", raw_argv[2]);
+			fprintf(stderr, "Process Status = %s\n", raw_argv[3]);
+			fprintf(stderr, "Requested Program = %s\n", filename);
+			fprintf(stderr, "argc=%d\n", argc);
+			fprintf(stderr, "envc=%d\n", envc);
+			for (i = 0; i < argc; i++) fprintf(stderr, "argv[%d] = %s\n", i, argv[i]);
+			for (i = 0; i < envc; i++) fprintf(stderr, "envp[%d] = %s\n", i, envp[i]);
+			fprintf(stderr, "\n");
 		}
 		/*
 		 * Continue if filename and argv[] and envp[] are appropriate. 
@@ -58,33 +60,57 @@ int main(int raw_argc, char *raw_argv[]) {
 		}
 		return 1;
 	}
-	fd2 = open(proc_policy_domain_policy, O_RDWR);
-	snprintf(buffer, sizeof(buffer) - 1, "select pid=%u\n", pid);
-	write(fd2, buffer, strlen(buffer));
-	snprintf(buffer, sizeof(buffer) - 1, "execute_handler %s\n", cp2);
-	write(fd2, buffer, strlen(buffer));
+	memset(buffer, 0, sizeof(buffer));
+	fp = fopen(proc_policy_self_domain, "r");
+	if (!fp)
+		return 1;
+	fgets(buffer, sizeof(buffer) - 1, fp);
+	fclose(fp);
+	cp2 = strrchr(buffer, ' ');
+	if (!cp2)
+		return 1;
+	cp2++;
+	fp = fopen(proc_policy_domain_policy, "r+");
+	if (!fp)
+		return 1;
+	fprintf(fp, "select pid=%u\n", pid);
+	fprintf(fp, "execute_handler %s\n", cp2);
+	fflush(fp);
 	if (fork() == 0) {
-		execve("/bin/true", raw_argv, environ);
-		_exit(0);
+		char *arg[3] = { "echo", "OK: execute handler succeeded", NULL };
+		char *env[2] = { "execute_handler", NULL };
+		execve("/bin/echo", arg, env);
+		_exit(1);
 	}
-	wait(NULL);
-	snprintf(buffer, sizeof(buffer) - 1, "delete execute_handler %s\n", cp2);
-	write(fd2, buffer, strlen(buffer));
-
-	snprintf(buffer, sizeof(buffer) - 1, "denied_execute_handler %s\n", cp2);
-	write(fd2, buffer, strlen(buffer));
-	cp = "delete allow_execute /bin/true\n";
-	write(fd2, cp, strlen(cp));
+	wait(&error);
+	error = WIFEXITED(error) ? WEXITSTATUS(error) : -1;
+	if (error) {
+		printf("BUG: execute handler failed\n");
+		fflush(stdout);
+	}
+	fprintf(fp, "delete execute_handler %s\n", cp2);
+	fprintf(fp, "denied_execute_handler %s\n", cp2);
+	fprintf(fp, "delete allow_execute /bin/echo\n");
+	fprintf(fp, "%s %s\n", buffer, cp2);
+	fprintf(fp, "use_profile 0\n");
+	fflush(fp);
 	cp = "255-MAC_FOR_FILE=enforcing\n";
 	write(profile_fd, cp, strlen(cp));
 	if (fork() == 0) {
-		execve("/bin/true", raw_argv, environ);
-		_exit(0);
+		char *arg[3] = { "echo", "OK: denied execute handler succeeded", NULL };
+		char *env[2] = { "denied_execute_handler", NULL };
+		execve("/bin/echo", arg, env);
+		_exit(1);
 	}
-	wait(NULL);
+	wait(&error);
+	error = WIFEXITED(error) ? WEXITSTATUS(error) : -1;
+	if (error) {
+		printf("BUG: execute handler failed\n");
+		fflush(stdout);
+	}
 	cp = "255-MAC_FOR_FILE=disabled\n";
 	write(profile_fd, cp, strlen(cp));
-	snprintf(buffer, sizeof(buffer) - 1, "delete denied_execute_handler %s\n", cp2);
-	write(fd2, buffer, strlen(buffer));
+	fprintf(fp, "delete denied_execute_handler %s\n", cp2);
+	fclose(fp);
 	return 0;
 }

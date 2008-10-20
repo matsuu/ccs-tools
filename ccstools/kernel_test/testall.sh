@@ -39,3 +39,4 @@ newns ccs_policy_io_test | grep -vF OK
 newns tomoyo_new_file_test | grep -vF OK
 newns tomoyo_new_capability_test | grep -vF OK
 newns tomoyo_new_network_test | grep -vF OK
+newns tomoyo_execute_handler_test | grep -vF OK
