@@ -104,12 +104,12 @@ static void PreInit(void) {
 	}
 }
 
-static int status_fd = EOF;
+static int profile_fd = EOF;
 static int is_kernel26 = 0;
 static pid_t pid = 0;
 
 static void WriteStatus(const char *cp) {
-	write(status_fd, "255-", 4); write(status_fd, cp, strlen(cp));
+	write(profile_fd, "255-", 4); write(profile_fd, cp, strlen(cp));
 }
 
 static void ClearStatus(void) {
@@ -126,15 +126,15 @@ static void ClearStatus(void) {
 		if (!cp) continue; *cp++ = '\0';
 		if (strcmp(buffer, "0")) continue;
 		//if (strcmp(cp, "TOMOYO_VERBOSE") == 0) continue;
-		write(status_fd, "255-", 4);
-		write(status_fd, cp, strlen(cp));
+		write(profile_fd, "255-", 4);
+		write(profile_fd, cp, strlen(cp));
 		if (strcmp(cp, "COMMENT") == 0) {
 			const char *cmd = "=Profile for kernel test\n";
-			write(status_fd, cmd, strlen(cmd)); continue;
+			write(profile_fd, cmd, strlen(cmd)); continue;
 		}
-		write(status_fd, "=0\n", 3);
+		write(profile_fd, "=0\n", 3);
 	}
-	write(status_fd, "255-SLEEP_PERIOD=1\n", 19);
+	write(profile_fd, "255-SLEEP_PERIOD=1\n", 19);
 	fclose(fp);
 }
 
@@ -145,11 +145,11 @@ static void Init(void) {
 		fprintf(stderr, "You can't use this program for this kernel.\n");
 		exit(1);
 	}
-	if ((status_fd = open(proc_policy_profile, O_WRONLY)) == EOF) {
+	if ((profile_fd = open(proc_policy_profile, O_WRONLY)) == EOF) {
 		fprintf(stderr, "Can't open %s .\n", proc_policy_profile);
 		exit(1);
 	}
-	if (write(status_fd, "", 0) != 0) {
+	if (write(profile_fd, "", 0) != 0) {
 		fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
 		exit(1);
 	}

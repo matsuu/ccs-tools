@@ -11,7 +11,6 @@
 #include "include.h"
 
 static int domain_fd = EOF;
-static int profile_fd = EOF;
 static char self_domain[4096];
 
 static void try_open(const char *policy, const char *file, const int mode, const char should_success) {
@@ -221,7 +220,6 @@ int main(int argc, char *argv[]) {
 	const char *cp;
 	int self_fd;
 	Init();
-	profile_fd = open(proc_policy_profile, O_WRONLY);
 	self_fd = open(proc_policy_self_domain, O_RDONLY);
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
 	memset(self_domain, 0, sizeof(self_domain));

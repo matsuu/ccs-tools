@@ -76,14 +76,14 @@ int main(int raw_argc, char *raw_argv[]) {
 	cp = "delete allow_execute /bin/true\n";
 	write(fd2, cp, strlen(cp));
 	cp = "255-MAC_FOR_FILE=enforcing\n";
-	write(status_fd, cp, strlen(cp));
+	write(profile_fd, cp, strlen(cp));
 	if (fork() == 0) {
 		execve("/bin/true", raw_argv, environ);
 		_exit(0);
 	}
 	wait(NULL);
 	cp = "255-MAC_FOR_FILE=disabled\n";
-	write(status_fd, cp, strlen(cp));
+	write(profile_fd, cp, strlen(cp));
 	snprintf(buffer, sizeof(buffer) - 1, "delete denied_execute_handler %s\n", cp2);
 	write(fd2, buffer, strlen(buffer));
 	return 0;
