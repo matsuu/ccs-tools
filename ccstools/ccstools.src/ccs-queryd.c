@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/10/02
+ * Version: 1.6.5-pre   2008/10/20
  *
  */
 #include "ccstools.h"
@@ -164,6 +164,91 @@ static void handle_update(const int fd)
 	refresh();
 }
 
+static bool convert_path_info(FILE *fp, const struct path_info *pattern,
+			      const char *new)
+{
+	bool modified = false;
+	const char *cp = pattern->name;
+	int depth = 0;
+	while (*cp)
+		if (*cp++ == '/')
+			depth++;
+	while (true) {
+		int d = depth;
+		char buffer[4096];
+		char *cp;
+		if (fscanf(fp, "%4095s", buffer) != 1)
+			break;
+		if (buffer[0] != '/')
+			goto out;
+		cp = buffer;
+		while (*cp) {
+			char c;
+			struct path_info old;
+			bool matched;
+			if (*cp != '/' || --d)
+				continue;
+			cp++;
+			c = *cp;
+			*cp = '\0';
+			old.name = buffer;
+			fill_path_info(&old);
+			matched = path_matches_pattern(&old, pattern);
+			*cp = c;
+			if (matched) {
+				fprintf(fp, "%s%s", new, cp);
+				modified = true;
+				buffer[0] = '\0';
+				break;
+			}
+		}
+out:
+		fprintf(fp, "%s ", buffer);
+	}
+	return modified;
+}
+
+static bool check_path_info(const char *buffer)
+{
+	bool modified = false;
+	static struct path_info *update_list = NULL;
+	static int update_list_len = 0;
+	char *sp = strdup(buffer);
+	char *str = sp;
+	const char *path_list[3] = {
+		proc_policy_system_policy,
+		proc_policy_exception_policy,
+		proc_policy_domain_policy
+	};
+	if (!str)
+		return false;
+	while (true) {
+		int i;
+		char *cp = strsep(&sp, " ");
+		if (!cp)
+			break;
+		for (i = 0; i < update_list_len; i++) {
+			int j;
+			struct path_info old;
+			/* TODO: split cp at upadte_list's depth. */
+			old.name = cp;
+			fill_path_info(&old);
+			if (!path_matches_pattern(&old, &update_list[i]))
+				continue;
+			for (j = 0; j < 3; j++) {
+				FILE *fp = fopen(path_list[j], "r+");
+				if (!fp)
+					continue;
+				if (convert_path_info(fp, &update_list[i], cp))
+					modified = true;
+				fclose(fp);
+			}
+		}
+	}
+	free(str);
+	return modified;
+}
+
 static int domain_policy_fd = EOF;
 static const int max_readline_history = 20;
 static const char **readline_history = NULL;
@@ -191,6 +276,10 @@ static bool handle_query_new_format(unsigned int serial)
 		return false;
 	}
 	*(cp - 1) = '\0';
+	if (0 && !retries && check_path_info(buffer)) {
+		c = 'r';
+		goto write_answer;
+	}
 	if (pid != prev_pid) {
 		if (prev_pid)
 			printw("----------------------------------------\n");
