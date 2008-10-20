@@ -10,7 +10,6 @@
  */
 #include "include.h"
 
-static int profile_fd = EOF;
 static int domain_fd = EOF;
 static int exception_fd = EOF;
 static const char *policy = "";
@@ -493,7 +492,6 @@ static void StageFileTest(void) {
 int main(int argc, char *argv[]) {
 	char *cp;
 	Init();
-	profile_fd = open(proc_policy_profile, O_WRONLY);
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
 	exception_fd = open(proc_policy_exception_policy, O_WRONLY);
 	{
