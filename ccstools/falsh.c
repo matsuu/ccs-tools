@@ -4,9 +4,9 @@
  * A tiny shell without built-in commands.
  * ( http://sourceforge.jp/projects/tomoyo/document/winf2005-en.pdf )
  *
- * Copyright (C) 2005-2006  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.0 2005/11/11
+ * Version: 1.6.5-pre   2008/10/20
  *
  * This program is intended to provide a login shell
  * to allow users do extra authentications (CERBERUS) safely.
@@ -28,42 +28,56 @@
 #include <signal.h>
 #include <wordexp.h>
 
-static int Shell(const char *commandline) {
-	int status, err;
+static int Shell(const char *commandline)
+{
+	int status;
+	int err;
 	pid_t pid;
-	struct sigaction sa, intr, quit;
+	struct sigaction sa;
+	struct sigaction intr;
+	struct sigaction quit;
 	sigset_t omask;
 	sa.sa_handler = SIG_IGN;
 	sa.sa_flags = 0;
 	sigemptyset(&sa.sa_mask);
-	if (sigaction(SIGINT, &sa, &intr) < 0) goto out;
-	if (sigaction(SIGQUIT, &sa, &quit) < 0) goto out_restore_sigint;
+	if (sigaction(SIGINT, &sa, &intr) < 0)
+		goto out;
+	if (sigaction(SIGQUIT, &sa, &quit) < 0)
+		goto out_restore_sigint;
 	sigaddset(&sa.sa_mask, SIGCHLD);
 	if (sigprocmask(SIG_BLOCK, &sa.sa_mask, &omask) == EOF) {
 		sigaction(SIGQUIT, &quit, (struct sigaction *) NULL);
-	out_restore_sigint:
+out_restore_sigint:
 		sigaction(SIGINT, &intr, (struct sigaction *) NULL);
-	out:
+out:
 		return -1;
 	}
-	switch (pid = fork()) {
+	pid = fork();
+	switch (pid) {
+		wordexp_t p;
 	case 0:
-		{
-			wordexp_t p;
-			sigaction(SIGINT, &intr, (struct sigaction *) NULL);
-			sigaction(SIGQUIT, &quit, (struct sigaction *) NULL);
-			sigprocmask(SIG_SETMASK, &omask, (sigset_t *) NULL);
-			if (wordexp(commandline, &p, WRDE_NOCMD) == 0) {
-				char **args = (char **) calloc(p.we_wordc + 1, sizeof(char *));
-				int i; for (i = 0; i < p.we_wordc; i++) args[i] = p.we_wordv[i];
-				execvp(args[0], args); err = errno; free(args); wordfree(&p);
-				fprintf(stderr, "ERROR: Can't execute. %s : %s\n", commandline, strerror(err));
-			} else {
-				fprintf(stderr, "ERROR: Can't parse. %s\n", commandline);
-				err = EINVAL;
-			}
-			_exit(err);
+		sigaction(SIGINT, &intr, (struct sigaction *) NULL);
+		sigaction(SIGQUIT, &quit, (struct sigaction *) NULL);
+		sigprocmask(SIG_SETMASK, &omask, (sigset_t *) NULL);
+		if (wordexp(commandline, &p, WRDE_NOCMD) == 0) {
+			char **args = (char **) calloc(p.we_wordc + 1,
+						       sizeof(char *));
+			int i;
+			for (i = 0; i < p.we_wordc; i++)
+				args[i] = p.we_wordv[i];
+			execvp(args[0], args);
+			err = errno;
+			free(args);
+			wordfree(&p);
+			fprintf(stderr,
+				"ERROR: Can't execute. %s : %s\n",
+				commandline, strerror(err));
+		} else {
+			fprintf(stderr, "ERROR: Can't parse. %s\n",
+				commandline);
+			err = EINVAL;
 		}
+		_exit(err);
 		break;
 	case -1:
 		err = errno;
@@ -71,8 +85,15 @@ static int Shell(const char *commandline) {
 		status = -1;
 		break;
 	default:
-		while ((err = waitpid(pid, &status, 0)) == EOF && errno == EINTR);
-		if (err != pid) status = -1;
+		while (1) {
+			err = waitpid(pid, &status, 0);
+			if (err != EOF)
+				break;
+			if (errno != EINTR)
+				break;
+		}
+		if (err != pid)
+			status = -1;
 	}
 	sigaction(SIGINT, &intr, (struct sigaction *) NULL);
 	sigaction(SIGQUIT, &quit, (struct sigaction *) NULL);
@@ -80,31 +101,50 @@ static int Shell(const char *commandline) {
 	return status;
 }
 
-int main(int argc, char *argv[]) {
-	static char buffer[1024], hostname[1024], cwd[1024];
+int main(int argc, char *argv[])
+{
+	static char buffer[1024];
+	static char hostname[1024];
+	static char cwd[1024];
 	struct passwd *pw = getpwuid(getuid());
 	char *line;
 	int shelllevel = 0;
-	if (argc == 3 && strcmp(argv[1], "-c") == 0) return Shell(argv[2]);
-	else if (argc != 1) return 1;
+	if (argc == 3 && !strcmp(argv[1], "-c"))
+		return Shell(argv[2]);
+	else if (argc != 1)
+		return 1;
 	{
 		const char *shlvl = getenv("SHLVL");
-		if (shlvl) shelllevel = atoi(shlvl);
+		if (shlvl)
+			shelllevel = atoi(shlvl);
 		shelllevel++;
 		memset(buffer, 0, sizeof(buffer));
 		snprintf(buffer, sizeof(buffer) - 1, "%d", shelllevel);
 		setenv("SHLVL", buffer, 1);
 	}
 	setenv("SHELL", "/bin/sh", 1);
-	memset(buffer, 0, sizeof(buffer)); memset(hostname, 0, sizeof(hostname)); memset(cwd, 0, sizeof(cwd));
-	getcwd(cwd, sizeof(cwd) - 1); gethostname(hostname, sizeof(hostname) - 1);
-	snprintf(buffer, sizeof(buffer) - 1, "[%s@%s %s (SHLVL=%d)]# ", pw ? pw->pw_name : "I have no name!", hostname, cwd, shelllevel);
+	memset(buffer, 0, sizeof(buffer));
+	memset(hostname, 0, sizeof(hostname));
+	memset(cwd, 0, sizeof(cwd));
+	getcwd(cwd, sizeof(cwd) - 1);
+	gethostname(hostname, sizeof(hostname) - 1);
+	snprintf(buffer, sizeof(buffer) - 1, "[%s@%s %s (SHLVL=%d)]# ",
+		 pw ? pw->pw_name : "I have no name!", hostname, cwd,
+		 shelllevel);
 	stifle_history(20);
-	while ((line = readline(buffer)) != NULL) {
-		if (*line) { add_history(line); Shell(line); }
-		free(line); line = NULL;
+	while (1) {
+		line = readline(buffer);
+		if (!line)
+			break;
+		if (*line) {
+			add_history(line);
+			Shell(line);
+		}
+		free(line);
+		line = NULL;
 	}
-	if (line) free(line);
+	if (line)
+		free(line);
 	printf("\n");
 	return 0;
 }

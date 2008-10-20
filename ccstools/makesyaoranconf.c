@@ -3,9 +3,9 @@
  *
  * Generate policy template file for SYAORAN.
  *
- * Copyright (C) 2005-2006  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.3.1   2006/12/08
+ * Version: 1.6.5-pre   2008/10/20
  *
  * This program generates policy template file for SYAORAN
  * (Implementation of the Tamper-Proof Device Filesystem).
@@ -28,36 +28,47 @@
 #include <dirent.h>
 #include <linux/kdev_t.h>
 
-static void DumpPath(const char *buffer) {
+static void DumpPath(const char *buffer)
+{
 	unsigned char c;
 	int width = 20;
-	while ((c = * (const unsigned char *) buffer) != '\0') {
+	while (1) {
+		c = *(const unsigned char *) buffer;
+		if (!c)
+			break;
 		buffer++;
 		if (c <= 32 || c > 126) {
-			printf("\\%c%c%c", (c >> 6) + '0', ((c >> 3) & 7) + '0', (c & 7) + '0');
+			printf("\\%c%c%c", (c >> 6) + '0',
+			       ((c >> 3) & 7) + '0', (c & 7) + '0');
 			width -= 3;
 		} else if (c == '\\') {
-			putchar('\\'); putchar('\\');
+			putchar('\\');
+			putchar('\\');
 			width -= 2;
 		} else {
 			putchar(c);
 			width--;
 		}
 	}
-	while (width-- > 0) putchar(' ');
+	while (width-- > 0)
+		putchar(' ');
 }
 
 #define PAGE_SIZE 4096
 
 static int root_dir_len = 0;
 
-static void FindFiles(const char *path) {
+static void FindFiles(const char *path)
+{
 	struct dirent **namelist;
-	int i, n = scandir(path, &namelist, 0, versionsort);
+	int i;
+	int n = scandir(path, &namelist, 0, versionsort);
 	char *filename;
-	//fprintf(stderr, "scandir(%s)=%d\n", path, n);
-	if (n < 0) return;
-	if ((filename = malloc(PAGE_SIZE)) == NULL) {
+	/* fprintf(stderr, "scandir(%s)=%d\n", path, n); */
+	if (n < 0)
+		return;
+	filename = malloc(PAGE_SIZE);
+	if (!filename) {
 		fprintf(stderr, "FATAL: Out of memory.\n");
 		exit(1);
 	}
@@ -65,14 +76,14 @@ static void FindFiles(const char *path) {
 	for (i = 0; i < n; i++) {
 		const char *file = namelist[i]->d_name;
 		struct stat64 buf;
-		if (strcmp(file, ".") == 0 || strcmp(file, "..") == 0) {
+		if (!strcmp(file, ".") || !strcmp(file, "..")) {
 			free((void *) namelist[i]);
 			continue;
 		}
 		snprintf(filename, PAGE_SIZE - 2, "%s%s", path, file);
 		free((void *) namelist[i]);
 		file = NULL;
-		if (lstat64(filename, &buf) == 0) {
+		if (!lstat64(filename, &buf)) {
 			static char symlink_buffer[PAGE_SIZE];
 			const uid_t user = buf.st_uid;
 			const gid_t group = buf.st_gid;
@@ -81,12 +92,19 @@ static void FindFiles(const char *path) {
 			const unsigned int major = MAJOR(buf.st_rdev);
 			const unsigned int minor = MINOR(buf.st_rdev);
 			const unsigned int flags = 0;
-			if (!S_ISBLK(mode) && !S_ISCHR(mode) && !S_ISSOCK(mode) && !S_ISFIFO(mode) && !S_ISDIR(mode) && !S_ISLNK(mode) && !S_ISREG(mode)) continue;
+			if (!S_ISBLK(mode) && !S_ISCHR(mode) &&
+			    !S_ISSOCK(mode) && !S_ISFIFO(mode) &&
+			    !S_ISDIR(mode) && !S_ISLNK(mode) && !S_ISREG(mode))
+				continue;
 			if (S_ISLNK(mode)) {
-				memset(symlink_buffer, 0, sizeof(symlink_buffer));
-				if (readlink(filename, symlink_buffer, sizeof(symlink_buffer) - 1) <= 0) continue;
+				memset(symlink_buffer, 0,
+				       sizeof(symlink_buffer));
+				if (readlink(filename, symlink_buffer,
+					     sizeof(symlink_buffer) - 1) <= 0)
+					continue;
 			}
-			if (strlen(filename) <= root_dir_len) continue;
+			if (strlen(filename) <= root_dir_len)
+				continue;
 			DumpPath(filename + root_dir_len);
 			printf(" %3o %3d %3d %2u ", perm, user, group, flags);
 			if (S_ISBLK(mode)) {
@@ -114,7 +132,8 @@ static void FindFiles(const char *path) {
 	free(filename);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	const char *root_dir = "/dev/";
 	if (argc > 1) {
 		if (chdir(argv[1])) {
@@ -126,12 +145,14 @@ int main(int argc, char *argv[]) {
 	root_dir_len = strlen(root_dir);
 	if (root_dir[root_dir_len - 1] != '/') {
 		char *cp = malloc(root_dir_len + 16);
-		if (!cp) return 1;
+		if (!cp)
+			return 1;
 		snprintf(cp, root_dir_len + 16, "%s/", root_dir);
 		root_dir = cp;
 		root_dir_len = strlen(root_dir);
 	}
-	printf("#filename permission uid gid flags type [ symlink_data | major minor ]\n");
+	printf("#filename permission uid gid flags type "
+	       "[ symlink_data | major minor ]\n");
 	FindFiles(root_dir);
 	return 0;
 }

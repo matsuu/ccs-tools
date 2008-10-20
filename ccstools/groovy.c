@@ -4,9 +4,9 @@
  * An example program for CERBERUS.
  * ( http://sourceforge.jp/projects/tomoyo/document/winf2005-en.pdf )
  *
- * Copyright (C) 2005-2006  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.0 2005/11/11
+ * Version: 1.6.5-pre   2008/10/20
  */
 #include <stdio.h>
 #include <string.h>
@@ -17,7 +17,8 @@
 #include <stdlib.h>
 #include <pwd.h>
 
-static const char *get_shell(void) {
+static const char *get_shell(void)
+{
 	static char *shell = NULL;
 	if (!shell) {
 		struct passwd *pw = getpwuid(getuid());
@@ -26,7 +27,8 @@ static const char *get_shell(void) {
 	return shell;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	static char buffer[1024];
 	static const char *lockfile = "/tmp/.lockme";
 	int trial;
@@ -37,7 +39,8 @@ int main(int argc, char *argv[]) {
 		fgets(buffer, sizeof(buffer) - 1, stdin);
 		if (shell) {
 			int fd;
-			if ((fd = open(lockfile, O_WRONLY | O_CREAT | O_EXCL, 0600)) != EOF) {
+			fd = open(lockfile, O_WRONLY | O_CREAT | O_EXCL, 0600);
+			if (fd != EOF) {
 				close(fd);
 				execlp(shell, shell, NULL);
 			}
