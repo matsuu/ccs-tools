@@ -13,7 +13,8 @@
 static int domain_fd = EOF;
 static char self_domain[4096];
 
-static void try_exec(const char *policy, char *argv[], char *envp[], const char should_success) {
+static void try_exec(const char *policy, char *argv[], char *envp[],
+		     const char should_success) {
 	FILE *fp;
 	char buffer[8192];
 	char *cp;
@@ -37,10 +38,12 @@ static void try_exec(const char *policy, char *argv[], char *envp[], const char 
 	}
 	while (fgets(buffer, sizeof(buffer) - 1, fp)) {
 		cp = strchr(buffer, '\n');
-		if (cp) *cp = '\0';
-		if (!strncmp(buffer, "<kernel>", 8)) domain_found = !strcmp(self_domain, buffer);
+		if (cp)
+			*cp = '\0';
+		if (!strncmp(buffer, "<kernel>", 8))
+			domain_found = !strcmp(self_domain, buffer);
 		if (domain_found) {
-			//printf("<%s>\n", buffer);
+			/* printf("<%s>\n", buffer); */
 			if (!strcmp(buffer, policy)) {
 				policy_found = 1;
 				break;
@@ -65,69 +68,111 @@ static void try_exec(const char *policy, char *argv[], char *envp[], const char 
 	write(domain_fd, policy, strlen(policy));
 	write(domain_fd, "\n", 1);
 	if (should_success) {
-		if (!err) printf("OK\n");
-		else printf("BUG: failed (%d)\n", err);
+		if (!err)
+			printf("OK\n");
+		else
+			printf("BUG: failed (%d)\n", err);
 	} else {
-		if (err == EPERM) printf("OK: Permission denied.\n");
-		else printf("BUG: failed (%d)\n", err);
+		if (err == EPERM)
+			printf("OK: Permission denied.\n");
+		else
+			printf("BUG: failed (%d)\n", err);
 	}
 }
 
-static void StageExecTest(void) {
+static void StageExecTest(void)
+{
 	int i;
-	static char *argv[128], *envp[128];
-	for (i = 0; i < 10; i++) { 
-		memset(argv, 0, sizeof(argv)); memset(envp, 0, sizeof(envp));
-		
+	static char *argv[128];
+	static char *envp[128];
+	for (i = 0; i < 10; i++) {
+		memset(argv, 0, sizeof(argv));
+		memset(envp, 0, sizeof(envp));
+
 		argv[0] = "/bin/true";
-		try_exec("allow_execute /bin/true if task.gid=0-100 exec.argc=1", argv, envp, 1);
+		try_exec("allow_execute /bin/true "
+			 "if task.gid=0-100 exec.argc=1", argv, envp, 1);
 		argv[0] = NULL;
-		try_exec("allow_execute /bin/true if task.gid=0-100 exec.argc=1", argv, envp, 0);
-		
+		try_exec("allow_execute /bin/true "
+			 "if task.gid=0-100 exec.argc=1", argv, envp, 0);
+
 		envp[0] = "";
-		try_exec("allow_execute /bin/true if task.gid!=100 task.euid=0 path1.uid=0 path1.parent.uid=0 exec.envc=1", argv, envp, 1);
+		try_exec("allow_execute /bin/true if task.gid!=100 task.euid=0 "
+			 "path1.uid=0 path1.parent.uid=0 exec.envc=1", argv,
+			 envp, 1);
 		envp[0] = NULL;
-		try_exec("allow_execute /bin/true if task.gid!=100 task.euid=0 path1.uid=0 path1.parent.uid=0 exec.envc=1", argv, envp, 0);
-		
+		try_exec("allow_execute /bin/true if task.gid!=100 task.euid=0 "
+			 "path1.uid=0 path1.parent.uid=0 exec.envc=1", argv,
+			 envp, 0);
+
 		argv[0] = "/bin/true";
 		argv[1] = "--";
-		try_exec("allow_execute /bin/true if 0=0 exec.argc=1-5", argv, envp, 1);
-		try_exec("allow_execute /bin/true if 0=0 exec.argc!=1-5", argv, envp, 0);
-		
+		try_exec("allow_execute /bin/true if 0=0 exec.argc=1-5", argv,
+			 envp, 1);
+		try_exec("allow_execute /bin/true if 0=0 exec.argc!=1-5", argv,
+			 envp, 0);
+
 		envp[0] = "";
 		envp[1] = "";
-		try_exec("allow_execute /bin/true if task.uid=0 task.gid!=1-100 path1.parent.uid!=1 path1.gid=0 exec.envc=1-5", argv, envp, 1);
-		try_exec("allow_execute /bin/true if task.uid=0 task.gid!=1-100 path1.parent.uid!=1 path1.gid=0 exec.envc!=1-5", argv, envp, 0);
-		
+		try_exec("allow_execute /bin/true if task.uid=0 "
+			 "task.gid!=1-100 path1.parent.uid!=1 path1.gid=0 "
+			 "exec.envc=1-5", argv, envp, 1);
+		try_exec("allow_execute /bin/true if task.uid=0 "
+			 "task.gid!=1-100 path1.parent.uid!=1 path1.gid=0 "
+			 "exec.envc!=1-5", argv, envp, 0);
+
 		argv[0] = "/bin/true";
 		argv[1] = "--";
-		try_exec("allow_execute /bin/true if task.uid=0 task.gid=0 path1.parent.uid=0 path1.uid=0 exec.argv[1]=\"--\"", argv, envp, 1);
-		try_exec("allow_execute /bin/true if task.uid=0 task.gid=0 path1.parent.uid=0 path1.uid=0 exec.argv[1]!=\"--\"", argv, envp, 0);
-		
+		try_exec("allow_execute /bin/true if task.uid=0 task.gid=0 "
+			 "path1.parent.uid=0 path1.uid=0 exec.argv[1]=\"--\"",
+			 argv, envp, 1);
+		try_exec("allow_execute /bin/true if task.uid=0 task.gid=0 "
+			 "path1.parent.uid=0 path1.uid=0 exec.argv[1]!=\"--\"",
+			 argv, envp, 0);
+
 		argv[0] = "/bin/true";
 		argv[1] = "-";
-		try_exec("allow_execute /bin/true if 1!=0 exec.argv[1]=\"--\"", argv, envp, 0);
-		try_exec("allow_execute /bin/true if 1!=0 exec.argv[1]!=\"--\"", argv, envp, 1);
-		
+		try_exec("allow_execute /bin/true if 1!=0 exec.argv[1]=\"--\"",
+			 argv, envp, 0);
+		try_exec("allow_execute /bin/true if 1!=0 exec.argv[1]!=\"--\"",
+			 argv, envp, 1);
+
 		envp[0] = "HOME=/";
-		try_exec("allow_execute /bin/true if task.euid=0 exec.envp[\"HOME\"]!=NULL", argv, envp, 1);
-		try_exec("allow_execute /bin/true if task.euid=0 exec.envp[\"HOME\"]=NULL", argv, envp, 0);
-		try_exec("allow_execute /bin/true if 0!=1 exec.envp[\"HOME\"]=\"/\"", argv, envp, 1);
-		try_exec("allow_execute /bin/true if 0!=1 exec.envp[\"HOME\"]!=\"/\"", argv, envp, 0);
-		
+		try_exec("allow_execute /bin/true if task.euid=0 "
+			 "exec.envp[\"HOME\"]!=NULL", argv, envp, 1);
+		try_exec("allow_execute /bin/true if task.euid=0 "
+			 "exec.envp[\"HOME\"]=NULL", argv, envp, 0);
+		try_exec("allow_execute /bin/true if 0!=1 "
+			 "exec.envp[\"HOME\"]=\"/\"", argv, envp, 1);
+		try_exec("allow_execute /bin/true if 0!=1 "
+			 "exec.envp[\"HOME\"]!=\"/\"", argv, envp, 0);
+
 		envp[0] = "HOME2=/";
-		try_exec("allow_execute /bin/true if path1.uid=0 exec.envp[\"HOME\"]!=NULL", argv, envp, 0);
-		try_exec("allow_execute /bin/true if path1.uid=0 exec.envp[\"HOME\"]=NULL", argv, envp, 1);
-		try_exec("allow_execute /bin/true if 100=1-1000 exec.envp[\"HOME\"]=\"/\"", argv, envp, 0);
-		try_exec("allow_execute /bin/true if 100=1-1000 exec.envp[\"HOME\"]!=\"/\"", argv, envp, 1);
-		try_exec("allow_execute /bin/true if path1.parent.gid!=100 exec.envp[\"HOME\"]!=NULL exec.envp[\"HOME3\"]=NULL", argv, envp, 0);
-		try_exec("allow_execute /bin/true if path1.parent.gid!=100 exec.envp[\"HOME\"]=NULL exec.envp[\"HOME3\"]=NULL", argv, envp, 1);
-		try_exec("allow_execute /bin/true if path1.parent.gid=0 exec.envp[\"HOME\"]=\"/\" exec.envp[\"HOME3\"]=NULL", argv, envp, 0);
-		try_exec("allow_execute /bin/true if path1.parent.gid=0 exec.envp[\"HOME\"]!=\"/\" exec.envp[\"HOME3\"]=NULL", argv, envp, 1);
+		try_exec("allow_execute /bin/true if path1.uid=0 "
+			 "exec.envp[\"HOME\"]!=NULL", argv, envp, 0);
+		try_exec("allow_execute /bin/true if path1.uid=0 "
+			 "exec.envp[\"HOME\"]=NULL", argv, envp, 1);
+		try_exec("allow_execute /bin/true if 100=1-1000 "
+			 "exec.envp[\"HOME\"]=\"/\"", argv, envp, 0);
+		try_exec("allow_execute /bin/true if 100=1-1000 "
+			 "exec.envp[\"HOME\"]!=\"/\"", argv, envp, 1);
+		try_exec("allow_execute /bin/true if path1.parent.gid!=100 "
+			 "exec.envp[\"HOME\"]!=NULL exec.envp[\"HOME3\"]=NULL",
+			 argv, envp, 0);
+		try_exec("allow_execute /bin/true if path1.parent.gid!=100 "
+			 "exec.envp[\"HOME\"]=NULL exec.envp[\"HOME3\"]=NULL",
+			 argv, envp, 1);
+		try_exec("allow_execute /bin/true if path1.parent.gid=0 "
+			 "exec.envp[\"HOME\"]=\"/\" exec.envp[\"HOME3\"]=NULL",
+			 argv, envp, 0);
+		try_exec("allow_execute /bin/true if path1.parent.gid=0 "
+			 "exec.envp[\"HOME\"]!=\"/\" exec.envp[\"HOME3\"]=NULL",
+			 argv, envp, 1);
 	}
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	const char *cp;
 	int self_fd;
 	Init();

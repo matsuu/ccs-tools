@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4   2008/09/03
+ * Version: 1.6.5-pre   2008/10/20
  *
  */
 #include <errno.h>
@@ -45,17 +45,40 @@ struct module;
 #endif
 #endif
 
-static pid_t gettid(void) { return syscall(__NR_gettid); }
-static int uselib(const char *library) { return syscall(__NR_uselib, library); }
-static caddr_t create_module(const char *name, size_t size) { return (caddr_t) syscall(__NR_create_module, name, size); }
-static int pivot_root(const char *new_root, const char *put_old) { return syscall(__NR_pivot_root, new_root, put_old); }
-static int tkill(int tid, int sig) { return syscall(__NR_tkill, tid, sig); }
+static pid_t gettid(void)
+{
+	return syscall(__NR_gettid);
+}
+static int uselib(const char *library)
+{
+	return syscall(__NR_uselib, library);
+}
+static caddr_t create_module(const char *name, size_t size)
+{
+	return (caddr_t) syscall(__NR_create_module, name, size);
+}
+static int pivot_root(const char *new_root, const char *put_old)
+{
+	return syscall(__NR_pivot_root, new_root, put_old);
+}
+static int tkill(int tid, int sig)
+{
+	return syscall(__NR_tkill, tid, sig);
+}
 #ifdef __NR_tgkill
-static int tgkill(int tgid, int tid, int sig) { return syscall(__NR_tgkill, tgid, tid, sig); }
+static int tgkill(int tgid, int tid, int sig)
+{
+	return syscall(__NR_tgkill, tgid, tid, sig);
+}
 #endif
 #ifdef __NR_sys_kexec_load
 struct kexec_segment;
-static long sys_kexec_load(unsigned long entry, unsigned long nr_segments, struct kexec_segment *segments, unsigned long flags) { return (long) syscall(__NR_sys_kexec_load, entry, nr_segments, segments, flags); }
+static long sys_kexec_load(unsigned long entry, unsigned long nr_segments,
+			   struct kexec_segment *segments, unsigned long flags)
+{
+	return (long) syscall(__NR_sys_kexec_load, entry, nr_segments,
+			      segments, flags);
+}
 #endif
 int reboot(int magic, int magic2, int flag, void *arg);
 int init_module(const char *name, struct module *image);
@@ -74,21 +97,33 @@ static const char *proc_policy_dir    = "/proc/ccs/",
 	*proc_policy_process_status   = "/proc/ccs/.process_status",
 	*proc_policy_self_domain      = "/proc/ccs/self_domain";
 
-static void PreInit(void) {
-        if (access("/sys/kernel/security/tomoyo/", F_OK) == 0) {
-                proc_policy_dir              = "/sys/kernel/security/tomoyo/";
-                proc_policy_domain_policy    = "/sys/kernel/security/tomoyo/domain_policy";
-                proc_policy_exception_policy = "/sys/kernel/security/tomoyo/exception_policy";
-                proc_policy_system_policy    = "/sys/kernel/security/tomoyo/system_policy";
-                proc_policy_profile          = "/sys/kernel/security/tomoyo/profile";
-                proc_policy_manager          = "/sys/kernel/security/tomoyo/manager";
-                proc_policy_query            = "/sys/kernel/security/tomoyo/query";
-                proc_policy_grant_log        = "/sys/kernel/security/tomoyo/grant_log";
-                proc_policy_reject_log       = "/sys/kernel/security/tomoyo/reject_log";
-                proc_policy_domain_status    = "/sys/kernel/security/tomoyo/.domain_status";
-                proc_policy_process_status   = "/sys/kernel/security/tomoyo/.process_status";
-                proc_policy_self_domain      = "/sys/kernel/security/tomoyo/self_domain";
-        } else if (access("/proc/tomoyo/", F_OK) == 0) {
+static void PreInit(void)
+{
+	if (access("/sys/kernel/security/tomoyo/", F_OK) == 0) {
+		proc_policy_dir              = "/sys/kernel/security/tomoyo/";
+		proc_policy_domain_policy    =
+			"/sys/kernel/security/tomoyo/domain_policy";
+		proc_policy_exception_policy =
+			"/sys/kernel/security/tomoyo/exception_policy";
+		proc_policy_system_policy    =
+			"/sys/kernel/security/tomoyo/system_policy";
+		proc_policy_profile          =
+			"/sys/kernel/security/tomoyo/profile";
+		proc_policy_manager          =
+			"/sys/kernel/security/tomoyo/manager";
+		proc_policy_query            =
+			"/sys/kernel/security/tomoyo/query";
+		proc_policy_grant_log        =
+			"/sys/kernel/security/tomoyo/grant_log";
+		proc_policy_reject_log       =
+			"/sys/kernel/security/tomoyo/reject_log";
+		proc_policy_domain_status    =
+			"/sys/kernel/security/tomoyo/.domain_status";
+		proc_policy_process_status   =
+			"/sys/kernel/security/tomoyo/.process_status";
+		proc_policy_self_domain      =
+			"/sys/kernel/security/tomoyo/self_domain";
+	} else if (access("/proc/tomoyo/", F_OK) == 0) {
 		proc_policy_dir              = "/proc/tomoyo/";
 		proc_policy_domain_policy    = "/proc/tomoyo/domain_policy";
 		proc_policy_exception_policy = "/proc/tomoyo/exception_policy";
@@ -108,27 +143,39 @@ static int profile_fd = EOF;
 static int is_kernel26 = 0;
 static pid_t pid = 0;
 
-static void WriteStatus(const char *cp) {
-	write(profile_fd, "255-", 4); write(profile_fd, cp, strlen(cp));
+static void WriteStatus(const char *cp)
+{
+	write(profile_fd, "255-", 4);
+	write(profile_fd, cp, strlen(cp));
 }
 
-static void ClearStatus(void) {
+static void ClearStatus(void)
+{
 	FILE *fp = fopen(proc_policy_profile, "r");
 	static char buffer[4096];
 	if (!fp) {
 		fprintf(stderr, "Can't open %s\n", proc_policy_profile);
 		exit(1);
 	}
-	while (memset(buffer, 0, sizeof(buffer)), fgets(buffer, sizeof(buffer) - 10, fp)) {
+	while (memset(buffer, 0, sizeof(buffer)),
+	       fgets(buffer, sizeof(buffer) - 10, fp)) {
 		char *cp = strchr(buffer, '=');
-		if (!cp) continue; *cp = '\0';
+		if (!cp)
+			continue;
+		*cp = '\0';
 		cp = strchr(buffer, '-');
-		if (!cp) continue; *cp++ = '\0';
-		if (strcmp(buffer, "0")) continue;
-		//if (strcmp(cp, "TOMOYO_VERBOSE") == 0) continue;
+		if (!cp)
+			continue;
+		*cp++ = '\0';
+		if (strcmp(buffer, "0"))
+			continue;
+		/*
+		  if (strcmp(cp, "TOMOYO_VERBOSE") == 0)
+		  continue;
+		*/
 		write(profile_fd, "255-", 4);
 		write(profile_fd, cp, strlen(cp));
-		if (strcmp(cp, "COMMENT") == 0) {
+		if (!strcmp(cp, "COMMENT")) {
 			const char *cmd = "=Profile for kernel test\n";
 			write(profile_fd, cmd, strlen(cmd)); continue;
 		}
@@ -138,19 +185,23 @@ static void ClearStatus(void) {
 	fclose(fp);
 }
 
-static void Init(void) {
+static void Init(void)
+{
 	PreInit();
 	pid = getpid();
 	if (access(proc_policy_dir, F_OK)) {
-		fprintf(stderr, "You can't use this program for this kernel.\n");
+		fprintf(stderr, "You can't use this program for this kernel."
+			"\n");
 		exit(1);
 	}
-	if ((profile_fd = open(proc_policy_profile, O_WRONLY)) == EOF) {
+	profile_fd = open(proc_policy_profile, O_WRONLY);
+	if (profile_fd == EOF) {
 		fprintf(stderr, "Can't open %s .\n", proc_policy_profile);
 		exit(1);
 	}
 	if (write(profile_fd, "", 0) != 0) {
-		fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
+		fprintf(stderr, "You need to register this program to %s to "
+			"run this program.\n", proc_policy_manager);
 		exit(1);
 	}
 	ClearStatus();
@@ -158,11 +209,13 @@ static void Init(void) {
 		FILE *fp = fopen("/proc/sys/kernel/osrelease", "r");
 		int version = 0;
 		if (!fp || fscanf(fp, "2.%d.", &version) != 1) {
-			fprintf(stderr, "Can't read /proc/sys/kernel/osrelease\n");
+			fprintf(stderr, "Can't read /proc/sys/kernel/osrelease"
+				"\n");
 			exit(1);
 		}
 		fclose(fp);
-		if (version == 6) is_kernel26 = 1;
+		if (version == 6)
+			is_kernel26 = 1;
 	}
 	{
 		char buffer[4096];
@@ -171,11 +224,13 @@ static void Init(void) {
 		if (fp) {
 			fgets(buffer, sizeof(buffer) - 1, fp);
 			fclose(fp);
-		} else exit(1);
+		} else
+			exit(1);
 		fp = fopen(proc_policy_domain_status, "w");
 		if (fp) {
 			fprintf(fp, "255 %s\n", buffer);
 			fclose(fp);
-		} else exit(1);
+		} else
+			exit(1);
 	}
 }

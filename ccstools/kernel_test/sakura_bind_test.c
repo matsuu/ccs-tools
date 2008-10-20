@@ -3,19 +3,20 @@
  *
  * Testing program for fs/sakura_bind.c
  *
- * Copyright (C) 2005-2007  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.5.0   2007/09/20
+ * Version: 1.6.5-pre   2008/10/20
  *
  */
 #include "include.h"
 
 static int min_port = 0, max_port = 0;
 static unsigned short int ipv4_listener_port = 0;
-static unsigned short int ipv6_listener_port = 0; 
+static unsigned short int ipv6_listener_port = 0;
 
-static void IPv4_TCP_Bind(void) {
-	// Try to bind as many as possible.
+static void IPv4_TCP_Bind(void)
+{
+	/* Try to bind as many as possible. */
 	if (fork() == 0) {
 		int i = 0;
 		while (1) {
@@ -26,26 +27,34 @@ static void IPv4_TCP_Bind(void) {
 			addr.sin_family = AF_INET;
 			addr.sin_addr.s_addr = htonl(INADDR_ANY);
 			addr.sin_port = htons(0);
-			if (bind(fd, (struct sockaddr *) &addr, sizeof(addr))) break;
+			if (bind(fd, (struct sockaddr *) &addr, sizeof(addr)))
+				break;
 			size = sizeof(addr);
 			if (getsockname(fd, (struct sockaddr *) &addr, &size)) {
-				printf("getsockname() failed.\n"); fflush(stdout); _exit(1);
+				printf("getsockname() failed.\n");
+				fflush(stdout); _exit(1);
 			} else {
 				const int port = ntohs(addr.sin_port);
-				if (!port || (port >= min_port && port <= max_port)) {
-					printf("BUG! Reserved port was assigned.\n"); fflush(stdout); _exit(1);
+				if (!port ||
+				    (port >= min_port && port <= max_port)) {
+					printf("BUG! "
+					       "Reserved port was assigned.\n");
+					fflush(stdout);
+					_exit(1);
 				}
 				i++;
 			}
 		}
-		printf("IPv4/TCP bind    port exhausted at %d\n", i); fflush(stdout);
+		printf("IPv4/TCP bind    port exhausted at %d\n", i);
+		fflush(stdout);
 		_exit(0);
 	}
 	wait(NULL);
 }
 
-static void IPv4_TCP_Connect(void) {
-	// Try to connect as many as possible.
+static void IPv4_TCP_Connect(void)
+{
+	/* Try to connect as many as possible. */
 	if (fork() == 0) {
 		int i = 0;
 		while (1) {
@@ -56,26 +65,35 @@ static void IPv4_TCP_Connect(void) {
 			addr.sin_family = AF_INET;
 			addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 			addr.sin_port = htons(ipv4_listener_port);
-			if (connect(fd, (struct sockaddr *) &addr, sizeof(addr))) break;
+			if (connect(fd, (struct sockaddr *) &addr,
+				    sizeof(addr)))
+				break;
 			size = sizeof(addr);
 			if (getsockname(fd, (struct sockaddr *) &addr, &size)) {
-				printf("getsockname() failed.\n"); fflush(stdout); _exit(1);
+				printf("getsockname() failed.\n");
+				fflush(stdout); _exit(1);
 			} else {
 				const int port = ntohs(addr.sin_port);
-				if (!port || (port >= min_port && port <= max_port)) {
-					printf("BUG! Reserved port was assigned.\n"); fflush(stdout); _exit(1);
+				if (!port ||
+				    (port >= min_port && port <= max_port)) {
+					printf("BUG! "
+					       "Reserved port was assigned.\n");
+					fflush(stdout);
+					_exit(1);
 				}
 				i++;
 			}
 		}
-		printf("IPv4/TCP connect port exhausted at %d\n", i); fflush(stdout);
+		printf("IPv4/TCP connect port exhausted at %d\n", i);
+		fflush(stdout);
 		_exit(0);
 	}
 	wait(NULL);
 }
 
-static void IPv4_UDP_Bind(void) {
-	// Try to bind as many as possible.
+static void IPv4_UDP_Bind(void)
+{
+	/* Try to bind as many as possible. */
 	if (fork() == 0) {
 		int i = 0;
 		while (1) {
@@ -86,26 +104,34 @@ static void IPv4_UDP_Bind(void) {
 			addr.sin_family = AF_INET;
 			addr.sin_addr.s_addr = htonl(INADDR_ANY);
 			addr.sin_port = htons(0);
-			if (bind(fd, (struct sockaddr *) &addr, sizeof(addr))) break;
+			if (bind(fd, (struct sockaddr *) &addr, sizeof(addr)))
+				break;
 			size = sizeof(addr);
 			if (getsockname(fd, (struct sockaddr *) &addr, &size)) {
-				printf("getsockname() failed.\n"); fflush(stdout); _exit(1);
+				printf("getsockname() failed.\n");
+				fflush(stdout); _exit(1);
 			} else {
 				const int port = ntohs(addr.sin_port);
-				if (!port || (port >= min_port && port <= max_port)) {
-					printf("BUG! Reserved port was assigned.\n"); fflush(stdout); _exit(1);
+				if (!port ||
+				    (port >= min_port && port <= max_port)) {
+					printf("BUG! "
+					       "Reserved port was assigned.\n");
+					fflush(stdout);
+					_exit(1);
 				}
 				i++;
 			}
 		}
-		printf("IPv4/UDP bind    port exhausted at %d\n", i); fflush(stdout);
+		printf("IPv4/UDP bind    port exhausted at %d\n", i);
+		fflush(stdout);
 		_exit(0);
 	}
 	wait(NULL);
 }
 
-static void IPv4_UDP_Connect(void) {
-	// Try to connect as many as possible.
+static void IPv4_UDP_Connect(void)
+{
+	/* Try to connect as many as possible. */
 	if (fork() == 0) {
 		int i = 0;
 		while (1) {
@@ -116,26 +142,35 @@ static void IPv4_UDP_Connect(void) {
 			addr.sin_family = AF_INET;
 			addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 			addr.sin_port = htons(ipv4_listener_port);
-			if (connect(fd, (struct sockaddr *) &addr, sizeof(addr))) break;
+			if (connect(fd, (struct sockaddr *) &addr,
+				    sizeof(addr)))
+				break;
 			size = sizeof(addr);
 			if (getsockname(fd, (struct sockaddr *) &addr, &size)) {
-				printf("getsockname() failed.\n"); fflush(stdout); _exit(1);
+				printf("getsockname() failed.\n");
+				fflush(stdout); _exit(1);
 			} else {
 				const int port = ntohs(addr.sin_port);
-				if (!port || (port >= min_port && port <= max_port)) {
-					printf("BUG! Reserved port was assigned.\n"); fflush(stdout); _exit(1);
+				if (!port ||
+				    (port >= min_port && port <= max_port)) {
+					printf("BUG! "
+					       "Reserved port was assigned.\n");
+					fflush(stdout);
+					_exit(1);
 				}
 				i++;
 			}
 		}
-		printf("IPv4/UDP connect port exhausted at %d\n", i); fflush(stdout);
+		printf("IPv4/UDP connect port exhausted at %d\n", i);
+		fflush(stdout);
 		_exit(0);
 	}
 	wait(NULL);
 }
 
-static void IPv4_UDP_SendTo(void) {	
-	// Try to send as many as possible.
+static void IPv4_UDP_SendTo(void)
+{
+	/* Try to send as many as possible. */
 	if (fork() == 0) {
 		int i = 0;
 		while (1) {
@@ -146,26 +181,36 @@ static void IPv4_UDP_SendTo(void) {
 			addr.sin_family = AF_INET;
 			addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 			addr.sin_port = htons(ipv4_listener_port);
-			if (sendto(fd, "", 1, 0, (struct sockaddr *) &addr, sizeof(addr)) != 1) break;
+			if (sendto(fd, "", 1, 0, (struct sockaddr *) &addr,
+				   sizeof(addr)) != 1)
+				break;
 			size = sizeof(addr);
 			if (getsockname(fd, (struct sockaddr *) &addr, &size)) {
-				printf("getsockname() failed.\n"); fflush(stdout); _exit(1);
+				printf("getsockname() failed.\n");
+				fflush(stdout);
+				_exit(1);
 			} else {
 				const int port = ntohs(addr.sin_port);
-				if (!port || (port >= min_port && port <= max_port)) {
-					printf("BUG! Reserved port was assigned.\n"); fflush(stdout); _exit(1);
+				if (!port ||
+				    (port >= min_port && port <= max_port)) {
+					printf("BUG! "
+					       "Reserved port was assigned.\n");
+					fflush(stdout);
+					_exit(1);
 				}
 				i++;
 			}
 		}
-		printf("IPv4/UDP sendto  port exhausted at %d\n", i); fflush(stdout);
+		printf("IPv4/UDP sendto  port exhausted at %d\n", i);
+		fflush(stdout);
 		_exit(0);
 	}
 	wait(NULL);
 }
 
-static void IPv6_TCP_Bind(void) {
-	// Try to bind as many as possible. 
+static void IPv6_TCP_Bind(void)
+{
+	/* Try to bind as many as possible. */
 	if (fork() == 0) {
 		int i = 0;
 		while (1) {
@@ -176,25 +221,34 @@ static void IPv6_TCP_Bind(void) {
 			addr.sin6_family = AF_INET6;
 			addr.sin6_addr = in6addr_any;
 			addr.sin6_port = htons(0);
-			if (bind(fd, (struct sockaddr *) &addr, sizeof(addr))) break;
+			if (bind(fd, (struct sockaddr *) &addr, sizeof(addr)))
+				break;
 			if (getsockname(fd, (struct sockaddr *) &addr, &size)) {
-				printf("getsockname() failed.\n"); fflush(stdout); _exit(1);
+				printf("getsockname() failed.\n");
+				fflush(stdout);
+				_exit(1);
 			} else {
 				const int port = ntohs(addr.sin6_port);
-				if (!port || (port >= min_port && port <= max_port)) {
-					printf("BUG! Reserved port was assigned.\n"); fflush(stdout); _exit(1);
+				if (!port ||
+				    (port >= min_port && port <= max_port)) {
+					printf("BUG! "
+					       "Reserved port was assigned.\n");
+					fflush(stdout);
+					_exit(1);
 				}
 				i++;
 			}
 		}
-		printf("IPv6/TCP bind    port exhausted at %d\n", i); fflush(stdout);
+		printf("IPv6/TCP bind    port exhausted at %d\n", i);
+		fflush(stdout);
 		_exit(0);
 	}
 	wait(NULL);
 }
 
-static void IPv6_TCP_Connect(void) {	
-	// Try to connect as many as possible.
+static void IPv6_TCP_Connect(void)
+{
+	/* Try to connect as many as possible. */
 	int status = 0;
 	if (fork() == 0) {
 		int i = 0;
@@ -207,27 +261,38 @@ static void IPv6_TCP_Connect(void) {
 			addr.sin6_family = AF_INET6;
 			addr.sin6_addr = in6addr_loopback;
 			addr.sin6_port = htons(ipv6_listener_port);
-			if (connect(fd, (struct sockaddr *) &addr, sizeof(addr))) break;
+			if (connect(fd, (struct sockaddr *) &addr,
+				    sizeof(addr)))
+				break;
 			size = sizeof(addr);
 			if (getsockname(fd, (struct sockaddr *) &addr, &size)) {
-				printf("getsockname() failed.\n"); fflush(stdout); _exit(1);
+				printf("getsockname() failed.\n");
+				fflush(stdout); _exit(1);
 			} else {
 				const int port = ntohs(addr.sin6_port);
-				if (!port || (port >= min_port && port <= max_port)) {
-					printf("BUG! Reserved port was assigned.\n"); fflush(stdout); _exit(1);
+				if (!port ||
+				    (port >= min_port && port <= max_port)) {
+					printf("BUG! "
+					       "Reserved port was assigned.\n");
+					fflush(stdout);
+					_exit(1);
 				}
 				i++;
 			}
 		}
-		printf("IPv6/TCP connect port exhausted at %d\n", i); fflush(stdout);
+		printf("IPv6/TCP connect port exhausted at %d\n", i);
+		fflush(stdout);
 		_exit(0);
 	}
 	wait(&status);
-	if (WIFSIGNALED(status)) printf("IPv6/TCP connect test timed out.\n"); fflush(stdout);
+	if (WIFSIGNALED(status))
+		printf("IPv6/TCP connect test timed out.\n");
+	fflush(stdout);
 }
 
-static void IPv6_UDP_Bind(void) {
-	// Try to bind as many as possible.
+static void IPv6_UDP_Bind(void)
+{
+	/* Try to bind as many as possible. */
 	if (fork() == 0) {
 		int i = 0;
 		while (1) {
@@ -238,26 +303,34 @@ static void IPv6_UDP_Bind(void) {
 			addr.sin6_family = AF_INET6;
 			addr.sin6_addr = in6addr_any;
 			addr.sin6_port = htons(0);
-			if (bind(fd, (struct sockaddr *) &addr, sizeof(addr))) break;
+			if (bind(fd, (struct sockaddr *) &addr, sizeof(addr)))
+				break;
 			size = sizeof(addr);
 			if (getsockname(fd, (struct sockaddr *) &addr, &size)) {
-				printf("getsockname() failed.\n"); fflush(stdout); _exit(1);
+				printf("getsockname() failed.\n");
+				fflush(stdout); _exit(1);
 			} else {
 				const int port = ntohs(addr.sin6_port);
-				if (!port || (port >= min_port && port <= max_port)) {
-					printf("BUG! Reserved port was assigned.\n"); fflush(stdout); _exit(1);
+				if (!port ||
+				    (port >= min_port && port <= max_port)) {
+					printf("BUG! "
+					       "Reserved port was assigned.\n");
+					fflush(stdout);
+					_exit(1);
 				}
 				i++;
 			}
 		}
-		printf("IPv6/UDP bind    port exhausted at %d\n", i); fflush(stdout);
+		printf("IPv6/UDP bind    port exhausted at %d\n", i);
+		fflush(stdout);
 		_exit(0);
 	}
 	wait(NULL);
 }
 
-static void IPv6_UDP_Connect(void) {
-	// Try to connect as many as possible.
+static void IPv6_UDP_Connect(void)
+{
+	/* Try to connect as many as possible. */
 	if (fork() == 0) {
 		int i = 0;
 		while (1) {
@@ -268,26 +341,36 @@ static void IPv6_UDP_Connect(void) {
 			addr.sin6_family = AF_INET6;
 			addr.sin6_addr = in6addr_loopback;
 			addr.sin6_port = htons(ipv6_listener_port);
-			if (connect(fd, (struct sockaddr *) &addr, sizeof(addr))) break;
+			if (connect(fd, (struct sockaddr *) &addr,
+				    sizeof(addr)))
+				break;
 			size = sizeof(addr);
 			if (getsockname(fd, (struct sockaddr *) &addr, &size)) {
-				printf("getsockname() failed.\n"); fflush(stdout); _exit(1);
+				printf("getsockname() failed.\n");
+				fflush(stdout);
+				_exit(1);
 			} else {
 				const int port = ntohs(addr.sin6_port);
-				if (!port || (port >= min_port && port <= max_port)) {
-					printf("BUG! Reserved port was assigned.\n"); fflush(stdout); _exit(1);
+				if (!port ||
+				    (port >= min_port && port <= max_port)) {
+					printf("BUG! "
+					       "Reserved port was assigned.\n");
+					fflush(stdout);
+					_exit(1);
 				}
 				i++;
 			}
 		}
-		printf("IPv6/UDP connect port exhausted at %d\n", i); fflush(stdout);
+		printf("IPv6/UDP connect port exhausted at %d\n", i);
+		fflush(stdout);
 		_exit(0);
 	}
 	wait(NULL);
 }
 
-static void IPv6_UDP_SendTo(void) {	
-	// Try to send as many as possible.
+static void IPv6_UDP_SendTo(void)
+{
+	/* Try to send as many as possible. */
 	if (fork() == 0) {
 		int i = 0;
 		while (1) {
@@ -298,19 +381,28 @@ static void IPv6_UDP_SendTo(void) {
 			addr.sin6_family = AF_INET6;
 			addr.sin6_addr = in6addr_loopback;
 			addr.sin6_port = htons(ipv6_listener_port);
-			if (sendto(fd, "", 1, 0, (struct sockaddr *) &addr, sizeof(addr)) != 1) break;
+			if (sendto(fd, "", 1, 0, (struct sockaddr *) &addr,
+				   sizeof(addr)) != 1)
+				break;
 			size = sizeof(addr);
 			if (getsockname(fd, (struct sockaddr *) &addr, &size)) {
-				printf("getsockname() failed.\n"); fflush(stdout); _exit(1);
+				printf("getsockname() failed.\n");
+				fflush(stdout);
+				_exit(1);
 			} else {
 				const int port = ntohs(addr.sin6_port);
-				if (!port || (port >= min_port && port <= max_port)) {
-					printf("BUG! Reserved port was assigned.\n"); fflush(stdout); _exit(1);
+				if (!port ||
+				    (port >= min_port && port <= max_port)) {
+					printf("BUG! "
+					       "Reserved port was assigned.\n");
+					fflush(stdout);
+					_exit(1);
 				}
 				i++;
 			}
 		}
-		printf("IPv6/UDP sendto  port exhausted at %d\n", i); fflush(stdout);
+		printf("IPv6/UDP sendto  port exhausted at %d\n", i);
+		fflush(stdout);
 		_exit(0);
 	}
 	wait(NULL);
@@ -318,46 +410,131 @@ static void IPv6_UDP_SendTo(void) {
 
 static int system_fd = EOF;
 
-static void SetReservedRange(int low, int high) {
+static void SetReservedRange(int low, int high)
+{
 	static char buffer[1024];
 	memset(buffer, 0, sizeof(buffer));
-	snprintf(buffer, sizeof(buffer) - 1, "deny_autobind %d-%d\n", min_port, max_port);
+	snprintf(buffer, sizeof(buffer) - 1, "deny_autobind %d-%d\n",
+		 min_port, max_port);
 	write(system_fd, buffer, strlen(buffer));
 }
 
-static void UnsetReservedRange(int low, int high) {
+static void UnsetReservedRange(int low, int high)
+{
 	static char buffer[1024];
 	memset(buffer, 0, sizeof(buffer));
-	snprintf(buffer, sizeof(buffer) - 1, "delete deny_autobind %d-%d\n", min_port, max_port);
+	snprintf(buffer, sizeof(buffer) - 1, "delete deny_autobind %d-%d\n",
+		 min_port, max_port);
 	write(system_fd, buffer, strlen(buffer));
 }
 
-int main(int argc, char *argv[]) {
+static void ipv4_listener_loop(int ipv4_listener_socket,
+			       struct sockaddr_in *addr, socklen_t size)
+{
+	fd_set fds;
+	FD_ZERO(&fds);
+	FD_SET(ipv4_listener_socket, &fds);
+	while (1) {
+		fd_set temp_fds = fds;
+		int fd;
+		int fd2;
+		if (select(1024, &temp_fds, NULL, NULL, NULL) == EOF) {
+			fprintf(stderr, "select=%s\n", strerror(errno));
+			continue;
+		}
+		for (fd = 0; fd < 1024; fd++) {
+			if (!FD_ISSET(fd, &temp_fds))
+				continue;
+			if (fd == ipv4_listener_socket) {
+				size = sizeof(*addr);
+				fd2 = accept(ipv4_listener_socket,
+					     (struct sockaddr *) addr, &size);
+				if (fd2 != EOF)
+					FD_SET(fd2, &fds);
+				else
+					fprintf(stderr, "accept=%s\n",
+						strerror(errno));
+			} else {
+				/* fprintf(stderr, "closed %d\n", fd); */
+				close(fd);
+				FD_CLR(fd, &fds);
+			}
+		}
+	}
+}
+
+static void ipv6_listener_loop(int ipv6_listener_socket,
+			       struct sockaddr_in6 *addr, socklen_t size)
+{
+	fd_set fds;
+	FD_ZERO(&fds);
+	if (ipv6_listener_socket == EOF)
+		while (1)
+			sleep(1000);
+	FD_SET(ipv6_listener_socket, &fds);
+	while (1) {
+		fd_set temp_fds = fds;
+		int fd;
+		int fd2;
+		if (select(1024, &temp_fds, NULL, NULL, NULL) == EOF) {
+			fprintf(stderr, "select=%s\n", strerror(errno));
+			continue;
+		}
+		for (fd = 0; fd < 1024; fd++) {
+			if (!FD_ISSET(fd, &temp_fds))
+				continue;
+			if (fd == ipv6_listener_socket) {
+				size = sizeof(*addr);
+				fd2 = accept(ipv6_listener_socket,
+					     (struct sockaddr *) addr, &size);
+				if (fd2 != EOF)
+					FD_SET(fd2, &fds);
+				else
+					fprintf(stderr, "accept=%s\n",
+						strerror(errno));
+			} else {
+				/* fprintf(stderr, "closed %d\n", fd); */
+				close(fd);
+				FD_CLR(fd, &fds);
+			}
+		}
+	}
+}
+
+int main(int argc, char *argv[])
+{
 	int ipv4_listener_socket = EOF;
 	int ipv6_listener_socket = EOF;
 	pid_t ipv4_pid = 0;
 	pid_t ipv6_pid = 0;
 	Init();
-	if ((system_fd = open(proc_policy_system_policy, O_RDWR)) == EOF) {
+	system_fd = open(proc_policy_system_policy, O_RDWR);
+	if (system_fd == EOF) {
 		fprintf(stderr, "Can't open %s .\n", proc_policy_system_policy);
 		return 1;
 	}
 	if (write(system_fd, "", 0) != 0) {
-		fprintf(stderr, "You need to register this program to %s to run this program.\n", proc_policy_manager);
+		fprintf(stderr, "You need to register this program to %s to "
+			"run this program.\n", proc_policy_manager);
 		return 1;
 	}
 	{
 		FILE *fp = fopen("/proc/sys/net/ipv4/ip_local_port_range", "r");
-		int original_range[2], narrow_range[2] = { 32768, 32768 + 100 };
+		int original_range[2];
+		int narrow_range[2] = { 32768, 32768 + 100 };
 		min_port = narrow_range[0] + 20;
 		max_port = narrow_range[1] - 20;
-		if (!fp || fscanf(fp, "%u %u", &original_range[0], &original_range[1]) != 2) {
-			fprintf(stderr, "Can't open /proc/sys/net/ipv4/ip_local_port_range .\n");
+		if (!fp || fscanf(fp, "%u %u", &original_range[0],
+				  &original_range[1]) != 2) {
+			fprintf(stderr, "Can't open "
+				"/proc/sys/net/ipv4/ip_local_port_range .\n");
 			exit(1);
 		}
 		fclose(fp);
-		if ((fp = fopen("/proc/sys/net/ipv4/ip_local_port_range", "w")) == NULL) {
-			fprintf(stderr, "Can't open /proc/sys/net/ipv4/ip_local_port_range .\n");
+		fp = fopen("/proc/sys/net/ipv4/ip_local_port_range", "w");
+		if (!fp) {
+			fprintf(stderr, "Can't open "
+				"/proc/sys/net/ipv4/ip_local_port_range .\n");
 			exit(1);
 		}
 		WriteStatus("RESTRICT_AUTOBIND=3\n");
@@ -369,36 +546,16 @@ int main(int argc, char *argv[]) {
 			addr.sin_family = AF_INET;
 			addr.sin_addr.s_addr = htonl(INADDR_ANY);
 			addr.sin_port = htons(0);
-			bind(ipv4_listener_socket, (struct sockaddr *) &addr, sizeof(addr));
-			getsockname(ipv4_listener_socket, (struct sockaddr *) &addr, &size);
+			bind(ipv4_listener_socket, (struct sockaddr *) &addr,
+			     sizeof(addr));
+			getsockname(ipv4_listener_socket,
+				    (struct sockaddr *) &addr, &size);
 			ipv4_listener_port = ntohs(addr.sin_port);
 			listen(ipv4_listener_socket, 512);
 			ipv4_pid = fork();
-			if (ipv4_pid == 0) {
-				fd_set fds;
-				FD_ZERO(&fds);
-				FD_SET(ipv4_listener_socket, &fds);
-				while (1) {
-					fd_set temp_fds = fds;
-					int fd, fd2;
-					if (select(1024, &temp_fds, NULL, NULL, NULL) == EOF) {
-						fprintf(stderr, "select=%s\n", strerror(errno));
-						continue;
-					}
-					for (fd = 0; fd < 1024; fd++) {
-						if (!FD_ISSET(fd, &temp_fds)) continue;
-						if (fd == ipv4_listener_socket) {
-							size = sizeof(addr);
-							fd2 = accept(ipv4_listener_socket, (struct sockaddr *) &addr, &size);
-							if (fd2 != EOF) FD_SET(fd2, &fds);
-							else fprintf(stderr, "accept=%s\n", strerror(errno));
-						} else {
-							//fprintf(stderr, "closed %d\n", fd);
-							close(fd); FD_CLR(fd, &fds);
-						}
-					}
-				}
-			}
+			if (ipv4_pid == 0)
+				ipv4_listener_loop(ipv4_listener_socket, &addr,
+						   size);
 		}
 		{
 			struct sockaddr_in6 addr;
@@ -408,37 +565,16 @@ int main(int argc, char *argv[]) {
 			addr.sin6_family = AF_INET6;
 			addr.sin6_addr = in6addr_any;
 			addr.sin6_port = htons(0);
-			bind(ipv6_listener_socket, (struct sockaddr *) &addr, sizeof(addr));
-			getsockname(ipv6_listener_socket, (struct sockaddr *) &addr, &size);
+			bind(ipv6_listener_socket, (struct sockaddr *) &addr,
+			     sizeof(addr));
+			getsockname(ipv6_listener_socket,
+				    (struct sockaddr *) &addr, &size);
 			ipv6_listener_port = ntohs(addr.sin6_port);
 			listen(ipv6_listener_socket, 512);
 			ipv6_pid = fork();
-			if (ipv6_pid == 0) {
-				fd_set fds;
-				FD_ZERO(&fds);
-				if (ipv6_listener_socket == EOF) while (1) sleep(1000);
-				FD_SET(ipv6_listener_socket, &fds);
-				while (1) {
-					fd_set temp_fds = fds;
-					int fd, fd2;
-					if (select(1024, &temp_fds, NULL, NULL, NULL) == EOF) {
-						fprintf(stderr, "select=%s\n", strerror(errno));
-						continue;
-					}
-					for (fd = 0; fd < 1024; fd++) {
-						if (!FD_ISSET(fd, &temp_fds)) continue;
-						if (fd == ipv6_listener_socket) {
-							size = sizeof(addr);
-							fd2 = accept(ipv6_listener_socket, (struct sockaddr *) &addr, &size);
-							if (fd2 != EOF) FD_SET(fd2, &fds);
-							else fprintf(stderr, "accept=%s\n", strerror(errno));
-						} else {
-							//fprintf(stderr, "closed %d\n", fd);
-							close(fd); FD_CLR(fd, &fds);
-						}
-					}
-				}
-			}
+			if (ipv6_pid == 0)
+				ipv6_listener_loop(ipv6_listener_socket, &addr,
+						   size);
 		}
 
 		{
@@ -448,7 +584,8 @@ int main(int argc, char *argv[]) {
 				narrow_range[1] += 1024;
 				min_port += 1024;
 				max_port += 1024;
-				fprintf(fp, "%d %d\n", narrow_range[0], narrow_range[1]);
+				fprintf(fp, "%d %d\n", narrow_range[0],
+					narrow_range[1]);
 				fflush(fp);
 				SetReservedRange(min_port, max_port);
 				switch (stage) {

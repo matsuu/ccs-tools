@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0   2008/04/01
+ * Version: 1.6.5-pre   2008/10/20
  *
  */
 #include <stdio.h>
@@ -13,10 +13,13 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-int main(int argc0, char *argv0[]) {
-	char *argv[128], *envp[128];
+int main(int argc0, char *argv0[])
+{
+	char *argv[128];
+	char *envp[128];
 	char buffer[16384];
-	memset(argv, 0, sizeof(argv)); memset(envp, 0, sizeof(envp));
+	memset(argv, 0, sizeof(argv));
+	memset(envp, 0, sizeof(envp));
 
 	if (fork() == 0) {
 		execve("/bin/true", NULL, NULL);
@@ -102,7 +105,10 @@ int main(int argc0, char *argv0[]) {
 	wait(NULL);
 
 	return 0;
-	//memset(argv, 0, sizeof(argv)); memset(envp, 0, sizeof(envp));
+	/*
+	  memset(argv, 0, sizeof(argv));
+	  memset(envp, 0, sizeof(envp));
+	*/
 	memset(buffer, 'a', sizeof(buffer) - 1);
 	argv[0] = "true";
 	argv[1] = buffer;
@@ -113,7 +119,10 @@ int main(int argc0, char *argv0[]) {
 	}
 	wait(NULL);
 
-	//memset(argv, 0, sizeof(argv)); memset(envp, 0, sizeof(envp));
+	/*
+	  memset(argv, 0, sizeof(argv));
+	  memset(envp, 0, sizeof(envp));
+	*/
 	buffer[4000] = '\0';
 	argv[0] = buffer;
 	argv[1] = buffer;

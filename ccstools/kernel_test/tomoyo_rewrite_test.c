@@ -5,41 +5,50 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0   2008/04/01
+ * Version: 1.6.5-pre   2008/10/20
  *
  */
 #include "include.h"
 
 static int is_enforce = 0;
 
-static void ShowPrompt(const char *str) {
-	printf("Testing %35s: (%s) ", str, is_enforce ? "must fail" : "must success");
+static void ShowPrompt(const char *str)
+{
+	printf("Testing %35s: (%s) ", str,
+	       is_enforce ? "must fail" : "must success");
 	errno = 0;
 }
 
-static void ShowResult(int result) {
+static void ShowResult(int result)
+{
 	if (is_enforce) {
 		if (result == EOF) {
-			if (errno == EPERM) printf("OK: Permission denied.\n");
-			else printf("BUG!\n");
+			if (errno == EPERM)
+				printf("OK: Permission denied.\n");
+			else
+				printf("BUG!\n");
 		} else {
 			printf("BUG!\n");
 		}
 	} else {
-		if (result != EOF) printf("OK\n");
-		else printf("BUG!\n");
+		if (result != EOF)
+			printf("OK\n");
+		else
+			printf("BUG!\n");
 	}
 }
 
 
-static void SetStatus(int status) {
+static void SetStatus(int status)
+{
 	char buffer[128];
 	memset(buffer, 0, sizeof(buffer));
 	snprintf(buffer, sizeof(buffer) - 1, "MAC_FOR_FILE=%d\n", status);
 	WriteStatus(buffer);
 }
 
-static void AddDomainPolicy(const char *data) {
+static void AddDomainPolicy(const char *data)
+{
 	char buffer[4096];
 	FILE *fp;
 	SetStatus(0);
@@ -48,7 +57,8 @@ static void AddDomainPolicy(const char *data) {
 		fgets(buffer, sizeof(buffer) - 1, fp);
 		fclose(fp);
 	} else {
-		fprintf(stderr, "BUG! Can't read %s\n", proc_policy_self_domain);
+		fprintf(stderr, "BUG! Can't read %s\n",
+			proc_policy_self_domain);
 	}
 	fp = fopen(proc_policy_domain_policy, "w");
 	if (fp) {
@@ -56,11 +66,13 @@ static void AddDomainPolicy(const char *data) {
 		fprintf(fp, "%s\n", data);
 		fclose(fp);
 	} else {
-		fprintf(stderr, "BUG! Can't write %s\n", proc_policy_domain_policy);
+		fprintf(stderr, "BUG! Can't write %s\n",
+			proc_policy_domain_policy);
 	}
 }
 
-static void AddExceptionPolicy(const char *data) {
+static void AddExceptionPolicy(const char *data)
+{
 	FILE *fp;
 	SetStatus(0);
 	fp = fopen(proc_policy_exception_policy, "w");
@@ -68,13 +80,15 @@ static void AddExceptionPolicy(const char *data) {
 		fprintf(fp, "%s\n", data);
 		fclose(fp);
 	} else {
-		fprintf(stderr, "BUG! Can't write %s\n", proc_policy_exception_policy);
+		fprintf(stderr, "BUG! Can't write %s\n",
+			proc_policy_exception_policy);
 	}
 }
 
 #define REWRITE_PATH "/tmp/rewrite_test"
 
-static void StageRewriteTest(void) {
+static void StageRewriteTest(void)
+{
 	int fd;
 
 	/* Start up */
@@ -121,7 +135,7 @@ static void StageRewriteTest(void) {
 	fd = open(REWRITE_PATH, O_WRONLY | O_APPEND);
 	ShowPrompt("ftruncate()");
 	ShowResult(ftruncate(fd, 0));
-	
+
 	ShowPrompt("fcntl(F_SETFL, ~O_APPEND)");
 	ShowResult(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) & ~O_APPEND));
 	close(fd);
@@ -161,7 +175,7 @@ static void StageRewriteTest(void) {
 	fd = open(REWRITE_PATH, O_WRONLY | O_APPEND);
 	ShowPrompt("ftruncate()");
 	ShowResult(ftruncate(fd, 0));
-	
+
 	ShowPrompt("fcntl(F_SETFL, ~O_APPEND)");
 	ShowResult(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) & ~O_APPEND));
 	close(fd);
@@ -172,7 +186,8 @@ static void StageRewriteTest(void) {
 	printf("\n\n");
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	Init();
 	StageRewriteTest();
 	ClearStatus();

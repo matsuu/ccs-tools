@@ -7,7 +7,8 @@
 #include <errno.h>
 #include <stdlib.h>
 
-static int child(void *arg) {
+static int child(void *arg)
+{
 	char **argv = (char **) arg;
 	argv++;
 	mount("/tmp/", "/tmp/", "tmpfs", 0, NULL);
@@ -15,9 +16,13 @@ static int child(void *arg) {
 	_exit(1);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
+	char c = 0;
 	char *stack = malloc(8192);
-	const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS, (void *) argv);
-	while (waitpid(pid, NULL, __WALL) == EOF && errno == EINTR);
+	const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS,
+				(void *) argv);
+	while (waitpid(pid, NULL, __WALL) == EOF && errno == EINTR)
+		c++; /* Dummy. */
 	return 0;
 }

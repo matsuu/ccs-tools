@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.2   2008/06/25
+ * Version: 1.6.5-pre   2008/10/20
  *
  */
 #include "include.h"
@@ -13,7 +13,8 @@
 static int fd = EOF;
 static const char *policy_file = "";
 
-static void try_io(const char *policy, const char should_success) {
+static void try_io(const char *policy, const char should_success)
+{
 	FILE *fp = fopen(policy_file, "r");
 	char buffer[8192];
 	int policy_found = 0;
@@ -27,7 +28,8 @@ static void try_io(const char *policy, const char should_success) {
 	}
 	while (fgets(buffer, sizeof(buffer) - 1, fp)) {
 		char *cp = strchr(buffer, '\n');
-		if (cp) *cp = '\0';
+		if (cp)
+			*cp = '\0';
 		if (!strcmp(buffer, policy)) {
 			policy_found = 1;
 			break;
@@ -35,18 +37,23 @@ static void try_io(const char *policy, const char should_success) {
 	}
 	fclose(fp);
 	if (should_success) {
-		if (policy_found) printf("OK\n");
-		else printf("BUG: policy write failed\n");
+		if (policy_found)
+			printf("OK\n");
+		else
+			printf("BUG: policy write failed\n");
 	} else {
-		if (!policy_found) printf("OK : write rejected.\n");
-		else printf("BUG: policy write not rejected.\n");
+		if (!policy_found)
+			printf("OK : write rejected.\n");
+		else
+			printf("BUG: policy write not rejected.\n");
 	}
 	write(fd, "delete ", 7);
 	write(fd, policy, strlen(policy));
 	write(fd, "\n", 1);
 }
 
-static void StagePolicyIOTest(void) {
+static void StagePolicyIOTest(void)
+{
 	int i;
 	policy_file = proc_policy_system_policy;
 	fd = open(policy_file, O_WRONLY);
@@ -110,9 +117,12 @@ static void StagePolicyIOTest(void) {
 		try_io("allow_mount any / --remount 0xC00", 1);
 		try_io("allow_mount /dev/sda1 /boot/ ext3 0xC00", 1);
 		try_io("allow_mount none /dev/shm/ tmpfs 0x0", 1);
-		try_io("allow_mount none /proc/sys/fs/binfmt_misc/ binfmt_misc 0x0", 1);
-		try_io("allow_mount none /proc/sys/fs/binfmt_misc/ binfmt_misc 0x0 0x1", 0);
-		try_io("allow_mount none /proc/sys/fs/binfmt_misc/ tmpfs binfmt_misc 0x0", 0);
+		try_io("allow_mount none /proc/sys/fs/binfmt_misc/ binfmt_misc "
+		       "0x0", 1);
+		try_io("allow_mount none /proc/sys/fs/binfmt_misc/ binfmt_misc "
+		       "0x0 0x1", 0);
+		try_io("allow_mount none /proc/sys/fs/binfmt_misc/ tmpfs "
+		       "binfmt_misc 0x0", 0);
 		try_io("allow_mount /proc/bus/usb /proc/bus/usb/ usbfs 0x0", 1);
 	}
 	close(fd);
@@ -159,11 +169,17 @@ static void StagePolicyIOTest(void) {
 		try_io("address_group TEST 0.0.0.0", 1);
 		try_io("address_group TEST 0.0.0.0-1.1.1.1", 1);
 		try_io("address_group TEST 0:0:0:0:0:0:0:ff", 1);
-		try_io("address_group TEST 0:0:0:0:0:0:0:0-ff:ff:ff:ff:ff:ff:ff:ff", 1);
-		try_io("address_group TEST fff0:fff1:fff2:fff3:fff4:fff5:fff6:fff7-fff8:fff9:fffa:fffb:fffc:fffd:fffe:ffff", 1);
+		try_io("address_group TEST "
+		       "0:0:0:0:0:0:0:0-ff:ff:ff:ff:ff:ff:ff:ff", 1);
+		try_io("address_group TEST "
+		       "fff0:fff1:fff2:fff3:fff4:fff5:fff6:fff7-"
+		       "fff8:fff9:fffa:fffb:fffc:fffd:fffe:ffff", 1);
 		try_io("address_group TEST2 0:0:0:0:0:0:0:ff", 1);
-		try_io("address_group TEST2 0:0:0:0:0:0:0:0-ff:ff:ff:ff:ff:ff:ff:ff", 1);
-		try_io("address_group TEST2 fff0:fff1:fff2:fff3:fff4:fff5:fff6:fff7-fff8:fff9:fffa:fffb:fffc:fffd:fffe:ffff", 1);
+		try_io("address_group TEST2 "
+		       "0:0:0:0:0:0:0:0-ff:ff:ff:ff:ff:ff:ff:ff", 1);
+		try_io("address_group TEST2 "
+		       "fff0:fff1:fff2:fff3:fff4:fff5:fff6:fff7-"
+		       "fff8:fff9:fffa:fffb:fffc:fffd:fffe:ffff", 1);
 		try_io("deny_rewrite /", 1);
 		try_io("deny_rewrite /foo", 1);
 		try_io("deny_rewrite /\\*", 1);
@@ -212,7 +228,8 @@ static void StagePolicyIOTest(void) {
 	close(fd);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	Init();
 	StagePolicyIOTest();
 	return 0;

@@ -3,75 +3,98 @@
  *
  * Testing program for fs/tomoyo_signal.c
  *
- * Copyright (C) 2005-2007  NTT DATA CORPORATION
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.5.0   2007/09/20
+ * Version: 1.6.5-pre   2008/10/20
  *
  */
 #include "include.h"
 
 static int is_enforce = 0;
 
-static void ShowPrompt(const char *str) {
-	printf("Testing %6s: (%s) ", str, is_enforce ? "must fail" : "should success");
+static void ShowPrompt(const char *str)
+{
+	printf("Testing %6s: (%s) ", str,
+	       is_enforce ? "must fail" : "should success");
 	errno = 0;
 }
 
-static void ShowResult(int result) {
+static void ShowResult(int result)
+{
 	if (is_enforce) {
 		if (result == EOF) {
-			if (errno == EPERM) printf("OK: Permission denied.\n");
-			else printf("FAILED: %s\n", strerror(errno));
+			if (errno == EPERM)
+				printf("OK: Permission denied.\n");
+			else
+				printf("FAILED: %s\n", strerror(errno));
 		} else {
 			printf("BUG!\n");
 		}
 	} else {
-		if (result != EOF) printf("OK\n");
-		else printf("%s\n", strerror(errno));
+		if (result != EOF)
+			printf("OK\n");
+		else
+			printf("%s\n", strerror(errno));
 	}
 	fflush(stdout);
 }
 
-static int Child(void) {
+static int Child(void)
+{
 	char c = 0;
 	signal(SIGTERM, SIG_IGN);
 	if (write(1, &c, 1) != 1) {
-		fprintf(stderr, "Can't write to pipe.\n"); fflush(stderr);
+		fprintf(stderr, "Can't write to pipe.\n");
+		fflush(stderr);
 		_exit(1);
 	}
-	while (read(0, &c, 1));
+	while (read(0, &c, 1))
+		c++; /* Dummy. */
 	return 0;
 }
 
-static int Parent(const char *self) {
-	int i, j;
+static int Parent(const char *self)
+{
+	int i;
+	int j;
 	for (i = 0; i < 2; i++) {
 		if (i == 0) {
 			WriteStatus("MAC_FOR_SIGNAL=3\n");
 			is_enforce = 1;
-			printf("***** Testing signal hooks in enforce mode. *****\n"); fflush(stdout);
+			printf("***** Testing signal hooks in enforce mode. "
+			       "*****\n");
+			fflush(stdout);
 		} else {
 			WriteStatus("MAC_FOR_SIGNAL=2\n");
 			is_enforce = 0;
-			printf("***** Testing signal hooks in permissive mode. *****\n"); fflush(stdout);
+			printf("***** Testing signal hooks in permissive mode. "
+			       "*****\n");
+			fflush(stdout);
 		}
 		for (j = 0; j < 3; j++) {
 			int pipe_fd[2] = { EOF, EOF };
 			pid_t pid;
 			char c = 0;
-			if (socketpair(AF_UNIX, SOCK_STREAM, 0, pipe_fd) || fcntl(pipe_fd[1], F_SETFL, 0)) {
-				fprintf(stderr, "FAILED to create socketpair.\n"); fflush(stderr);
+			if (socketpair(AF_UNIX, SOCK_STREAM, 0, pipe_fd) ||
+			    fcntl(pipe_fd[1], F_SETFL, 0)) {
+				fprintf(stderr,
+					"FAILED to create socketpair.\n");
+				fflush(stderr);
 				exit(1);
 			}
 			pid = fork();
-			switch(pid) {
+			switch (pid) {
 			case 0:
-				if (close(pipe_fd[0]) == 0 && close(0) == 0 && close(1) == 0 && dup2(pipe_fd[1], 0) != EOF && dup2(pipe_fd[1], 1) != EOF)
+				if (close(pipe_fd[0]) == 0 && close(0) == 0 &&
+				    close(1) == 0 && dup2(pipe_fd[1], 0) != EOF
+				    && dup2(pipe_fd[1], 1) != EOF)
 					execlp(self, self, "--", NULL);
-				fprintf(stderr, "Can't exec()\n"); fflush(stderr);
+				fprintf(stderr, "Can't exec()\n");
+				fflush(stderr);
 				_exit(1);
 			case -1:
-				fprintf(stderr, "Can't fork()\n"); fflush(stderr);
+				fprintf(stderr, "Can't fork()\n");
+				fflush(stderr);
 				exit(1);
 			}
 			close(pipe_fd[1]);
@@ -95,19 +118,23 @@ static int Parent(const char *self) {
 				break;
 			}
 			close(pipe_fd[0]);
-			while (wait(NULL) != EOF || errno == EINTR);
+			while (wait(NULL) != EOF || errno == EINTR)
+				c++; /* Dummy. */
 		}
 	}
 	return 0;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	PreInit();
 	if (access(proc_policy_dir, F_OK)) {
-		fprintf(stderr, "You can't use this program for this kernel.\n");
+		fprintf(stderr, "You can't use this program for this kernel."
+			"\n");
 		return 1;
 	}
-	if (argc > 1) return Child();
+	if (argc > 1)
+		return Child();
 	Init();
 	Parent(argv[0]);
 	ClearStatus();

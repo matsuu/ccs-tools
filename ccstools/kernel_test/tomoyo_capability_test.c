@@ -5,12 +5,13 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.0   2008/04/01
+ * Version: 1.6.5-pre   2008/10/20
  *
  */
 #include "include.h"
 
-static int child(void *arg) {
+static int child(void *arg)
+{
 	errno = 0;
 	pivot_root("/proc", proc_policy_dir);
 	return errno;
@@ -19,72 +20,93 @@ static int child(void *arg) {
 static int domain_fd = EOF;
 static int is_enforce = 0;
 
-static void ShowPrompt(const char *str) {
-	if (domain_fd != EOF) printf("Testing %34s: (%s) ", str, "should success");
-	else printf("Testing %34s: (%s) ", str, is_enforce ? "must fail" : "should success");
+static void ShowPrompt(const char *str)
+{
+	if (domain_fd != EOF)
+		printf("Testing %34s: (%s) ", str, "should success");
+	else
+		printf("Testing %34s: (%s) ", str,
+		       is_enforce ? "must fail" : "should success");
 	errno = 0;
 }
 
-static void ShowResult(int result) {
+static void ShowResult(int result)
+{
 	if (domain_fd != EOF) {
-		if (result != EOF) printf("OK\n");
-		else printf("FAILED: %s\n", strerror(errno));
+		if (result != EOF)
+			printf("OK\n");
+		else
+			printf("FAILED: %s\n", strerror(errno));
 	} else if (is_enforce) {
 		if (result == EOF) {
-			if (errno == EPERM) printf("OK: Permission denied.\n");
-			else printf("FAILED: %s\n", strerror(errno));
+			if (errno == EPERM)
+				printf("OK: Permission denied.\n");
+			else
+				printf("FAILED: %s\n", strerror(errno));
 		} else {
 			printf("BUG!\n");
 		}
 	} else {
-		if (result != EOF) printf("OK\n");
-		else printf("FAILED: %s\n", strerror(errno));
+		if (result != EOF)
+			printf("OK\n");
+		else
+			printf("FAILED: %s\n", strerror(errno));
 	}
 }
 
-static void SetCapability(const char *capability) {
+static void SetCapability(const char *capability)
+{
 	static char buffer[1024];
 	memset(buffer, 0, sizeof(buffer));
-	snprintf(buffer, sizeof(buffer) - 1, "MAC_FOR_CAPABILITY::%s=%d\n", capability, is_enforce ? 3 : 2);
+	snprintf(buffer, sizeof(buffer) - 1, "MAC_FOR_CAPABILITY::%s=%d\n",
+		 capability, is_enforce ? 3 : 2);
 	WriteStatus(buffer);
 	if (domain_fd != EOF) {
-		snprintf(buffer, sizeof(buffer) - 1, "allow_capability %s\n", capability);
+		snprintf(buffer, sizeof(buffer) - 1, "allow_capability %s\n",
+			 capability);
 		write(domain_fd, buffer, strlen(buffer));
 	}
 }
 
-static void UnsetCapability(const char *capability) {
+static void UnsetCapability(const char *capability)
+{
 	static char buffer[1024];
 	memset(buffer, 0, sizeof(buffer));
-	snprintf(buffer, sizeof(buffer) - 1, "MAC_FOR_CAPABILITY::%s=%d\n", capability, 0);
+	snprintf(buffer, sizeof(buffer) - 1, "MAC_FOR_CAPABILITY::%s=%d\n",
+		 capability, 0);
 	WriteStatus(buffer);
 	if (domain_fd != EOF) {
-		snprintf(buffer, sizeof(buffer) - 1, "delete allow_capability %s\n", capability);
+		snprintf(buffer, sizeof(buffer) - 1,
+			 "delete allow_capability %s\n", capability);
 		write(domain_fd, buffer, strlen(buffer));
 	}
 }
 
-static void StageCapabilityTest(void) {
+static void StageCapabilityTest(void)
+{
 	int fd;
-	char tmp1[128], tmp2[128];
+	char tmp1[128];
+	char tmp2[128];
 	memset(tmp1, 0, sizeof(tmp1));
 	memset(tmp2, 0, sizeof(tmp2));
 	SetCapability("inet_tcp_create");
 	ShowPrompt("inet_tcp_create");
 	fd = socket(AF_INET, SOCK_STREAM, 0);
 	ShowResult(fd);
-	if (fd != EOF) close(fd);
+	if (fd != EOF)
+		close(fd);
 	UnsetCapability("inet_tcp_create");
 
 	{
 		struct sockaddr_in addr;
-		int fd1, fd2;
+		int fd1;
+		int fd2;
 		socklen_t size = sizeof(addr);
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET;
 		addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 		addr.sin_port = htons(0);
-		
+
 		fd1 = socket(AF_INET, SOCK_STREAM, 0);
 		bind(fd1, (struct sockaddr *) &addr, sizeof(addr));
 		getsockname(fd1, (struct sockaddr *) &addr, &size);
@@ -92,43 +114,50 @@ static void StageCapabilityTest(void) {
 		ShowPrompt("inet_tcp_listen");
 		ShowResult(listen(fd1, 5));
 		UnsetCapability("inet_tcp_listen");
-		
+
 		fd2 = socket(AF_INET, SOCK_STREAM, 0);
 		SetCapability("inet_tcp_connect");
 		ShowPrompt("inet_tcp_connect");
-		ShowResult(connect(fd2, (struct sockaddr *) &addr, sizeof(addr)));
+		ShowResult(connect(fd2, (struct sockaddr *) &addr,
+				   sizeof(addr)));
 		UnsetCapability("inet_tcp_connect");
-		
-		if (fd2 != EOF) close(fd2);
-		if (fd1 != EOF) close(fd1);
+
+		if (fd2 != EOF)
+			close(fd2);
+		if (fd1 != EOF)
+			close(fd1);
 	}
-	
+
 	SetCapability("use_inet_udp");
 	ShowPrompt("use_inet_udp");
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	ShowResult(fd);
-	if (fd != EOF) close(fd);
+	if (fd != EOF)
+		close(fd);
 	UnsetCapability("use_inet_udp");
-	
+
 	SetCapability("use_inet_ip");
 	ShowPrompt("use_inet_ip");
 	fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	ShowResult(fd);
-	if (fd != EOF) close(fd);
+	if (fd != EOF)
+		close(fd);
 	UnsetCapability("use_inet_ip");
 
 	SetCapability("use_route");
 	ShowPrompt("use_route");
 	fd = socket(AF_ROUTE, SOCK_RAW, 0);
 	ShowResult(fd);
-	if (fd != EOF) close(fd);
+	if (fd != EOF)
+		close(fd);
 	UnsetCapability("use_route");
-	
+
 	SetCapability("use_packet");
 	ShowPrompt("use_packet");
 	fd = socket(AF_PACKET, SOCK_RAW, 0);
 	ShowResult(fd);
-	if (fd != EOF) close(fd);
+	if (fd != EOF)
+		close(fd);
 	UnsetCapability("use_packet");
 
 	SetCapability("use_kernel_module");
@@ -187,7 +216,8 @@ static void StageCapabilityTest(void) {
 		ShowPrompt("create_unix_socket(bind)");
 		ShowResult(bind(fd, (struct sockaddr *) &addr, sizeof(addr)));
 		unlink(tmp1);
-		if (fd != EOF) close(fd);
+		if (fd != EOF)
+			close(fd);
 	}
 	UnsetCapability("create_unix_socket");
 
@@ -195,19 +225,21 @@ static void StageCapabilityTest(void) {
 	ShowPrompt("SYS_MOUNT");
 	ShowResult(mount("/", "/", "nonexistent", 0, NULL));
 	UnsetCapability("SYS_MOUNT");
-	
+
 	SetCapability("SYS_UMOUNT");
 	ShowPrompt("SYS_UMOUNT");
 	ShowResult(umount("/"));
 	UnsetCapability("SYS_UMOUNT");
-	if (access("/", W_OK)) mount("", "/", "", MS_REMOUNT, NULL);
-	
+	if (access("/", W_OK))
+		mount("", "/", "", MS_REMOUNT, NULL);
+
 	SetCapability("SYS_REBOOT");
 	ShowPrompt("SYS_REBOOT");
-	ShowResult(reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, 
-					  0x0000C0DE /* Use invalid value so that the system won't reboot. */, NULL));
+	ShowResult(reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
+			  0x0000C0DE /* Use invalid value so that the system
+					won't reboot. */, NULL));
 	UnsetCapability("SYS_REBOOT");
-	
+
 	SetCapability("SYS_CHROOT");
 	ShowPrompt("SYS_CHROOT");
 	ShowResult(chroot("/"));
@@ -219,8 +251,10 @@ static void StageCapabilityTest(void) {
 	{
 		int error;
 		char *stack = malloc(8192);
-		const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS, NULL);
-		while (waitpid(pid, &error, __WALL) == EOF && errno == EINTR);
+		const pid_t pid = clone(child, stack + (8192 / 2), CLONE_NEWNS,
+					NULL);
+		while (waitpid(pid, &error, __WALL) == EOF && errno == EINTR)
+			error += 0; /* Dummy. */
 		free(stack);
 		errno = WIFEXITED(error) ? WEXITSTATUS(error) : -1;
 		ShowResult(errno ? EOF : 0);
@@ -250,9 +284,10 @@ static void StageCapabilityTest(void) {
 #endif
 	}
 	UnsetCapability("SYS_KEXEC_LOAD");
-	
+
 	{
-		int pty_fd = EOF, status = 0;
+		int pty_fd = EOF;
+		int status = 0;
 		int pipe_fd[2] = { EOF, EOF };
 		pipe(pipe_fd);
 		SetCapability("SYS_VHANGUP");
@@ -292,17 +327,19 @@ static void StageCapabilityTest(void) {
 		ShowPrompt("SYS_TIME(settimeofday())");
 		ShowResult(settimeofday(&tv, &tz));
 		memset(&buf, 0, sizeof(buf));
-		buf.modes = 0x100; /* Use invalid value so that the clock won't change. */
+		buf.modes = 0x100; /* Use invalid value so that the clock won't
+				      change. */
 		ShowPrompt("SYS_TIME(adjtimex())");
 		ShowResult(adjtimex(&buf));
 		UnsetCapability("SYS_TIME");
 	}
-	
+
 	SetCapability("SYS_NICE");
 	ShowPrompt("SYS_NICE(nice())");
 	ShowResult(nice(0));
 	ShowPrompt("SYS_NICE(setpriority())");
-	ShowResult(setpriority(PRIO_PROCESS, pid, getpriority(PRIO_PROCESS, pid)));
+	ShowResult(setpriority(PRIO_PROCESS, pid,
+			       getpriority(PRIO_PROCESS, pid)));
 	UnsetCapability("SYS_NICE");
 
 	{
@@ -317,7 +354,7 @@ static void StageCapabilityTest(void) {
 		ShowResult(setdomainname(buffer, strlen(buffer)));
 		UnsetCapability("SYS_SETHOSTNAME");
 	}
-	
+
 	SetCapability("SYS_LINK");
 	ShowPrompt("SYS_LINK");
 	strcpy(tmp1, "/tmp/link_source_XXXXXX");
@@ -327,7 +364,7 @@ static void StageCapabilityTest(void) {
 	unlink(tmp2);
 	unlink(tmp1);
 	UnsetCapability("SYS_LINK");
-	
+
 	SetCapability("SYS_SYMLINK");
 	ShowPrompt("SYS_SYMLINK");
 	strcpy(tmp1, "/tmp/symlink_target_XXXXXX");
@@ -337,7 +374,7 @@ static void StageCapabilityTest(void) {
 	unlink(tmp2);
 	unlink(tmp1);
 	UnsetCapability("SYS_SYMLINK");
-	
+
 	SetCapability("SYS_RENAME");
 	ShowPrompt("SYS_RENAME");
 	strcpy(tmp1, "/tmp/rename_old_XXXXXX");
@@ -355,7 +392,7 @@ static void StageCapabilityTest(void) {
 	ShowResult(unlink(tmp1));
 	UnsetCapability("SYS_UNLINK");
 	unlink(tmp1);
-	
+
 	SetCapability("SYS_CHMOD");
 	ShowPrompt("SYS_CHMOD");
 	ShowResult(chmod("/dev/null", 0));
@@ -372,7 +409,8 @@ static void StageCapabilityTest(void) {
 	{
 		int fd = open("/dev/null", O_RDONLY);
 		ShowPrompt("SYS_IOCTL");
-		ShowResult(ioctl(fd, 0 /* Use invalid value so that nothing happen. */));
+		ShowResult(ioctl(fd, 0 /* Use invalid value so that nothing
+					  happen. */));
 		close(fd);
 	}
 	UnsetCapability("SYS_IOCTL");
@@ -405,7 +443,8 @@ static void StageCapabilityTest(void) {
 	}
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	PreInit();
 	Init();
 	printf("***** Testing capability hooks in enforce mode. *****\n");
@@ -417,7 +456,8 @@ int main(int argc, char *argv[]) {
 	StageCapabilityTest();
 	printf("\n\n");
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
-	printf("***** Testing capability hooks in enforce mode with policy. *****\n");
+	printf("***** Testing capability hooks in enforce mode with policy. "
+	       "*****\n");
 	is_enforce = 1;
 	{
 		char self_domain[4096];
@@ -429,7 +469,7 @@ int main(int argc, char *argv[]) {
 		write(domain_fd, "\n", 1);
 	}
 	StageCapabilityTest();
-	printf("\n\n");	
+	printf("\n\n");
 	close(domain_fd);
 	ClearStatus();
 	return 0;

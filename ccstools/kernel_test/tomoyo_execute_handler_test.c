@@ -10,9 +10,11 @@
  */
 #include "include.h"
 
-int main(int raw_argc, char *raw_argv[]) {
+int main(int raw_argc, char *raw_argv[])
+{
 	char buffer[4096];
-	char *cp, *cp2;
+	char *cp;
+	char *cp2;
 	FILE *fp;
 	int error;
 	Init();
@@ -25,16 +27,24 @@ int main(int raw_argc, char *raw_argv[]) {
 	fgets(buffer, sizeof(buffer) - 1, fp);
 	fclose(fp);
 	if (strstr(buffer, " execute_handler=yes")) {
-		int i, argc, envc;
-		char *filename, **argv, **envp;
-		if (raw_argc < 7) return 1;
+		int i;
+		int argc;
+		int envc;
+		char *filename;
+		char **argv;
+		char **envp;
+		if (raw_argc < 7)
+			return 1;
 		filename = raw_argv[4];
 		argc = atoi(raw_argv[5]);
 		envc = atoi(raw_argv[6]);
-		if (raw_argc != argc + envc + 7) return 1;
-		for (i = 5; i < argc + 5; i++) raw_argv[i] = raw_argv[i + 2];
+		if (raw_argc != argc + envc + 7)
+			return 1;
+		for (i = 5; i < argc + 5; i++)
+			raw_argv[i] = raw_argv[i + 2];
 		raw_argv[argc + 5] = NULL;
-		for (i = argc + 6; i < argc + envc + 6; i++) raw_argv[i] = raw_argv[i + 1];
+		for (i = argc + 6; i < argc + envc + 6; i++)
+			raw_argv[i] = raw_argv[i + 1];
 		raw_argv[argc + envc + 6] = NULL;
 		argv = raw_argv + 5;
 		envp = raw_argv + argc + 6;
@@ -48,16 +58,17 @@ int main(int raw_argc, char *raw_argv[]) {
 			fprintf(stderr, "Requested Program = %s\n", filename);
 			fprintf(stderr, "argc=%d\n", argc);
 			fprintf(stderr, "envc=%d\n", envc);
-			for (i = 0; i < argc; i++) fprintf(stderr, "argv[%d] = %s\n", i, argv[i]);
-			for (i = 0; i < envc; i++) fprintf(stderr, "envp[%d] = %s\n", i, envp[i]);
+			for (i = 0; i < argc; i++)
+				fprintf(stderr, "argv[%d] = %s\n", i, argv[i]);
+			for (i = 0; i < envc; i++)
+				fprintf(stderr, "envp[%d] = %s\n", i, envp[i]);
 			fprintf(stderr, "\n");
 		}
 		/*
-		 * Continue if filename and argv[] and envp[] are appropriate. 
+		 * Continue if filename and argv[] and envp[] are appropriate.
 		 */
-		if (1) {
+		if (1)
 			execve(filename, argv, envp);
-		}
 		return 1;
 	}
 	memset(buffer, 0, sizeof(buffer));
@@ -77,7 +88,8 @@ int main(int raw_argc, char *raw_argv[]) {
 	fprintf(fp, "execute_handler %s\n", cp2);
 	fflush(fp);
 	if (fork() == 0) {
-		char *arg[3] = { "echo", "OK: execute handler succeeded", NULL };
+		char *arg[3] = { "echo", "OK: execute handler succeeded",
+				 NULL };
 		char *env[2] = { "execute_handler", NULL };
 		execve("/bin/echo", arg, env);
 		_exit(1);
@@ -97,7 +109,8 @@ int main(int raw_argc, char *raw_argv[]) {
 	cp = "255-MAC_FOR_FILE=enforcing\n";
 	write(profile_fd, cp, strlen(cp));
 	if (fork() == 0) {
-		char *arg[3] = { "echo", "OK: denied execute handler succeeded", NULL };
+		char *arg[3] = { "echo", "OK: denied execute handler succeeded",
+				 NULL };
 		char *env[2] = { "denied_execute_handler", NULL };
 		execve("/bin/echo", arg, env);
 		_exit(1);
