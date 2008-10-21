@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/20
+ * Version: 1.6.5-pre   2008/10/21
  *
  * This program generates policy template file for SYAORAN
  * (Implementation of the Tamper-Proof Device Filesystem).
@@ -76,7 +76,7 @@ static void FindFiles(const char *path)
 	for (i = 0; i < n; i++) {
 		const char *file = namelist[i]->d_name;
 		struct stat64 buf;
-		if (!strcmp(file, ".") || !strcmp(file, "..")) {
+		if (!strcmp(file, ".") || !strcmp(file, "..") || !file[0]) {
 			free((void *) namelist[i]);
 			continue;
 		}
