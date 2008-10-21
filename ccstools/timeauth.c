@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/20
+ * Version: 1.6.5-pre   2008/10/21
  */
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -91,6 +91,13 @@ static void NormalizeLine(unsigned char *buffer)
 	*dp = '\0';
 }
 
+struct element {
+	unsigned int key;
+	unsigned int interval;
+	unsigned int min_interval;
+	unsigned int max_interval;
+};
+
 #define PASSWORD_PROMPT           "PASSWORD_PROMPT "
 #define MAX_TRIALS                "MAX_TRIALS "
 #define SLEEP_ON_FAILURE          "SLEEP_ON_FAILURE "
@@ -100,27 +107,19 @@ static void NormalizeLine(unsigned char *buffer)
 #define SINGLE_FAILURE_MESSAGE    "SINGLE_FAILURE_MESSAGE "
 #define COMPLETE_FAILURE_MESSAGE  "COMPLETE_FAILURE_MESSAGE "
 
-struct element {
-	unsigned int key;
-	unsigned int interval;
-	unsigned int min_interval;
-	unsigned int max_interval;
-};
+static char *password_prompt = "Enter\\040password";
+static unsigned int max_trials = 3;
+static unsigned int sleep_on_failure = 3;
+static unsigned int max_timing_errors = 0;
+static char *exec_on_success = "/bin/sh";
+static char *authentication_data = NULL;
+static char *single_failure_message = "Incorrect\\040password.";
+static char *complete_failure_message = "Authentication\\040failed.";
 
-struct authinfo {
-	int max_trials;
-	char *password_prompt;
-	struct element *authdata_list;
-	int authdata_list_len;
-	int max_timing_errors;
-	char *exec_on_success;
-	char *single_failure_message;
-	int sleep_on_failure;
-	char *complete_failure_message;
-	char *authentication_data;
-};
+static struct element *authdata_list = NULL;
+static int authdata_list_len = 0;
 
-static void show_help(struct authinfo *ai, const char *argv0)
+static void show_help(const char *argv0)
 {
 	char *self = canonicalize_file_name(argv0);
 	fprintf(stderr, "This is an interpreter for "
@@ -128,63 +127,52 @@ static void show_help(struct authinfo *ai, const char *argv0)
 		"script. To perform password-with-timing-information "
 		"authentication, create a program like the following "
 		"example.\n\n");
-	printf("#! %s\n", self);
-	printf(PASSWORD_PROMPT          "%s\n", ai->password_prompt);
-	printf(MAX_TRIALS               "%d\n", ai->max_trials);
-	printf(SLEEP_ON_FAILURE         "%d\n", ai->sleep_on_failure);
-	printf(MAX_TIMING_ERRORS        "%d\n", ai->max_timing_errors);
-	printf(EXEC_ON_SUCCESS          "%s\n", ai->exec_on_success);
-	printf(AUTHENTICATION_DATA      "1000-5000 p 1000-5000 a "
+	printf("#! %s\n"
+	       PASSWORD_PROMPT          "%s\n"
+	       MAX_TRIALS               "%d\n"
+	       SLEEP_ON_FAILURE         "%d\n"
+	       MAX_TIMING_ERRORS        "%d\n"
+	       EXEC_ON_SUCCESS          "%s\n"
+	       AUTHENTICATION_DATA      "1000-5000 p 1000-5000 a "
 	       "1000-5000 s 1000-5000 s 1000-5000 w 1000-5000 o "
-	       "1000-5000 r 1000-5000 d 1000-5000 \\012\n");
-	printf(SINGLE_FAILURE_MESSAGE   "%s\n", ai->single_failure_message);
-	printf(COMPLETE_FAILURE_MESSAGE "%s\n",
-	       ai->complete_failure_message);
-	fprintf(stderr, "\n");
-	fprintf(stderr, PASSWORD_PROMPT "is a string to display "
-		"before user's input.\n");
-	fprintf(stderr, MAX_TRIALS "is the maximal count the user can "
-		"try.\n");
-	fprintf(stderr, SLEEP_ON_FAILURE "is the delay in second for "
-		"each failure.\n");
-	fprintf(stderr, MAX_TIMING_ERRORS "is the acceptable limit for "
-		"timing errors.\n");
-	fprintf(stderr, EXEC_ON_SUCCESS "is a program to execute when "
-		"the authentication succeeded.\n");
-	fprintf(stderr, AUTHENTICATION_DATA "is an authentication data "
-		"that are the repetition of minimal-interval and "
-		"maximal-interval in milliseconds and character.\n");
-	fprintf(stderr, SINGLE_FAILURE_MESSAGE "is a string to display "
-		"when the authentication failed for once.\n");
-	fprintf(stderr, COMPLETE_FAILURE_MESSAGE "is a string to "
-		"display when the authentication failed for all "
-		"trials.\n");
-	fprintf(stderr, "The above example requires the user to press "
-		"'password' + Enter with 1 second to 5 seconds "
-		"interval for each key input.\n\n");
-	fprintf(stderr, "Any character with value <= 0x20 or 0x7F "
+	       "1000-5000 r 1000-5000 d 1000-5000 \\012\n"
+	       SINGLE_FAILURE_MESSAGE   "%s\n"
+	       COMPLETE_FAILURE_MESSAGE "%s\n",
+	       self, password_prompt, max_trials, sleep_on_failure,
+	       max_timing_errors, exec_on_success, single_failure_message,
+	       complete_failure_message);
+	fprintf(stderr,
+		"\n"
+		PASSWORD_PROMPT "is a string to display before user's input.\n"
+		MAX_TRIALS "is the maximal count the user can try.\n"
+		SLEEP_ON_FAILURE "is the delay in second for each failure.\n"
+		MAX_TIMING_ERRORS "is the acceptable limit for timing errors.\n"
+		EXEC_ON_SUCCESS "is a program to execute when the "
+		"authentication succeeded.\n"
+		AUTHENTICATION_DATA "is an authentication data that are the "
+		"repetition of minimal-interval and maximal-interval in "
+		"milliseconds and character.\n"
+		SINGLE_FAILURE_MESSAGE "is a string to display when the "
+		"authentication failed for once.\n"
+		COMPLETE_FAILURE_MESSAGE "is a string to display when the "
+		"authentication failed for all trials.\n"
+		"The above example requires the user to press 'password' + "
+		"Enter with 1 second to 5 seconds interval for each key input."
+		"\n\n"
+		"Any character with value <= 0x20 or 0x7F "
 		"<= values are regarded as a delimiter.\n"
 		"You have to follow the character representation rule "
 		"shown below.\n"
 		"  ASCII character (0x21 <= value <= 0x5B or 0x5D <= "
 		"value <= 7E).\n"
 		"  \\\\ for \\ character (value = 0x5C).\n"
-		"  \\ooo style octal representation (value = any).\n");
-	fprintf(stderr, "You can obtain " AUTHENTICATION_DATA
-		"interactively by executing '%s --make'\n", self);
+		"  \\ooo style octal representation (value = any).\n"
+		"You can obtain " AUTHENTICATION_DATA "interactively by "
+		"executing '%s --make'\n", self);
 }
 
-static void make_mode(struct authinfo *ai, const char *argv0)
+static void make_mode(const char *argv0)
 {
-	struct element *authdata_list = ai->authdata_list;
-	int authdata_list_len = ai->authdata_list_len;
-	unsigned int max_timing_errors = ai->max_timing_errors;
-	const char *exec_on_success = ai->exec_on_success;
-	const char *password_prompt = ai->password_prompt;
-	const int max_trials = ai->max_trials;
-	const int sleep_on_failure = ai->sleep_on_failure;
-	const char *single_failure_message = ai->single_failure_message;
-	const char *complete_failure_message = ai->complete_failure_message;
 	int trial;
 	int pos;
 	struct termios tp;
@@ -312,7 +300,7 @@ static void make_mode(struct authinfo *ai, const char *argv0)
 		if (!exec_on_success)
 			exec_on_success = "/bin/sh";
 		fprintf(stderr, "Printing the content of "
-				"authentication script.\n");
+			"authentication script.\n");
 		printf("#! %s\n", self);
 		printf(PASSWORD_PROMPT   "%s\n", password_prompt);
 		printf(MAX_TRIALS        "%d\n", max_trials);
@@ -332,8 +320,7 @@ static void make_mode(struct authinfo *ai, const char *argv0)
 				printf("\\%03o ", c);
 		}
 		printf("\n");
-		printf(SINGLE_FAILURE_MESSAGE   "%s\n",
-		       single_failure_message);
+		printf(SINGLE_FAILURE_MESSAGE   "%s\n", single_failure_message);
 		printf(COMPLETE_FAILURE_MESSAGE "%s\n",
 		       complete_failure_message);
 	}
@@ -345,7 +332,7 @@ static void make_mode(struct authinfo *ai, const char *argv0)
 	goto retry;
 }
 
-static int parse_script(struct authinfo *ai, const char *argv1)
+static int parse_script(const char *argv1)
 {
 	char buffer[8192];
 	FILE *fp = fopen(argv1, "r");
@@ -366,37 +353,37 @@ static int parse_script(struct authinfo *ai, const char *argv1)
 		}
 		NormalizeLine(buffer);
 		if (str_starts(buffer, PASSWORD_PROMPT))
-			ai->password_prompt = str_dup(buffer);
+			password_prompt = str_dup(buffer);
 		else if (sscanf(buffer, MAX_TRIALS "%u", &v) == 1)
-			ai->max_trials = v;
+			max_trials = v;
 		else if (sscanf(buffer, SLEEP_ON_FAILURE "%u", &v) == 1)
-			ai->sleep_on_failure = v;
+			sleep_on_failure = v;
 		else if (sscanf(buffer, MAX_TIMING_ERRORS "%u", &v) == 1)
-			ai->max_timing_errors = v;
+			max_timing_errors = v;
 		else if (str_starts(buffer, EXEC_ON_SUCCESS))
-			ai->exec_on_success = str_dup(buffer);
+			exec_on_success = str_dup(buffer);
 		else if (str_starts(buffer, AUTHENTICATION_DATA))
-			ai->authentication_data = str_dup(buffer);
+			authentication_data = str_dup(buffer);
 		else if (str_starts(buffer, SINGLE_FAILURE_MESSAGE))
-			ai->single_failure_message = str_dup(buffer);
+			single_failure_message = str_dup(buffer);
 		else if (str_starts(buffer, COMPLETE_FAILURE_MESSAGE))
-			ai->complete_failure_message = str_dup(buffer);
+			complete_failure_message = str_dup(buffer);
 	}
 	fclose(fp);
-	if (!ai->authentication_data) {
+	if (!authentication_data) {
 		fprintf(stderr, "No authentication data found.\n");
 		return 1;
 	}
-	ai->password_prompt = str_dup(ai->password_prompt);
-	UnEscapeLine(ai->password_prompt);
-	ai->exec_on_success = str_dup(ai->exec_on_success);
-	UnEscapeLine(ai->exec_on_success);
-	ai->single_failure_message = str_dup(ai->single_failure_message);
-	UnEscapeLine(ai->single_failure_message);
-	ai->complete_failure_message = str_dup(ai->complete_failure_message);
-	UnEscapeLine(ai->complete_failure_message);
+	password_prompt = str_dup(password_prompt);
+	UnEscapeLine(password_prompt);
+	exec_on_success = str_dup(exec_on_success);
+	UnEscapeLine(exec_on_success);
+	single_failure_message = str_dup(single_failure_message);
+	UnEscapeLine(single_failure_message);
+	complete_failure_message = str_dup(complete_failure_message);
+	UnEscapeLine(complete_failure_message);
 	{
-		char *cp = strtok(ai->authentication_data, " ");
+		char *cp = strtok(authentication_data, " ");
 		while (cp) {
 			unsigned int a;
 			unsigned int b;
@@ -418,39 +405,28 @@ static int parse_script(struct authinfo *ai, const char *argv1)
 				else
 					break;
 			}
-			ai->authdata_list = (struct element *)
-				realloc(ai->authdata_list,
-					sizeof(struct element)
-					* (ai->authdata_list_len + 1));
-			if (!ai->authdata_list)
+			authdata_list = (struct element *)
+				realloc(authdata_list, sizeof(struct element)
+					* (authdata_list_len + 1));
+			if (!authdata_list)
 				break;
-			ai->authdata_list[ai->authdata_list_len].min_interval
-				= a;
-			ai->authdata_list[ai->authdata_list_len].max_interval
-				= b;
-			ai->authdata_list[ai->authdata_list_len++].key = c;
+			authdata_list[authdata_list_len].min_interval = a;
+			authdata_list[authdata_list_len].max_interval = b;
+			authdata_list[authdata_list_len++].key = c;
 			cp = strtok(NULL, " ");
 		}
-		if (!ai->authdata_list) {
+		if (!authdata_list) {
 			fprintf(stderr, "No authentication data found.\n");
 			return 1;
 		}
-		free(ai->authentication_data);
-		ai->authentication_data = NULL;
+		free(authentication_data);
+		authentication_data = NULL;
 	}
 	return 0;
 }
 
-static void do_auth(const struct authinfo *ai)
+static int do_auth(void)
 {
-	const int max_trials = ai->max_trials;
-	const char *password_prompt = ai->password_prompt;
-	const struct element *authdata_list = ai->authdata_list;
-	const int authdata_list_len = ai->authdata_list_len;
-	const int max_timing_errors = ai->max_timing_errors;
-	const char *exec_on_success = ai->exec_on_success;
-	const char *single_failure_message = ai->single_failure_message;
-	const int sleep_on_failure = ai->sleep_on_failure;
 	int trial;
 	struct termios tp;
 	struct termios tp0;
@@ -484,8 +460,8 @@ static void do_auth(const struct authinfo *ai)
 				if (authdata_list[pos].key != key) {
 					failed = 1;
 				} else if (interval <
-					   authdata_list[pos].min_interval
-					   || interval >
+					   authdata_list[pos].min_interval ||
+					   interval >
 					   authdata_list[pos].max_interval) {
 					if (++errors > max_timing_errors)
 						failed = 1;
@@ -507,30 +483,21 @@ static void do_auth(const struct authinfo *ai)
 		printf("%s\n", single_failure_message);
 		sleep(sleep_on_failure);
 	}
+	printf("%s\n", complete_failure_message);
+	return 1;
 }
 
 int main(int argc, char *argv[])
 {
-	struct authinfo ai;
-	memset(&ai, 0, sizeof(ai));
-	ai.max_trials = 3;
-	ai.sleep_on_failure = 3;
-	ai.max_timing_errors = 0;
-	ai.password_prompt = "Enter\\040password";
-	ai.exec_on_success = "/bin/sh";
-	ai.single_failure_message = "Incorrect\\040password.";
-	ai.complete_failure_message = "Authentication\\040failed.";
 	if (argc != 2 || !strcmp(argv[1], "--help") || !strcmp(argv[1], "-h")) {
-		show_help(&ai, argv[0]);
+		show_help(argv[0]);
 		return 1;
 	}
 	if (!strcmp(argv[1], "--make")) {
-		make_mode(&ai, argv[0]);
+		make_mode(argv[0]);
 		return 0;
 	}
-	if (parse_script(&ai, argv[1]))
+	if (parse_script(argv[1]))
 		return 1;
-	do_auth(&ai);
-	printf("%s\n", ai.complete_failure_message);
-	return 0;
+	return do_auth();
 }

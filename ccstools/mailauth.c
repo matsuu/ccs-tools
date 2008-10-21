@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/20
+ * Version: 1.6.5-pre   2008/10/21
  */
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -102,64 +102,61 @@ static void NormalizeLine(unsigned char *buffer)
 #define SINGLE_FAILURE_MESSAGE   "SINGLE_FAILURE_MESSAGE "
 #define COMPLETE_FAILURE_MESSAGE "COMPLETE_FAILURE_MESSAGE "
 
-#define PASSWORD_SIZE 16
+static char *password_prompt = "Enter\\040password";
+static unsigned int max_trials = 3;
+static unsigned int sleep_on_failure = 3;
+static char *exec_on_success = "/bin/sh";
+static char *mail_command = NULL;
+static char *single_failure_message = "Incorrect\\040password.";
+static char *complete_failure_message = "Authentication\\040failed.";
 
-struct authinfo {
-	char password[PASSWORD_SIZE];
-	unsigned int max_trials;
-	unsigned int sleep_on_failure;
-	char *password_prompt;
-	char *exec_on_success;
-	char *single_failure_message;
-	char *complete_failure_message;
-	char *mail_command;
-};
-
-static void show_help(struct authinfo *ai, const char *argv0)
+static void show_help(const char *argv0)
 {
 	char *self = canonicalize_file_name(argv0);
-	fprintf(stderr, "This is an interpreter for "
-		"one-time-password-using-mail authentication script. To "
-		"perform one-time-password-using-mail authentication, create a "
-		"program like the following example.\n\n");
-	printf("#! %s\n", self);
-	printf(PASSWORD_PROMPT          "%s\n", ai->password_prompt);
-	printf(MAX_TRIALS               "%d\n", ai->max_trials);
-	printf(SLEEP_ON_FAILURE         "%d\n", ai->sleep_on_failure);
-	printf(EXEC_ON_SUCCESS          "%s\n", ai->exec_on_success);
-	printf(MAIL_COMMAND             "%s\n", "curl --data-binary @- "
-	       "https://your.server/path_to_cgi");
-	printf(SINGLE_FAILURE_MESSAGE   "%s\n", ai->single_failure_message);
-	printf(COMPLETE_FAILURE_MESSAGE "%s\n", ai->complete_failure_message);
-	fprintf(stderr, "\n");
-	fprintf(stderr, PASSWORD_PROMPT "is a string to display before user's "
-		"input.\n");
-	fprintf(stderr, MAX_TRIALS "is the maximal count the user can try.\n");
-	fprintf(stderr, SLEEP_ON_FAILURE "is the delay in second for each "
-		"failure.\n");
-	fprintf(stderr, EXEC_ON_SUCCESS "is a program to execute when the "
-		"authentication succeeded.\n");
-	fprintf(stderr, MAIL_COMMAND "is the command line to notify "
-		"password.\n");
-	fprintf(stderr, SINGLE_FAILURE_MESSAGE "is a string to display when "
-		"the authentication failed for once.\n");
-	fprintf(stderr, COMPLETE_FAILURE_MESSAGE "is a string to display when "
-		"the authentication failed for all trials.\n");
-	fprintf(stderr, "The above example sends password to "
-		"https://your.server/path_to_cgi using curl.\n");
-	fprintf(stderr, "Any character with value <= 0x20 or 0x7F <= values "
+	fprintf(stderr,
+		"This is an interpreter for one-time-password-using-mail "
+		"authentication script. To perform "
+		"one-time-password-using-mail authentication, create a program "
+		"like the following example.\n\n");
+	printf("#! %s\n"
+	       PASSWORD_PROMPT          "%s\n"
+	       MAX_TRIALS               "%d\n"
+	       SLEEP_ON_FAILURE         "%d\n"
+	       EXEC_ON_SUCCESS          "%s\n"
+	       MAIL_COMMAND             "%s\n"
+	       SINGLE_FAILURE_MESSAGE   "%s\n"
+	       COMPLETE_FAILURE_MESSAGE "%s\n",
+	       self,
+	       password_prompt, max_trials, sleep_on_failure, exec_on_success,
+	       "curl --data-binary @- https://your.server/path_to_cgi",
+	       single_failure_message, complete_failure_message);
+	fprintf(stderr,
+		"\n"
+		PASSWORD_PROMPT "is a string to display before user's input.\n"
+		MAX_TRIALS "is the maximal count the user can try.\n"
+		SLEEP_ON_FAILURE "is the delay in second for each failure.\n"
+		EXEC_ON_SUCCESS "is a program to execute when the "
+		"authentication succeeded.\n"
+		MAIL_COMMAND "is the command line to notify password.\n"
+		SINGLE_FAILURE_MESSAGE "is a string to display when "
+		"the authentication failed for once.\n"
+		COMPLETE_FAILURE_MESSAGE "is a string to display when "
+		"the authentication failed for all trials.\n"
+		"The above example sends password to "
+		"https://your.server/path_to_cgi using curl.\n"
+		"Any character with value <= 0x20 or 0x7F <= values "
 		"are regarded as a delimiter.\n"
 		"You have to follow the character representation rule shown "
 		"below.\n"
 		"  ASCII character (0x21 <= value <= 0x5B or 0x5D <= value "
 		"<= 7E).\n"
 		"  \\\\ for \\ character (value = 0x5C).\n"
-		"  \\ooo style octal representation (value = any).\n");
-	fprintf(stderr, "The line "MAIL_COMMAND "is passed to system(), so "
+		"  \\ooo style octal representation (value = any).\n"
+		"The line "MAIL_COMMAND "is passed to system(), so "
 		"escape appropriately as needed.\n");
 }
 
-static int parse_script(struct authinfo *ai, const char *argv1)
+static int parse_script(const char *argv1)
 {
 	char buffer[8192];
 	FILE *fp = fopen(argv1, "r");
@@ -180,45 +177,39 @@ static int parse_script(struct authinfo *ai, const char *argv1)
 		}
 		NormalizeLine(buffer);
 		if (str_starts(buffer, PASSWORD_PROMPT))
-			ai->password_prompt = str_dup(buffer);
+			password_prompt = str_dup(buffer);
 		else if (sscanf(buffer, MAX_TRIALS "%u", &v) == 1)
-			ai->max_trials = v;
+			max_trials = v;
 		else if (sscanf(buffer, SLEEP_ON_FAILURE "%u", &v) == 1)
-			ai->sleep_on_failure = v;
+			sleep_on_failure = v;
 		else if (str_starts(buffer, EXEC_ON_SUCCESS))
-			ai->exec_on_success = str_dup(buffer);
+			exec_on_success = str_dup(buffer);
 		else if (str_starts(buffer, MAIL_COMMAND))
-			ai->mail_command = str_dup(buffer);
+			mail_command = str_dup(buffer);
 		else if (str_starts(buffer, SINGLE_FAILURE_MESSAGE))
-			ai->single_failure_message = str_dup(buffer);
+			single_failure_message = str_dup(buffer);
 		else if (str_starts(buffer, COMPLETE_FAILURE_MESSAGE))
-			ai->complete_failure_message = str_dup(buffer);
+			complete_failure_message = str_dup(buffer);
 	}
 	fclose(fp);
-	if (!ai->mail_command) {
+	if (!mail_command) {
 		fprintf(stderr, "No mail command found.\n");
 		return 1;
 	}
-	ai->password_prompt = str_dup(ai->password_prompt);
-	UnEscapeLine(ai->password_prompt);
-	ai->exec_on_success = str_dup(ai->exec_on_success);
-	UnEscapeLine(ai->exec_on_success);
-	ai->single_failure_message = str_dup(ai->single_failure_message);
-	UnEscapeLine(ai->single_failure_message);
-	ai->complete_failure_message = str_dup(ai->complete_failure_message);
-	UnEscapeLine(ai->complete_failure_message);
+	password_prompt = str_dup(password_prompt);
+	UnEscapeLine(password_prompt);
+	exec_on_success = str_dup(exec_on_success);
+	UnEscapeLine(exec_on_success);
+	single_failure_message = str_dup(single_failure_message);
+	UnEscapeLine(single_failure_message);
+	complete_failure_message = str_dup(complete_failure_message);
+	UnEscapeLine(complete_failure_message);
 	return 0;
 }
 
-static int do_auth(struct authinfo *ai)
+static int do_auth(void)
 {
-	const int max_trials = ai->max_trials;
-	const char *password_prompt = ai->password_prompt;
-	const char *exec_on_success = ai->exec_on_success;
-	const char *single_failure_message = ai->single_failure_message;
-	const int sleep_on_failure = ai->sleep_on_failure;
-	const char *mail_command = ai->mail_command;
-	char password[PASSWORD_SIZE];
+	char password[16];
 	char buffer[8192];
 	{ /* Create password. */
 		int i = 0;
@@ -265,26 +256,18 @@ static int do_auth(struct authinfo *ai)
 			sleep(sleep_on_failure);
 		}
 	}
-	printf("%s\n", ai->complete_failure_message);
+	printf("%s\n", complete_failure_message);
 	return 1;
 }
 
 int main(int argc, char *argv[])
 {
-	struct authinfo ai;
-	memset(&ai, 0, sizeof(ai));
-	ai.max_trials = 3;
-	ai.sleep_on_failure = 3;
-	ai.password_prompt = "Enter\\040password";
-	ai.exec_on_success = "/bin/sh";
-	ai.single_failure_message = "Incorrect\\040password.";
-	ai.complete_failure_message = "Authentication\\040failed.";
 	unsetenv("SHELLOPTS"); /* Make sure popen() executes MAIL_COMMAND */
 	if (argc != 2 || !strcmp(argv[1], "--help") || !strcmp(argv[1], "-h")) {
-		show_help(&ai, argv[0]);
+		show_help(argv[0]);
 		return 1;
 	}
-	if (parse_script(&ai, argv[1]))
+	if (parse_script(argv[1]))
 		return 1;
-	return do_auth(&ai);
+	return do_auth();
 }
