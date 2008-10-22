@@ -224,7 +224,7 @@ static void StageOpenTest(void)
 			 buffer, O_RDONLY, 1);
 
 		snprintf(buffer, sizeof(buffer) - 1, "/etc/fstab");
- 		try_open("allow_read /etc/fstab ; set task.state[0]=1", buffer,
+		try_open("allow_read /etc/fstab ; set task.state[0]=1", buffer,
 			 O_RDONLY, 1);
 		try_open("allow_read /etc/fstab "
 			 "if task.state[0]=0-2 ; set task.state[1]=3", buffer,
