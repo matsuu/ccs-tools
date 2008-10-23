@@ -12,7 +12,7 @@
 #define _GNU_SOURCE
 #include "include.h"
 
-static void ShowPrompt(const char *str, const int is_enforce)
+static void show_prompt(const char *str, const int is_enforce)
 {
 	printf("Testing %60s: (%s) ", str,
 	       is_enforce ? "must fail" : "should success");
@@ -39,7 +39,7 @@ static int child(void *arg)
 
 static int system_fd = EOF;
 
-static void WritePolicy(const char *cp)
+static void write_policy(const char *cp)
 {
 	write(system_fd, cp, strlen(cp));
 }
@@ -47,7 +47,7 @@ static void WritePolicy(const char *cp)
 int main(int argc, char *argv[])
 {
 	char c = 0;
-	Init();
+	ccs_test_init();
 	if (strncmp(proc_policy_dir, "/proc/", 6))
 		pivot_root_dir = "/sys/kernel/security/";
 	system_fd = open(proc_policy_system_policy, O_RDWR);
@@ -76,10 +76,10 @@ int main(int argc, char *argv[])
 			mknod(dev_ram_path, S_IFBLK, MKDEV(1, 0));
 		}
 		memset(buf, 0, sizeof(buf));
-		WriteStatus("RESTRICT_MOUNT=3\n");
+		write_status("RESTRICT_MOUNT=3\n");
 
 		/* Test standard case */
-		ShowPrompt("mount('none', '" TEST_DIR "', 'tmpfs') for '"
+		show_prompt("mount('none', '" TEST_DIR "', 'tmpfs') for '"
 			   TEST_DIR "'", 1);
 		if (mount("none", TEST_DIR, "tmpfs", 0, NULL) == EOF &&
 		    errno == EPERM)
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 		/* Test device_name with pattern */
 		snprintf(buf, sizeof(buf) - 1, "mount('%s', '" TEST_DIR
 			 "', 'ext2') for '%s\\*'", dev_ram_path, dev_ram_path);
-		ShowPrompt(buf, 1);
+		show_prompt(buf, 1);
 		if (mount(dev_ram_path, TEST_DIR, "ext2", MS_RDONLY, NULL)
 		    == EOF && errno == EPERM)
 			printf("OK: Permission denied.\n");
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 			printf("BUG: %s\n", strerror(errno));
 
 		/* Test dir_name with pattern */
-		ShowPrompt("mount('none', '" TEST_DIR "', 'tmpfs') for '"
+		show_prompt("mount('none', '" TEST_DIR "', 'tmpfs') for '"
 			   TEST_DIR_PATTERN "'", 1);
 		if (mount("none", TEST_DIR, "tmpfs", 0, NULL) == EOF &&
 		    errno == EPERM)
@@ -107,42 +107,42 @@ int main(int argc, char *argv[])
 			printf("BUG: %s\n", strerror(errno));
 
 		/* Test standard case */
-		WritePolicy("allow_mount none " TEST_DIR " tmpfs 0\n");
-		ShowPrompt("mount('none', '" TEST_DIR "', 'tmpfs') for '"
+		write_policy("allow_mount none " TEST_DIR " tmpfs 0\n");
+		show_prompt("mount('none', '" TEST_DIR "', 'tmpfs') for '"
 			   TEST_DIR "'", 0);
 		if (mount("none", TEST_DIR, "tmpfs", 0, NULL) == 0)
 			printf("OK\n");
 		else
 			printf("FAILED: %s\n", strerror(errno));
-		WritePolicy("delete allow_mount none " TEST_DIR " tmpfs 0\n");
+		write_policy("delete allow_mount none " TEST_DIR " tmpfs 0\n");
 
 		/* Test device_name with pattern */
 		snprintf(buf, sizeof(buf) - 1, "allow_mount %s\\* " TEST_DIR
 			 " ext2 1\n", dev_ram_path);
-		WritePolicy(buf);
+		write_policy(buf);
 		snprintf(buf, sizeof(buf) - 1, "mount('%s', '" TEST_DIR
 			 "', 'ext2') for '%s\\*'", dev_ram_path, dev_ram_path);
-		ShowPrompt(buf, 0);
+		show_prompt(buf, 0);
 		if (mount(dev_ram_path, TEST_DIR, "ext2", MS_RDONLY, NULL) == 0)
 			printf("OK\n");
 		else
 			printf("FAILED: %s\n", strerror(errno));
 		snprintf(buf, sizeof(buf) - 1, "delete allow_mount %s\\* "
 			 TEST_DIR " ext2 1\n", dev_ram_path);
-		WritePolicy(buf);
+		write_policy(buf);
 
 		/* Test dir_name with pattern */
-		WritePolicy("allow_mount none " TEST_DIR_PATTERN " tmpfs 0\n");
-		ShowPrompt("mount('none', '" TEST_DIR "', 'tmpfs') for '"
+		write_policy("allow_mount none " TEST_DIR_PATTERN " tmpfs 0\n");
+		show_prompt("mount('none', '" TEST_DIR "', 'tmpfs') for '"
 			   TEST_DIR_PATTERN "'", 0);
 		if (mount("none", TEST_DIR, "tmpfs", 0, NULL) == 0)
 			printf("OK\n");
 		else
 			printf("FAILED: %s\n", strerror(errno));
-		WritePolicy("delete allow_mount none " TEST_DIR_PATTERN
+		write_policy("delete allow_mount none " TEST_DIR_PATTERN
 			    " tmpfs 0\n");
 
-		WriteStatus("RESTRICT_MOUNT=0\n");
+		write_status("RESTRICT_MOUNT=0\n");
 		while (umount(TEST_DIR) == 0)
 			c++; /* Dummy. */
 	}
@@ -150,10 +150,10 @@ int main(int argc, char *argv[])
 	/* Test mount(). */
 	{
 		mount("none", TEST_DIR, "tmpfs", 0, NULL);
-		WriteStatus("RESTRICT_MOUNT=3\n");
+		write_status("RESTRICT_MOUNT=3\n");
 
 		/* Test remount case */
-		ShowPrompt("mount('" TEST_DIR "', MS_REMOUNT)", 1);
+		show_prompt("mount('" TEST_DIR "', MS_REMOUNT)", 1);
 		if (mount("none", TEST_DIR, "tmpfs", MS_REMOUNT, NULL) == EOF
 		    && errno == EPERM)
 			printf("OK: Permission denied.\n");
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
 			printf("BUG: %s\n", strerror(errno));
 
 		/* Test bind case */
-		ShowPrompt("mount('" TEST_DIR "', '" TEST_DIR_BIND
+		show_prompt("mount('" TEST_DIR "', '" TEST_DIR_BIND
 			   "', MS_BIND)", 1);
 		if (mount(TEST_DIR, TEST_DIR_BIND, NULL, MS_BIND, NULL) == EOF
 		    && errno == EPERM)
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
 			printf("BUG: %s\n", strerror(errno));
 
 		/* Test move case */
-		ShowPrompt("mount('" TEST_DIR "', '" TEST_DIR_MOVE
+		show_prompt("mount('" TEST_DIR "', '" TEST_DIR_MOVE
 			   "', MS_MOVE)", 1);
 		if (mount(TEST_DIR, TEST_DIR_MOVE, NULL, MS_MOVE, NULL) == EOF
 		    && errno == EPERM)
@@ -179,42 +179,42 @@ int main(int argc, char *argv[])
 			printf("BUG: %s\n", strerror(errno));
 
 		/* Test remount case */
-		WritePolicy("allow_mount any " TEST_DIR " --remount 0\n");
-		ShowPrompt("mount('" TEST_DIR "', MS_REMOUNT)", 0);
+		write_policy("allow_mount any " TEST_DIR " --remount 0\n");
+		show_prompt("mount('" TEST_DIR "', MS_REMOUNT)", 0);
 		if (mount("none", TEST_DIR, "tmpfs", MS_REMOUNT, NULL) == 0)
 			printf("OK\n");
 		else
 			printf("FAILED: %s\n", strerror(errno));
-		WritePolicy("delete allow_mount any " TEST_DIR
+		write_policy("delete allow_mount any " TEST_DIR
 			    " --remount 0\n");
 
 		/* Test bind case */
-		WritePolicy("allow_mount " TEST_DIR " " TEST_DIR_BIND
+		write_policy("allow_mount " TEST_DIR " " TEST_DIR_BIND
 			    " --bind 0\n");
-		ShowPrompt("mount('" TEST_DIR "', '" TEST_DIR_BIND
+		show_prompt("mount('" TEST_DIR "', '" TEST_DIR_BIND
 			   "', MS_BIND)", 0);
 		if (mount(TEST_DIR, TEST_DIR_BIND, NULL, MS_BIND, NULL) == 0)
 			printf("OK\n");
 		else
 			printf("FAILED: %s\n", strerror(errno));
 		umount(TEST_DIR_BIND);
-		WritePolicy("delete allow_mount " TEST_DIR " " TEST_DIR_BIND
+		write_policy("delete allow_mount " TEST_DIR " " TEST_DIR_BIND
 			    " --bind 0\n");
 
 		/* Test move case */
-		WritePolicy("allow_mount " TEST_DIR " " TEST_DIR_MOVE
+		write_policy("allow_mount " TEST_DIR " " TEST_DIR_MOVE
 			    " --move 0\n");
-		ShowPrompt("mount('" TEST_DIR "', '" TEST_DIR_MOVE
+		show_prompt("mount('" TEST_DIR "', '" TEST_DIR_MOVE
 			   "', MS_MOVE)", 0);
 		if (mount(TEST_DIR, TEST_DIR_MOVE, NULL, MS_MOVE, NULL) == 0)
 			printf("OK\n");
 		else
 			printf("FAILED: %s\n", strerror(errno));
 		umount(TEST_DIR_MOVE);
-		WritePolicy("delete allow_mount " TEST_DIR " " TEST_DIR_MOVE
+		write_policy("delete allow_mount " TEST_DIR " " TEST_DIR_MOVE
 			    " --move 0\n");
 
-		WriteStatus("RESTRICT_MOUNT=0\n");
+		write_status("RESTRICT_MOUNT=0\n");
 		while (umount(TEST_DIR) == 0)
 			c++; /* Dummy. */
 	}
@@ -222,87 +222,87 @@ int main(int argc, char *argv[])
 	/* Test mount(). */
 	{
 		mount("none", TEST_DIR, "tmpfs", 0, NULL);
-		WriteStatus("DENY_CONCEAL_MOUNT=3\n");
+		write_status("DENY_CONCEAL_MOUNT=3\n");
 
-		ShowPrompt("mount('none', '" TEST_DIR "', 'tmpfs')", 1);
+		show_prompt("mount('none', '" TEST_DIR "', 'tmpfs')", 1);
 		if (mount("none", TEST_DIR, "tmpfs", 0, NULL) == EOF &&
 		    errno == EPERM)
 			printf("OK: Permission denied.\n");
 		else
 			printf("BUG: %s\n", strerror(errno));
 
-		ShowPrompt("mount('none', '/tmp/', 'tmpfs')", 1);
+		show_prompt("mount('none', '/tmp/', 'tmpfs')", 1);
 		if (mount("none", "/tmp/", "tmpfs", 0, NULL) == EOF &&
 		    errno == EPERM)
 			printf("OK: Permission denied.\n");
 		else
 			printf("BUG: %s\n", strerror(errno));
 
-		ShowPrompt("mount('none', '/', 'tmpfs')", 1);
+		show_prompt("mount('none', '/', 'tmpfs')", 1);
 		if (mount("none", "/", "tmpfs", 0, NULL) == EOF &&
 		    errno == EPERM)
 			printf("OK: Permission denied.\n");
 		else
 			printf("BUG: %s\n", strerror(errno));
 
-		WriteStatus("DENY_CONCEAL_MOUNT=2\n");
+		write_status("DENY_CONCEAL_MOUNT=2\n");
 
-		ShowPrompt("mount('none', '" TEST_DIR "', 'tmpfs')", 0);
+		show_prompt("mount('none', '" TEST_DIR "', 'tmpfs')", 0);
 		if (mount("none", TEST_DIR, "tmpfs", 0, NULL) == 0)
 			printf("OK\n");
 		else
 			printf("FAILED: %s\n", strerror(errno));
 
-		WriteStatus("DENY_CONCEAL_MOUNT=0\n");
+		write_status("DENY_CONCEAL_MOUNT=0\n");
 		while (umount(TEST_DIR) == 0)
 			c++; /* Dummy. */
 	}
 
 	/* Test umount(). */
 	{
-		WriteStatus("RESTRICT_UNMOUNT=3\n");
+		write_status("RESTRICT_UNMOUNT=3\n");
 
 		/* Test standard case */
-		WritePolicy("deny_unmount " TEST_DIR "\n");
+		write_policy("deny_unmount " TEST_DIR "\n");
 
 		mount("none", TEST_DIR, "tmpfs", 0, NULL);
-		ShowPrompt("umount('" TEST_DIR "') for '" TEST_DIR "'", 1);
+		show_prompt("umount('" TEST_DIR "') for '" TEST_DIR "'", 1);
 		if (umount(TEST_DIR) == EOF && errno == EPERM)
 			printf("OK: Permission denied.\n");
 		else
 			printf("BUG: %s\n", strerror(errno));
-		WritePolicy("delete deny_unmount " TEST_DIR "\n");
+		write_policy("delete deny_unmount " TEST_DIR "\n");
 
 		mount("none", TEST_DIR, "tmpfs", 0, NULL);
-		ShowPrompt("umount('" TEST_DIR "') for '" TEST_DIR "'", 0);
+		show_prompt("umount('" TEST_DIR "') for '" TEST_DIR "'", 0);
 		if (umount(TEST_DIR) == 0)
 			printf("OK\n");
 		else
 			printf("FAILED: %s\n", strerror(errno));
 
 		/* Test pattern */
-		WritePolicy("deny_unmount " TEST_DIR_PATTERN "\n");
+		write_policy("deny_unmount " TEST_DIR_PATTERN "\n");
 		mount("none", TEST_DIR, "tmpfs", 0, NULL);
-		ShowPrompt("umount('" TEST_DIR "') for '" TEST_DIR_PATTERN "'",
+		show_prompt("umount('" TEST_DIR "') for '" TEST_DIR_PATTERN "'",
 			   1);
 		if (umount(TEST_DIR) == EOF && errno == EPERM)
 			printf("OK: Permission denied.\n");
 		else
 			printf("BUG: %s\n", strerror(errno));
-		WritePolicy("delete deny_unmount " TEST_DIR_PATTERN "\n");
+		write_policy("delete deny_unmount " TEST_DIR_PATTERN "\n");
 
-		WriteStatus("RESTRICT_UNMOUNT=0\n");
+		write_status("RESTRICT_UNMOUNT=0\n");
 		while (umount(TEST_DIR) == 0)
 			c++; /* Dummy. */
 	}
 
 	/* Test chroot(). */
 	{
-		WriteStatus("RESTRICT_CHROOT=3\n");
+		write_status("RESTRICT_CHROOT=3\n");
 
 		/* Test standard case */
-		WritePolicy("allow_chroot " TEST_DIR "\n");
-		ShowPrompt("chroot('" TEST_DIR "') for '" TEST_DIR "'", 0);
+		write_policy("allow_chroot " TEST_DIR "\n");
+		show_prompt("chroot('" TEST_DIR "') for '" TEST_DIR "'", 0);
 		fflush(stdout);
 		if (fork() == 0) {
 			if (chroot(TEST_DIR) == 0)
@@ -313,9 +313,9 @@ int main(int argc, char *argv[])
 			_exit(0);
 		}
 		wait(NULL);
-		WritePolicy("delete allow_chroot " TEST_DIR "\n");
+		write_policy("delete allow_chroot " TEST_DIR "\n");
 
-		ShowPrompt("chroot('" TEST_DIR "') for '" TEST_DIR "'", 1);
+		show_prompt("chroot('" TEST_DIR "') for '" TEST_DIR "'", 1);
 		fflush(stdout);
 		if (fork() == 0) {
 			if (chroot(TEST_DIR) == EOF && errno == EPERM)
@@ -328,8 +328,8 @@ int main(int argc, char *argv[])
 		wait(NULL);
 
 		/* Test pattern */
-		WritePolicy("allow_chroot " TEST_DIR_PATTERN "\n");
-		ShowPrompt("chroot('" TEST_DIR "') for '" TEST_DIR_PATTERN "'",
+		write_policy("allow_chroot " TEST_DIR_PATTERN "\n");
+		show_prompt("chroot('" TEST_DIR "') for '" TEST_DIR_PATTERN "'",
 			   0);
 		fflush(stdout);
 		if (fork() == 0) {
@@ -341,23 +341,23 @@ int main(int argc, char *argv[])
 			_exit(0);
 		}
 		wait(NULL);
-		WritePolicy("delete allow_chroot " TEST_DIR_PATTERN "\n");
+		write_policy("delete allow_chroot " TEST_DIR_PATTERN "\n");
 
-		WriteStatus("RESTRICT_CHROOT=0\n");
+		write_status("RESTRICT_CHROOT=0\n");
 	}
 
 	/* Test pivot_root(). */
 	{
 		int error;
 		char *stack = malloc(8192);
-		WriteStatus("RESTRICT_PIVOT_ROOT=3\n");
+		write_status("RESTRICT_PIVOT_ROOT=3\n");
 
 		snprintf(stack, 8191, "allow_pivot_root %s %s\n",
 			 pivot_root_dir, proc_policy_dir);
-		WritePolicy(stack);
+		write_policy(stack);
 		snprintf(stack, 8191, "pivot_root('%s', '%s')", pivot_root_dir,
 			 proc_policy_dir);
-		ShowPrompt(stack, 0);
+		show_prompt(stack, 0);
 		{
 			const pid_t pid = clone(child, stack + (8192 / 2),
 						CLONE_NEWNS, NULL);
@@ -373,10 +373,10 @@ int main(int argc, char *argv[])
 
 		snprintf(stack, 8191, "delete allow_pivot_root %s %s\n",
 			 pivot_root_dir, proc_policy_dir);
-		WritePolicy(stack);
+		write_policy(stack);
 		snprintf(stack, 8191, "pivot_root('%s', '%s')", pivot_root_dir,
 			 proc_policy_dir);
-		ShowPrompt(stack, 1);
+		show_prompt(stack, 1);
 		{
 			const pid_t pid = clone(child, stack + (8192 / 2),
 						CLONE_NEWNS, NULL);
@@ -390,10 +390,10 @@ int main(int argc, char *argv[])
 		else
 			printf("BUG: %s\n", strerror(errno));
 
-		WriteStatus("RESTRICT_PIVOT_ROOT=2\n");
+		write_status("RESTRICT_PIVOT_ROOT=2\n");
 		snprintf(stack, 8191, "pivot_root('%s', '%s')", pivot_root_dir,
 			 proc_policy_dir);
-		ShowPrompt(stack, 0);
+		show_prompt(stack, 0);
 		{
 			const pid_t pid = clone(child, stack + (8192 / 2),
 						CLONE_NEWNS, NULL);
@@ -407,7 +407,7 @@ int main(int argc, char *argv[])
 		else
 			printf("FAILED: %s\n", strerror(errno));
 
-		WriteStatus("RESTRICT_PIVOT_ROOT=0\n");
+		write_status("RESTRICT_PIVOT_ROOT=0\n");
 
 		free(stack);
 	}
@@ -417,6 +417,6 @@ int main(int argc, char *argv[])
 	rmdir(TEST_DIR);
 
 	close(system_fd);
-	ClearStatus();
+	clear_status();
 	return 0;
 }

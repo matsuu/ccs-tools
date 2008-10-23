@@ -77,7 +77,7 @@ static void try_open(const char *policy, const char *file, const int mode,
 	}
 }
 
-static void StageOpenTest(void)
+static void stage_open_test(void)
 {
 	const pid_t pid = getppid();
 	int i;
@@ -296,7 +296,7 @@ static void try_signal(const char *condition, const unsigned char s0,
 	printf("BUG: state change failed: %s\n", buffer);
 }
 
-static void StageSignalTest(void)
+static void stage_signal_test(void)
 {
 	int i;
 	for (i = 0; i < 5; i++) {
@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
 {
 	const char *cp;
 	int self_fd;
-	Init();
+	ccs_test_init();
 	self_fd = open(proc_policy_self_domain, O_RDONLY);
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
 	memset(self_domain, 0, sizeof(self_domain));
@@ -337,14 +337,14 @@ int main(int argc, char *argv[])
 	write(domain_fd, "\n", 1);
 	cp = "255-MAC_FOR_FILE=enforcing\n";
 	write(profile_fd, cp, strlen(cp));
-	StageOpenTest();
+	stage_open_test();
 	cp = "255-MAC_FOR_FILE=disabled\n";
 	write(profile_fd, cp, strlen(cp));
 	cp = "255-MAC_FOR_SIGNAL=enforcing\n";
 	write(profile_fd, cp, strlen(cp));
-	StageSignalTest();
+	stage_signal_test();
 	cp = "255-MAC_FOR_SIGNAL=disabled\n";
 	write(profile_fd, cp, strlen(cp));
-	ClearStatus();
+	clear_status();
 	return 0;
 }

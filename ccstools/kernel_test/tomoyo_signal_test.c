@@ -12,14 +12,14 @@
 
 static int is_enforce = 0;
 
-static void ShowPrompt(const char *str)
+static void show_prompt(const char *str)
 {
 	printf("Testing %6s: (%s) ", str,
 	       is_enforce ? "must fail" : "should success");
 	errno = 0;
 }
 
-static void ShowResult(int result)
+static void show_result(int result)
 {
 	if (is_enforce) {
 		if (result == EOF) {
@@ -39,7 +39,7 @@ static void ShowResult(int result)
 	fflush(stdout);
 }
 
-static int Child(void)
+static int do_child(void)
 {
 	char c = 0;
 	signal(SIGTERM, SIG_IGN);
@@ -53,19 +53,19 @@ static int Child(void)
 	return 0;
 }
 
-static int Parent(const char *self)
+static int do_parent(const char *self)
 {
 	int i;
 	int j;
 	for (i = 0; i < 2; i++) {
 		if (i == 0) {
-			WriteStatus("MAC_FOR_SIGNAL=3\n");
+			write_status("MAC_FOR_SIGNAL=3\n");
 			is_enforce = 1;
 			printf("***** Testing signal hooks in enforce mode. "
 			       "*****\n");
 			fflush(stdout);
 		} else {
-			WriteStatus("MAC_FOR_SIGNAL=2\n");
+			write_status("MAC_FOR_SIGNAL=2\n");
 			is_enforce = 0;
 			printf("***** Testing signal hooks in permissive mode. "
 			       "*****\n");
@@ -101,18 +101,18 @@ static int Parent(const char *self)
 			read(pipe_fd[0], &c, 1);
 			switch (j) {
 			case 0:
-				ShowPrompt("kill");
-				ShowResult(kill(pid, SIGTERM));
+				show_prompt("kill");
+				show_result(kill(pid, SIGTERM));
 				break;
 			case 1:
-				ShowPrompt("tkill");
-				ShowResult(tkill(pid, SIGTERM));
+				show_prompt("tkill");
+				show_result(tkill(pid, SIGTERM));
 				break;
 			case 2:
 #ifdef __NR_tgkill
 				if (is_kernel26) {
-					ShowPrompt("tgkill");
-					ShowResult(tgkill(pid, pid, SIGTERM));
+					show_prompt("tgkill");
+					show_result(tgkill(pid, pid, SIGTERM));
 				}
 #endif
 				break;
@@ -127,16 +127,16 @@ static int Parent(const char *self)
 
 int main(int argc, char *argv[])
 {
-	PreInit();
+	ccs_test_pre_init();
 	if (access(proc_policy_dir, F_OK)) {
 		fprintf(stderr, "You can't use this program for this kernel."
 			"\n");
 		return 1;
 	}
 	if (argc > 1)
-		return Child();
-	Init();
-	Parent(argv[0]);
-	ClearStatus();
+		return do_child();
+	ccs_test_init();
+	do_parent(argv[0]);
+	clear_status();
 	return 0;
 }

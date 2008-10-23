@@ -12,14 +12,14 @@
 
 static int is_enforce = 0;
 
-static void ShowPrompt(const char *str)
+static void show_prompt(const char *str)
 {
 	printf("Testing %35s: (%s) ", str,
 	       is_enforce ? "must fail" : "should success");
 	errno = 0;
 }
 
-static void ShowResult(int result)
+static void show_result(int result)
 {
 	if (is_enforce) {
 		if (result == EOF) {
@@ -60,7 +60,7 @@ static const char *socket_path         = "/tmp/socket_test";
 
 static int ftruncate_fd = EOF;
 
-static void StageFileTest(void)
+static void stage_file_test(void)
 {
 	int fd;
 	{
@@ -68,14 +68,14 @@ static void StageFileTest(void)
 				      NET_IPV4_LOCAL_PORT_RANGE };
 		int buffer[2] = { 32768, 61000 };
 		int size = sizeof(buffer);
-		ShowPrompt("sysctl(READ)");
-		ShowResult(sysctl(name, 3, buffer, &size, 0, 0));
-		ShowPrompt("sysctl(WRITE)");
-		ShowResult(sysctl(name, 3, 0, 0, buffer, size));
+		show_prompt("sysctl(READ)");
+		show_result(sysctl(name, 3, buffer, &size, 0, 0));
+		show_prompt("sysctl(WRITE)");
+		show_result(sysctl(name, 3, 0, 0, buffer, size));
 	}
 
-	ShowPrompt("uselib()");
-	ShowResult(uselib("/bin/true"));
+	show_prompt("uselib()");
+	show_result(uselib("/bin/true"));
 
 	{
 		int pipe_fd[2] = { EOF, EOF };
@@ -91,79 +91,79 @@ static void StageFileTest(void)
 		}
 		close(pipe_fd[1]);
 		read(pipe_fd[0], &err, sizeof(err));
-		ShowPrompt("execve()");
+		show_prompt("execve()");
 		errno = err;
-		ShowResult(err ? EOF : 0);
+		show_result(err ? EOF : 0);
 	}
 
-	ShowPrompt("open(O_RDONLY)");
+	show_prompt("open(O_RDONLY)");
 	fd = open(dev_null_path, O_RDONLY);
-	ShowResult(fd);
+	show_result(fd);
 	if (fd != EOF)
 		close(fd);
 
-	ShowPrompt("open(O_WRONLY)");
+	show_prompt("open(O_WRONLY)");
 	fd = open(dev_null_path, O_WRONLY);
-	ShowResult(fd);
+	show_result(fd);
 	if (fd != EOF)
 		close(fd);
 
-	ShowPrompt("open(O_RDWR)");
+	show_prompt("open(O_RDWR)");
 	fd = open(dev_null_path, O_RDWR);
-	ShowResult(fd);
+	show_result(fd);
 	if (fd != EOF)
 		close(fd);
 
-	ShowPrompt("open(O_CREAT | O_EXCL)");
+	show_prompt("open(O_CREAT | O_EXCL)");
 	fd = open(open_creat_path, O_CREAT | O_EXCL, 0666);
-	ShowResult(fd);
+	show_result(fd);
 	if (fd != EOF)
 		close(fd);
 
-	ShowPrompt("open(O_TRUNC)");
+	show_prompt("open(O_TRUNC)");
 	fd = open(truncate_path, O_TRUNC);
-	ShowResult(fd);
+	show_result(fd);
 	if (fd != EOF)
 		close(fd);
 
-	ShowPrompt("truncate()");
-	ShowResult(truncate(truncate_path, 0));
+	show_prompt("truncate()");
+	show_result(truncate(truncate_path, 0));
 
-	ShowPrompt("ftruncate()");
-	ShowResult(ftruncate(ftruncate_fd, 0));
+	show_prompt("ftruncate()");
+	show_result(ftruncate(ftruncate_fd, 0));
 
-	ShowPrompt("mknod(S_IFREG)");
-	ShowResult(mknod(mknod_reg_path, S_IFREG, 0));
+	show_prompt("mknod(S_IFREG)");
+	show_result(mknod(mknod_reg_path, S_IFREG, 0));
 
-	ShowPrompt("mknod(S_IFCHR)");
-	ShowResult(mknod(mknod_chr_path, S_IFCHR, MKDEV(1, 3)));
+	show_prompt("mknod(S_IFCHR)");
+	show_result(mknod(mknod_chr_path, S_IFCHR, MKDEV(1, 3)));
 
-	ShowPrompt("mknod(S_IFBLK)");
-	ShowResult(mknod(mknod_blk_path, S_IFBLK, MKDEV(1, 0)));
+	show_prompt("mknod(S_IFBLK)");
+	show_result(mknod(mknod_blk_path, S_IFBLK, MKDEV(1, 0)));
 
-	ShowPrompt("mknod(S_IFIFO)");
-	ShowResult(mknod(mknod_fifo_path, S_IFIFO, 0));
+	show_prompt("mknod(S_IFIFO)");
+	show_result(mknod(mknod_fifo_path, S_IFIFO, 0));
 
-	ShowPrompt("mknod(S_IFSOCK)");
-	ShowResult(mknod(mknod_sock_path, S_IFSOCK, 0));
+	show_prompt("mknod(S_IFSOCK)");
+	show_result(mknod(mknod_sock_path, S_IFSOCK, 0));
 
-	ShowPrompt("mkdir()");
-	ShowResult(mkdir(mkdir_path, 0600));
+	show_prompt("mkdir()");
+	show_result(mkdir(mkdir_path, 0600));
 
-	ShowPrompt("rmdir()");
-	ShowResult(rmdir(rmdir_path));
+	show_prompt("rmdir()");
+	show_result(rmdir(rmdir_path));
 
-	ShowPrompt("unlink()");
-	ShowResult(unlink(unlink_path));
+	show_prompt("unlink()");
+	show_result(unlink(unlink_path));
 
-	ShowPrompt("symlink()");
-	ShowResult(symlink(symlink_dest_path, symlink_source_path));
+	show_prompt("symlink()");
+	show_result(symlink(symlink_dest_path, symlink_source_path));
 
-	ShowPrompt("link()");
-	ShowResult(link(link_source_path, link_dest_path));
+	show_prompt("link()");
+	show_result(link(link_source_path, link_dest_path));
 
-	ShowPrompt("rename()");
-	ShowResult(rename(rename_source_path, rename_dest_path));
+	show_prompt("rename()");
+	show_result(rename(rename_source_path, rename_dest_path));
 
 	{
 		struct sockaddr_un addr;
@@ -172,8 +172,8 @@ static void StageFileTest(void)
 		addr.sun_family = AF_UNIX;
 		strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
 		fd = socket(AF_UNIX, SOCK_STREAM, 0);
-		ShowPrompt("unix_bind()");
-		ShowResult(bind(fd, (struct sockaddr *) &addr, sizeof(addr)));
+		show_prompt("unix_bind()");
+		show_result(bind(fd, (struct sockaddr *) &addr, sizeof(addr)));
 		if (fd != EOF)
 			close(fd);
 	}
@@ -181,7 +181,7 @@ static void StageFileTest(void)
 	printf("\n\n");
 }
 
-static void CreateFiles(void)
+static void create_files(void)
 {
 	mkdir(rmdir_path, 0700);
 	close(creat(link_source_path, 0600));
@@ -191,7 +191,7 @@ static void CreateFiles(void)
 	ftruncate_fd = open(ftruncate_path, O_WRONLY | O_CREAT, 0600);
 }
 
-static void CleanUpFiles(void)
+static void creanup_files(void)
 {
 	if (ftruncate_fd != EOF)
 		close(ftruncate_fd);
@@ -214,34 +214,34 @@ static void CleanUpFiles(void)
 	unlink(socket_path);
 }
 
-static void SetFileEnforce(int enforce)
+static void set_file_enforce(int enforce)
 {
 	if (enforce)
-		WriteStatus("MAC_FOR_FILE=3\n");
+		write_status("MAC_FOR_FILE=3\n");
 	else
-		WriteStatus("MAC_FOR_FILE=2\n");
+		write_status("MAC_FOR_FILE=2\n");
 }
 
 int main(int argc, char *argv[])
 {
-	Init();
+	ccs_test_init();
 
 	printf("***** Testing file hooks in enforce mode. *****\n");
-	CreateFiles();
+	create_files();
 	is_enforce = 1;
-	SetFileEnforce(1);
-	StageFileTest();
-	SetFileEnforce(0);
-	ClearStatus();
-	CleanUpFiles();
+	set_file_enforce(1);
+	stage_file_test();
+	set_file_enforce(0);
+	clear_status();
+	creanup_files();
 
 	printf("***** Testing file hooks in permissive mode. *****\n");
 	is_enforce = 0;
-	CreateFiles();
-	SetFileEnforce(0);
-	StageFileTest();
-	CleanUpFiles();
+	create_files();
+	set_file_enforce(0);
+	stage_file_test();
+	creanup_files();
 
-	ClearStatus();
+	clear_status();
 	return 0;
 }

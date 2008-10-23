@@ -12,14 +12,14 @@
 
 static int is_enforce = 0;
 
-static void ShowPrompt(const char *str)
+static void show_prompt(const char *str)
 {
 	printf("Testing %50s: (%s) ", str,
 	       is_enforce ? "must fail" : "should success");
 	errno = 0;
 }
 
-static void ShowResult(int result)
+static void show_result(int result)
 {
 	if (is_enforce) {
 		if (result == EOF) {
@@ -38,7 +38,7 @@ static void ShowResult(int result)
 	}
 }
 
-static void ShowResult2(int result)
+static void show_result2(int result)
 {
 	if (is_enforce) {
 		if (result == EOF) {
@@ -57,7 +57,7 @@ static void ShowResult2(int result)
 	}
 }
 
-static void ShowResult3(int result)
+static void show_result3(int result)
 {
 	if (is_enforce) {
 		if (result == EOF) {
@@ -76,7 +76,7 @@ static void ShowResult3(int result)
 	}
 }
 
-static void ShowResult4(int result)
+static void show_result4(int result)
 {
 	if (result == EOF) {
 		if (errno == EDESTADDRREQ)
@@ -88,16 +88,16 @@ static void ShowResult4(int result)
 	}
 }
 
-static void SetEnforce(int flag)
+static void set_enforce(int flag)
 {
 	is_enforce = flag;
 	if (flag)
-		WriteStatus("MAC_FOR_NETWORK=3\n");
+		write_status("MAC_FOR_NETWORK=3\n");
 	else
-		WriteStatus("MAC_FOR_NETWORK=2\n");
+		write_status("MAC_FOR_NETWORK=2\n");
 }
 
-static void StageNetworkTest(void)
+static void stage_network_test(void)
 {
 	int i;
 	static char buf[16];
@@ -123,50 +123,50 @@ static void StageNetworkTest(void)
 		saddr.sin_port = htons(0);
 		snprintf(sbuffer, sizeof(sbuffer) - 1,
 			 "Server: Binding TCP 127.0.0.1 0");
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
-		ShowResult(bind(fd1, (struct sockaddr *) &saddr,
+		set_enforce(1);
+		show_prompt(sbuffer);
+		show_result(bind(fd1, (struct sockaddr *) &saddr,
 				sizeof(saddr)));
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
-		ShowResult(bind(fd1, (struct sockaddr *) &saddr,
+		set_enforce(0);
+		show_prompt(sbuffer);
+		show_result(bind(fd1, (struct sockaddr *) &saddr,
 				sizeof(saddr)));
 		getsockname(fd1, (struct sockaddr *) &saddr, &size);
 
 		snprintf(sbuffer, sizeof(sbuffer) - 1,
 			 "Server: Listening TCP 127.0.0.1 %d",
 			 ntohs(saddr.sin_port));
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
-		ShowResult(listen(fd1, 5));
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
-		ShowResult(listen(fd1, 5));
+		set_enforce(1);
+		show_prompt(sbuffer);
+		show_result(listen(fd1, 5));
+		set_enforce(0);
+		show_prompt(sbuffer);
+		show_result(listen(fd1, 5));
 
 		fd2 = socket(PF_INET, SOCK_STREAM, 0);
 
 		snprintf(cbuffer, sizeof(cbuffer) - 1,
 			 "Client: Connecting TCP 127.0.0.1 %d",
 			 ntohs(saddr.sin_port));
-		SetEnforce(1);
-		ShowPrompt(cbuffer);
-		ShowResult(connect(fd2, (struct sockaddr *) &saddr,
+		set_enforce(1);
+		show_prompt(cbuffer);
+		show_result(connect(fd2, (struct sockaddr *) &saddr,
 				   sizeof(saddr)));
-		SetEnforce(0);
-		ShowPrompt(cbuffer);
-		ShowResult(connect(fd2, (struct sockaddr *) &saddr,
+		set_enforce(0);
+		show_prompt(cbuffer);
+		show_result(connect(fd2, (struct sockaddr *) &saddr,
 				   sizeof(saddr)));
 		getsockname(fd2, (struct sockaddr *) &caddr, &size);
 
 		snprintf(sbuffer, sizeof(sbuffer) - 1,
 			 "Server: Accepting TCP 127.0.0.1 %d",
 			 ntohs(caddr.sin_port));
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
+		set_enforce(1);
+		show_prompt(sbuffer);
 		fd3 = accept(fd1, (struct sockaddr *) &caddr, &size);
-		ShowResult3(fd3);
+		show_result3(fd3);
 
-		SetEnforce(0);
+		set_enforce(0);
 		close(fd2);
 		fd2 = socket(PF_INET, SOCK_STREAM, 0);
 		connect(fd2, (struct sockaddr *) &saddr, sizeof(saddr));
@@ -175,10 +175,10 @@ static void StageNetworkTest(void)
 		snprintf(sbuffer, sizeof(sbuffer) - 1,
 			 "Server: Accepting TCP 127.0.0.1 %d",
 			 ntohs(caddr.sin_port));
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
+		set_enforce(0);
+		show_prompt(sbuffer);
 		fd3 = accept(fd1, (struct sockaddr *) &caddr, &size);
-		ShowResult3(fd3);
+		show_result3(fd3);
 
 		close(fd3);
 		close(fd2);
@@ -200,13 +200,13 @@ static void StageNetworkTest(void)
 		saddr.sin_port = htons(0);
 		snprintf(sbuffer, sizeof(sbuffer) - 1,
 			 "Server: Binding UDP 127.0.0.1 0");
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
-		ShowResult(bind(fd1, (struct sockaddr *) &saddr,
+		set_enforce(1);
+		show_prompt(sbuffer);
+		show_result(bind(fd1, (struct sockaddr *) &saddr,
 				sizeof(saddr)));
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
-		ShowResult(bind(fd1, (struct sockaddr *) &saddr,
+		set_enforce(0);
+		show_prompt(sbuffer);
+		show_result(bind(fd1, (struct sockaddr *) &saddr,
 				sizeof(saddr)));
 		getsockname(fd1, (struct sockaddr *) &saddr, &size);
 
@@ -217,37 +217,37 @@ static void StageNetworkTest(void)
 		snprintf(cbuffer, sizeof(cbuffer) - 1,
 			 "Client: Sending UDP 127.0.0.1 %d using send()",
 			 ntohs(saddr.sin_port));
-		SetEnforce(1);
-		ShowPrompt(cbuffer);
-		ShowResult4(send(fd2, "", 1, 0));
-		SetEnforce(0);
-		ShowPrompt(cbuffer);
-		ShowResult4(send(fd2, "", 1, 0));
+		set_enforce(1);
+		show_prompt(cbuffer);
+		show_result4(send(fd2, "", 1, 0));
+		set_enforce(0);
+		show_prompt(cbuffer);
+		show_result4(send(fd2, "", 1, 0));
 
 		/* write() -> read() */
 
 		snprintf(cbuffer, sizeof(cbuffer) - 1,
 			 "Client: Sending UDP 127.0.0.1 %d using write()",
 			 ntohs(saddr.sin_port));
-		SetEnforce(1);
-		ShowPrompt(cbuffer);
-		ShowResult4(write(fd2, "", 1));
-		SetEnforce(0);
-		ShowPrompt(cbuffer);
-		ShowResult4(write(fd2, "", 1));
+		set_enforce(1);
+		show_prompt(cbuffer);
+		show_result4(write(fd2, "", 1));
+		set_enforce(0);
+		show_prompt(cbuffer);
+		show_result4(write(fd2, "", 1));
 
 		/* connect() */
 
 		snprintf(cbuffer, sizeof(cbuffer) - 1,
 			 "Client: Connecting UDP 127.0.0.1 %d",
 			 ntohs(saddr.sin_port));
-		SetEnforce(1);
-		ShowPrompt(cbuffer);
-		ShowResult(connect(fd2, (struct sockaddr *) &saddr,
+		set_enforce(1);
+		show_prompt(cbuffer);
+		show_result(connect(fd2, (struct sockaddr *) &saddr,
 				   sizeof(saddr)));
-		SetEnforce(0);
-		ShowPrompt(cbuffer);
-		ShowResult(connect(fd2, (struct sockaddr *) &saddr,
+		set_enforce(0);
+		show_prompt(cbuffer);
+		show_result(connect(fd2, (struct sockaddr *) &saddr,
 				   sizeof(saddr)));
 		getsockname(fd2, (struct sockaddr *) &caddr, &size);
 
@@ -260,24 +260,24 @@ static void StageNetworkTest(void)
 			 "Server: Receiving UDP 127.0.0.1 %d using recvfrom()",
 			 ntohs(caddr.sin_port));
 
-		SetEnforce(1);
-		ShowPrompt(cbuffer);
-		ShowResult(sendto(fd2, "", 1, 0, (struct sockaddr *) &saddr,
+		set_enforce(1);
+		show_prompt(cbuffer);
+		show_result(sendto(fd2, "", 1, 0, (struct sockaddr *) &saddr,
 				  sizeof(saddr)));
-		SetEnforce(0);
-		ShowPrompt(cbuffer);
-		ShowResult(sendto(fd2, "", 1, 0, (struct sockaddr *) &saddr,
+		set_enforce(0);
+		show_prompt(cbuffer);
+		show_result(sendto(fd2, "", 1, 0, (struct sockaddr *) &saddr,
 				  sizeof(saddr)));
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
-		ShowResult2(recvfrom(fd1, buf, sizeof(buf) - 1, 0,
+		set_enforce(1);
+		show_prompt(sbuffer);
+		show_result2(recvfrom(fd1, buf, sizeof(buf) - 1, 0,
 				     (struct sockaddr *) &caddr, &size));
-		SetEnforce(0);
+		set_enforce(0);
 		sendto(fd2, "", 1, 0, (struct sockaddr *) &saddr,
 		       sizeof(saddr));
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
-		ShowResult2(recvfrom(fd1, buf, sizeof(buf) - 1, 0,
+		set_enforce(0);
+		show_prompt(sbuffer);
+		show_result2(recvfrom(fd1, buf, sizeof(buf) - 1, 0,
 				     (struct sockaddr *) &caddr, &size));
 
 		/* send() -> recv() */
@@ -289,23 +289,23 @@ static void StageNetworkTest(void)
 			 "Server: Receiving UDP 127.0.0.1 %d using recv()",
 			 ntohs(caddr.sin_port));
 		if (0) {
-			SetEnforce(1);
-			ShowPrompt(cbuffer);
-			ShowResult(send(fd2, "", 1, 0));
+			set_enforce(1);
+			show_prompt(cbuffer);
+			show_result(send(fd2, "", 1, 0));
 			/* This won't fail because dest address is given via
 			   connect(). */
 		}
-		SetEnforce(0);
-		ShowPrompt(cbuffer);
-		ShowResult(send(fd2, "", 1, 0));
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
-		ShowResult2(recv(fd1, buf, sizeof(buf) - 1, 0));
-		SetEnforce(0);
+		set_enforce(0);
+		show_prompt(cbuffer);
+		show_result(send(fd2, "", 1, 0));
+		set_enforce(1);
+		show_prompt(sbuffer);
+		show_result2(recv(fd1, buf, sizeof(buf) - 1, 0));
+		set_enforce(0);
 		send(fd2, "", 1, 0);
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
-		ShowResult2(recv(fd1, buf, sizeof(buf) - 1, 0));
+		set_enforce(0);
+		show_prompt(sbuffer);
+		show_result2(recv(fd1, buf, sizeof(buf) - 1, 0));
 
 		/* write() -> read() */
 
@@ -316,23 +316,23 @@ static void StageNetworkTest(void)
 			 "Server: Receiving UDP 127.0.0.1 %d using read()",
 			 ntohs(caddr.sin_port));
 		if (0) {
-			SetEnforce(1);
-			ShowPrompt(cbuffer);
-			ShowResult(write(fd2, "", 1));
+			set_enforce(1);
+			show_prompt(cbuffer);
+			show_result(write(fd2, "", 1));
 			/* This won't fail because dest address is given via
 			   connect(). */
 		}
-		SetEnforce(0);
-		ShowPrompt(cbuffer);
-		ShowResult(write(fd2, "", 1));
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
-		ShowResult2(read(fd1, buf, sizeof(buf) - 1));
-		SetEnforce(0);
+		set_enforce(0);
+		show_prompt(cbuffer);
+		show_result(write(fd2, "", 1));
+		set_enforce(1);
+		show_prompt(sbuffer);
+		show_result2(read(fd1, buf, sizeof(buf) - 1));
+		set_enforce(0);
 		write(fd2, "", 1);
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
-		ShowResult2(read(fd1, buf, sizeof(buf) - 1));
+		set_enforce(0);
+		show_prompt(sbuffer);
+		show_result2(read(fd1, buf, sizeof(buf) - 1));
 
 		/* sendmsg() -> recvmsg() */
 		{
@@ -358,20 +358,20 @@ static void StageNetworkTest(void)
 			snprintf(sbuffer, sizeof(sbuffer) - 1,
 				 "Server: Receiving UDP 127.0.0.1 %d using "
 				 "recvmsg()", ntohs(caddr.sin_port));
-			SetEnforce(1);
-			ShowPrompt(cbuffer);
-			ShowResult(sendmsg(fd1, &msg1, 0));
-			SetEnforce(0);
-			ShowPrompt(cbuffer);
-			ShowResult(sendmsg(fd1, &msg1, 0));
-			SetEnforce(1);
-			ShowPrompt(sbuffer);
-			ShowResult2(recvmsg(fd1, &msg2, 0));
-			SetEnforce(0);
+			set_enforce(1);
+			show_prompt(cbuffer);
+			show_result(sendmsg(fd1, &msg1, 0));
+			set_enforce(0);
+			show_prompt(cbuffer);
+			show_result(sendmsg(fd1, &msg1, 0));
+			set_enforce(1);
+			show_prompt(sbuffer);
+			show_result2(recvmsg(fd1, &msg2, 0));
+			set_enforce(0);
 			sendmsg(fd1, &msg1, 0);
-			SetEnforce(0);
-			ShowPrompt(sbuffer);
-			ShowResult2(recvmsg(fd1, &msg2, 0));
+			set_enforce(0);
+			show_prompt(sbuffer);
+			show_result2(recvmsg(fd1, &msg2, 0));
 		}
 
 		close(fd2);
@@ -395,13 +395,13 @@ static void StageNetworkTest(void)
 		saddr.sin_port = htons(0);
 		snprintf(sbuffer, sizeof(sbuffer) - 1,
 			 "Server: Binding RAW 127.0.0.1 IPPROTO_RAW");
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
-		ShowResult(bind(fd1, (struct sockaddr *) &saddr,
+		set_enforce(1);
+		show_prompt(sbuffer);
+		show_result(bind(fd1, (struct sockaddr *) &saddr,
 				sizeof(saddr)));
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
-		ShowResult(bind(fd1, (struct sockaddr *) &saddr,
+		set_enforce(0);
+		show_prompt(sbuffer);
+		show_result(bind(fd1, (struct sockaddr *) &saddr,
 				sizeof(saddr)));
 
 		fd2 = socket(PF_INET, SOCK_RAW, IPPROTO_RAW);
@@ -410,13 +410,13 @@ static void StageNetworkTest(void)
 		snprintf(cbuffer, sizeof(cbuffer) - 1,
 			 "Client: Connecting RAW 127.0.0.1 %d",
 			 ntohs(saddr.sin_port));
-		SetEnforce(1);
-		ShowPrompt(cbuffer);
-		ShowResult(connect(fd2, (struct sockaddr *) &saddr,
+		set_enforce(1);
+		show_prompt(cbuffer);
+		show_result(connect(fd2, (struct sockaddr *) &saddr,
 				   sizeof(saddr)));
-		SetEnforce(0);
-		ShowPrompt(cbuffer);
-		ShowResult(connect(fd2, (struct sockaddr *) &saddr,
+		set_enforce(0);
+		show_prompt(cbuffer);
+		show_result(connect(fd2, (struct sockaddr *) &saddr,
 				   sizeof(saddr)));
 
 		memset(&ip, 0, sizeof(ip));
@@ -429,29 +429,29 @@ static void StageNetworkTest(void)
 		snprintf(cbuffer, sizeof(cbuffer) - 1,
 			 "Client: Sending RAW 127.0.0.1 %d",
 			 ntohs(saddr.sin_port));
-		SetEnforce(1);
-		ShowPrompt(cbuffer);
-		ShowResult(sendto(fd2, &ip, sizeof(ip), 0,
+		set_enforce(1);
+		show_prompt(cbuffer);
+		show_result(sendto(fd2, &ip, sizeof(ip), 0,
 				  (struct sockaddr *) &saddr, sizeof(saddr)));
-		SetEnforce(0);
-		ShowPrompt(cbuffer);
-		ShowResult(sendto(fd2, &ip, sizeof(ip), 0,
+		set_enforce(0);
+		show_prompt(cbuffer);
+		show_result(sendto(fd2, &ip, sizeof(ip), 0,
 				  (struct sockaddr *) &saddr, sizeof(saddr)));
 
 		getsockname(fd2, (struct sockaddr *) &caddr, &size);
 		snprintf(sbuffer, sizeof(sbuffer) - 1,
 			 "Server: Receiving RAW 127.0.0.1 %d",
 			 ntohs(caddr.sin_port));
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
-		ShowResult2(recvfrom(fd1, buf, sizeof(buf) - 1, 0,
+		set_enforce(1);
+		show_prompt(sbuffer);
+		show_result2(recvfrom(fd1, buf, sizeof(buf) - 1, 0,
 				     (struct sockaddr *) &caddr, &size));
-		SetEnforce(0);
+		set_enforce(0);
 		sendto(fd2, &ip, sizeof(ip), 0, (struct sockaddr *) &saddr,
 		       sizeof(saddr));
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
-		ShowResult2(recvfrom(fd1, buf, sizeof(buf) - 1, 0,
+		set_enforce(0);
+		show_prompt(sbuffer);
+		show_result2(recvfrom(fd1, buf, sizeof(buf) - 1, 0,
 				     (struct sockaddr *) &caddr, &size));
 
 		close(fd2);
@@ -480,50 +480,50 @@ static void StageNetworkTest(void)
 		saddr.sin6_port = htons(0);
 		snprintf(sbuffer, sizeof(sbuffer) - 1,
 			 "Server: Binding TCP 0:0:0:0:0:0:0:1 0");
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
-		ShowResult(bind(fd1, (struct sockaddr *) &saddr,
+		set_enforce(1);
+		show_prompt(sbuffer);
+		show_result(bind(fd1, (struct sockaddr *) &saddr,
 				sizeof(saddr)));
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
-		ShowResult(bind(fd1, (struct sockaddr *) &saddr,
+		set_enforce(0);
+		show_prompt(sbuffer);
+		show_result(bind(fd1, (struct sockaddr *) &saddr,
 				sizeof(saddr)));
 		getsockname(fd1, (struct sockaddr *) &saddr, &size);
 
 		snprintf(sbuffer, sizeof(sbuffer) - 1,
 			 "Server: Listening TCP 0:0:0:0:0:0:0:1 %d",
 			 ntohs(saddr.sin6_port));
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
-		ShowResult(listen(fd1, 5));
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
-		ShowResult(listen(fd1, 5));
+		set_enforce(1);
+		show_prompt(sbuffer);
+		show_result(listen(fd1, 5));
+		set_enforce(0);
+		show_prompt(sbuffer);
+		show_result(listen(fd1, 5));
 
 		fd2 = socket(PF_INET6, SOCK_STREAM, 0);
 
 		snprintf(cbuffer, sizeof(cbuffer) - 1,
 			 "Client: Connecting TCP 0:0:0:0:0:0:0:1 %d",
 			 ntohs(saddr.sin6_port));
-		SetEnforce(1);
-		ShowPrompt(cbuffer);
-		ShowResult(connect(fd2, (struct sockaddr *) &saddr,
+		set_enforce(1);
+		show_prompt(cbuffer);
+		show_result(connect(fd2, (struct sockaddr *) &saddr,
 				   sizeof(saddr)));
-		SetEnforce(0);
-		ShowPrompt(cbuffer);
-		ShowResult(connect(fd2, (struct sockaddr *) &saddr,
+		set_enforce(0);
+		show_prompt(cbuffer);
+		show_result(connect(fd2, (struct sockaddr *) &saddr,
 				   sizeof(saddr)));
 
 		getsockname(fd2, (struct sockaddr *) &caddr, &size);
 		snprintf(sbuffer, sizeof(sbuffer) - 1,
 			 "Server: Accepting TCP 0:0:0:0:0:0:0:1 %d",
 			 ntohs(caddr.sin6_port));
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
+		set_enforce(1);
+		show_prompt(sbuffer);
 		fd3 = accept(fd1, (struct sockaddr *) &caddr, &size);
-		ShowResult3(fd3);
+		show_result3(fd3);
 
-		SetEnforce(0);
+		set_enforce(0);
 		close(fd2);
 		fd2 = socket(PF_INET6, SOCK_STREAM, 0);
 		connect(fd2, (struct sockaddr *) &saddr, sizeof(saddr));
@@ -532,10 +532,10 @@ static void StageNetworkTest(void)
 		snprintf(sbuffer, sizeof(sbuffer) - 1,
 			 "Server: Accepting TCP 0:0:0:0:0:0:0:1 %d",
 			 ntohs(caddr.sin6_port));
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
+		set_enforce(0);
+		show_prompt(sbuffer);
 		fd3 = accept(fd1, (struct sockaddr *) &caddr, &size);
-		ShowResult3(fd3);
+		show_result3(fd3);
 
 		close(fd3);
 		close(fd2);
@@ -557,13 +557,13 @@ static void StageNetworkTest(void)
 		saddr.sin6_port = htons(0);
 		snprintf(sbuffer, sizeof(sbuffer) - 1,
 			 "Server: Binding UDP 0:0:0:0:0:0:0:1 0");
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
-		ShowResult(bind(fd1, (struct sockaddr *) &saddr,
+		set_enforce(1);
+		show_prompt(sbuffer);
+		show_result(bind(fd1, (struct sockaddr *) &saddr,
 				sizeof(saddr)));
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
-		ShowResult(bind(fd1, (struct sockaddr *) &saddr,
+		set_enforce(0);
+		show_prompt(sbuffer);
+		show_result(bind(fd1, (struct sockaddr *) &saddr,
 				sizeof(saddr)));
 		getsockname(fd1, (struct sockaddr *) &saddr, &size);
 
@@ -572,13 +572,13 @@ static void StageNetworkTest(void)
 		snprintf(cbuffer, sizeof(cbuffer) - 1,
 			 "Client: Connecting UDP 0:0:0:0:0:0:0:1 %d",
 			 ntohs(saddr.sin6_port));
-		SetEnforce(1);
-		ShowPrompt(cbuffer);
-		ShowResult(connect(fd2, (struct sockaddr *) &saddr,
+		set_enforce(1);
+		show_prompt(cbuffer);
+		show_result(connect(fd2, (struct sockaddr *) &saddr,
 				   sizeof(saddr)));
-		SetEnforce(0);
-		ShowPrompt(cbuffer);
-		ShowResult(connect(fd2, (struct sockaddr *) &saddr,
+		set_enforce(0);
+		show_prompt(cbuffer);
+		show_result(connect(fd2, (struct sockaddr *) &saddr,
 				   sizeof(saddr)));
 		getsockname(fd2, (struct sockaddr *) &caddr, &size);
 
@@ -589,24 +589,24 @@ static void StageNetworkTest(void)
 			 "Server: Receiving UDP 0:0:0:0:0:0:0:1 %d",
 			 ntohs(caddr.sin6_port));
 
-		SetEnforce(1);
-		ShowPrompt(cbuffer);
-		ShowResult(sendto(fd2, "", 1, 0, (struct sockaddr *) &saddr,
+		set_enforce(1);
+		show_prompt(cbuffer);
+		show_result(sendto(fd2, "", 1, 0, (struct sockaddr *) &saddr,
 				  sizeof(saddr)));
-		SetEnforce(0);
-		ShowPrompt(cbuffer);
-		ShowResult(sendto(fd2, "", 1, 0, (struct sockaddr *) &saddr,
+		set_enforce(0);
+		show_prompt(cbuffer);
+		show_result(sendto(fd2, "", 1, 0, (struct sockaddr *) &saddr,
 				  sizeof(saddr)));
-		SetEnforce(1);
-		ShowPrompt(sbuffer);
-		ShowResult2(recvfrom(fd1, buf, sizeof(buf) - 1, 0,
+		set_enforce(1);
+		show_prompt(sbuffer);
+		show_result2(recvfrom(fd1, buf, sizeof(buf) - 1, 0,
 				     (struct sockaddr *) &caddr, &size));
-		SetEnforce(0);
+		set_enforce(0);
 		sendto(fd2, "", 1, 0, (struct sockaddr *) &saddr,
 		       sizeof(saddr));
-		SetEnforce(0);
-		ShowPrompt(sbuffer);
-		ShowResult2(recvfrom(fd1, buf, sizeof(buf) - 1, 0,
+		set_enforce(0);
+		show_prompt(sbuffer);
+		show_result2(recvfrom(fd1, buf, sizeof(buf) - 1, 0,
 				     (struct sockaddr *) &caddr, &size));
 
 		close(fd2);
@@ -620,8 +620,8 @@ static void StageNetworkTest(void)
 
 int main(int argc, char *argv[])
 {
-	Init();
-	StageNetworkTest();
-	ClearStatus();
+	ccs_test_init();
+	stage_network_test();
+	clear_status();
 	return 0;
 }

@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/21
+ * Version: 1.6.5-pre   2008/10/23
  */
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -38,7 +38,7 @@ static char *str_dup(const char *str)
 	return cp;
 }
 
-static void UnEscapeLine(unsigned char *buffer)
+static void unescape_line(unsigned char *buffer)
 {
 	unsigned char *cp = buffer;
 	unsigned char c;
@@ -72,7 +72,7 @@ static void UnEscapeLine(unsigned char *buffer)
 	*cp = '\0';
 }
 
-static void NormalizeLine(unsigned char *buffer)
+static void normalize_line(unsigned char *buffer)
 {
 	unsigned char *sp = buffer;
 	unsigned char *dp = buffer;
@@ -351,7 +351,7 @@ static int parse_script(const char *argv1)
 			fclose(fp);
 			return 1;
 		}
-		NormalizeLine(buffer);
+		normalize_line(buffer);
 		if (str_starts(buffer, PASSWORD_PROMPT))
 			password_prompt = str_dup(buffer);
 		else if (sscanf(buffer, MAX_TRIALS "%u", &v) == 1)
@@ -375,13 +375,13 @@ static int parse_script(const char *argv1)
 		return 1;
 	}
 	password_prompt = str_dup(password_prompt);
-	UnEscapeLine(password_prompt);
+	unescape_line(password_prompt);
 	exec_on_success = str_dup(exec_on_success);
-	UnEscapeLine(exec_on_success);
+	unescape_line(exec_on_success);
 	single_failure_message = str_dup(single_failure_message);
-	UnEscapeLine(single_failure_message);
+	unescape_line(single_failure_message);
 	complete_failure_message = str_dup(complete_failure_message);
-	UnEscapeLine(complete_failure_message);
+	unescape_line(complete_failure_message);
 	{
 		char *cp = strtok(authentication_data, " ");
 		while (cp) {

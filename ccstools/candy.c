@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/20
+ * Version: 1.6.5-pre   2008/10/23
  */
 #include <stdio.h>
 #include <string.h>
@@ -25,7 +25,7 @@ static const char *get_shell(void)
 	return shell;
 }
 
-static int GetStartTime(pid_t pid, unsigned long long *t)
+static int get_start_time(pid_t pid, unsigned long long *t)
 {
 	FILE *fp;
 	int i;
@@ -66,8 +66,8 @@ int main(int argc, char *argv[])
 		if (shell && !strcmp(buffer, passwd)) {
 			unsigned long long t0;
 			unsigned long long t1;
-			if (GetStartTime(getppid(), &t0) == 0 &&
-			    GetStartTime(getpid(), &t1) == 0) {
+			if (get_start_time(getppid(), &t0) == 0 &&
+			    get_start_time(getpid(), &t1) == 0) {
 				/* 10 sec */
 				if ((t1 - t0) < 1000)
 					execlp(shell, shell, NULL);

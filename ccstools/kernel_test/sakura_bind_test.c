@@ -14,7 +14,7 @@ static int min_port = 0, max_port = 0;
 static unsigned short int ipv4_listener_port = 0;
 static unsigned short int ipv6_listener_port = 0;
 
-static void IPv4_TCP_Bind(void)
+static void ipv4_tcp_bind(void)
 {
 	/* Try to bind as many as possible. */
 	if (fork() == 0) {
@@ -52,7 +52,7 @@ static void IPv4_TCP_Bind(void)
 	wait(NULL);
 }
 
-static void IPv4_TCP_Connect(void)
+static void ipv4_tcp_connect(void)
 {
 	/* Try to connect as many as possible. */
 	if (fork() == 0) {
@@ -91,7 +91,7 @@ static void IPv4_TCP_Connect(void)
 	wait(NULL);
 }
 
-static void IPv4_UDP_Bind(void)
+static void ipv4_udp_bind(void)
 {
 	/* Try to bind as many as possible. */
 	if (fork() == 0) {
@@ -129,7 +129,7 @@ static void IPv4_UDP_Bind(void)
 	wait(NULL);
 }
 
-static void IPv4_UDP_Connect(void)
+static void ipv4_udp_connect(void)
 {
 	/* Try to connect as many as possible. */
 	if (fork() == 0) {
@@ -168,7 +168,7 @@ static void IPv4_UDP_Connect(void)
 	wait(NULL);
 }
 
-static void IPv4_UDP_SendTo(void)
+static void ipv4_udp_sendto(void)
 {
 	/* Try to send as many as possible. */
 	if (fork() == 0) {
@@ -208,7 +208,7 @@ static void IPv4_UDP_SendTo(void)
 	wait(NULL);
 }
 
-static void IPv6_TCP_Bind(void)
+static void ipv6_tcp_bind(void)
 {
 	/* Try to bind as many as possible. */
 	if (fork() == 0) {
@@ -246,7 +246,7 @@ static void IPv6_TCP_Bind(void)
 	wait(NULL);
 }
 
-static void IPv6_TCP_Connect(void)
+static void ipv6_tcp_connect(void)
 {
 	/* Try to connect as many as possible. */
 	int status = 0;
@@ -290,7 +290,7 @@ static void IPv6_TCP_Connect(void)
 	fflush(stdout);
 }
 
-static void IPv6_UDP_Bind(void)
+static void ipv6_udp_bind(void)
 {
 	/* Try to bind as many as possible. */
 	if (fork() == 0) {
@@ -328,7 +328,7 @@ static void IPv6_UDP_Bind(void)
 	wait(NULL);
 }
 
-static void IPv6_UDP_Connect(void)
+static void ipv6_udp_connect(void)
 {
 	/* Try to connect as many as possible. */
 	if (fork() == 0) {
@@ -368,7 +368,7 @@ static void IPv6_UDP_Connect(void)
 	wait(NULL);
 }
 
-static void IPv6_UDP_SendTo(void)
+static void ipv6_udp_sendto(void)
 {
 	/* Try to send as many as possible. */
 	if (fork() == 0) {
@@ -410,7 +410,7 @@ static void IPv6_UDP_SendTo(void)
 
 static int system_fd = EOF;
 
-static void SetReservedRange(int low, int high)
+static void set_reserved_range(int low, int high)
 {
 	static char buffer[1024];
 	memset(buffer, 0, sizeof(buffer));
@@ -419,7 +419,7 @@ static void SetReservedRange(int low, int high)
 	write(system_fd, buffer, strlen(buffer));
 }
 
-static void UnsetReservedRange(int low, int high)
+static void unset_reserved_range(int low, int high)
 {
 	static char buffer[1024];
 	memset(buffer, 0, sizeof(buffer));
@@ -507,7 +507,7 @@ int main(int argc, char *argv[])
 	int ipv6_listener_socket = EOF;
 	pid_t ipv4_pid = 0;
 	pid_t ipv6_pid = 0;
-	Init();
+	ccs_test_init();
 	system_fd = open(proc_policy_system_policy, O_RDWR);
 	if (system_fd == EOF) {
 		fprintf(stderr, "Can't open %s .\n", proc_policy_system_policy);
@@ -537,7 +537,7 @@ int main(int argc, char *argv[])
 				"/proc/sys/net/ipv4/ip_local_port_range .\n");
 			exit(1);
 		}
-		WriteStatus("RESTRICT_AUTOBIND=3\n");
+		write_status("RESTRICT_AUTOBIND=3\n");
 		{
 			struct sockaddr_in addr;
 			socklen_t size = sizeof(addr);
@@ -587,52 +587,52 @@ int main(int argc, char *argv[])
 				fprintf(fp, "%d %d\n", narrow_range[0],
 					narrow_range[1]);
 				fflush(fp);
-				SetReservedRange(min_port, max_port);
+				set_reserved_range(min_port, max_port);
 				switch (stage) {
 				case 0:
-					IPv4_TCP_Bind();
+					ipv4_tcp_bind();
 					break;
 				case 1:
-					IPv4_TCP_Connect();
+					ipv4_tcp_connect();
 					break;
 				case 2:
-					IPv4_UDP_Bind();
+					ipv4_udp_bind();
 					break;
 				case 3:
-					IPv4_UDP_Connect();
+					ipv4_udp_connect();
 					break;
 				case 4:
-					IPv4_UDP_SendTo();
+					ipv4_udp_sendto();
 					break;
 				case 5:
-					IPv6_TCP_Bind();
+					ipv6_tcp_bind();
 					break;
 				case 6:
-					IPv6_TCP_Connect();
+					ipv6_tcp_connect();
 					break;
 				case 7:
-					IPv6_UDP_Bind();
+					ipv6_udp_bind();
 					break;
 				case 8:
-					IPv6_UDP_Connect();
+					ipv6_udp_connect();
 					break;
 				case 9:
-					IPv6_UDP_SendTo();
+					ipv6_udp_sendto();
 					break;
 				}
-				UnsetReservedRange(min_port, max_port);
+				unset_reserved_range(min_port, max_port);
 			}
 		}
 		kill(ipv4_pid, SIGHUP);
 		kill(ipv6_pid, SIGHUP);
 		close(ipv4_listener_socket);
 		close(ipv6_listener_socket);
-		WriteStatus("RESTRICT_AUTOBIND=0\n");
+		write_status("RESTRICT_AUTOBIND=0\n");
 		fprintf(fp, "%d %d\n", original_range[0], original_range[1]);
 		fclose(fp);
 	}
 	printf("Done.\n");
 	close(system_fd);
-	ClearStatus();
+	clear_status();
 	return 0;
 }

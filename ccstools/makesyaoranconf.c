@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/21
+ * Version: 1.6.5-pre   2008/10/23
  *
  * This program generates policy template file for SYAORAN
  * (Implementation of the Tamper-Proof Device Filesystem).
@@ -28,7 +28,7 @@
 #include <dirent.h>
 #include <linux/kdev_t.h>
 
-static void DumpPath(const char *buffer)
+static void dump_path(const char *buffer)
 {
 	unsigned char c;
 	int width = 20;
@@ -58,7 +58,7 @@ static void DumpPath(const char *buffer)
 
 static int root_dir_len = 0;
 
-static void FindFiles(const char *path)
+static void find_files(const char *path)
 {
 	struct dirent **namelist;
 	int i;
@@ -105,7 +105,7 @@ static void FindFiles(const char *path)
 			}
 			if (strlen(filename) <= root_dir_len)
 				continue;
-			DumpPath(filename + root_dir_len);
+			dump_path(filename + root_dir_len);
 			printf(" %3o %3d %3d %2u ", perm, user, group, flags);
 			if (S_ISBLK(mode)) {
 				printf("b %3u %3u\n", major, minor);
@@ -118,10 +118,10 @@ static void FindFiles(const char *path)
 			} else if (S_ISDIR(mode)) {
 				printf("d\n");
 				strcat(filename, "/");
-				FindFiles(filename);
+				find_files(filename);
 			} else if (S_ISLNK(mode)) {
 				printf("l ");
-				DumpPath(symlink_buffer);
+				dump_path(symlink_buffer);
 				printf("\n");
 			} else if (S_ISREG(mode)) {
 				printf("f\n");
@@ -153,6 +153,6 @@ int main(int argc, char *argv[])
 	}
 	printf("#filename permission uid gid flags type "
 	       "[ symlink_data | major minor ]\n");
-	FindFiles(root_dir);
+	find_files(root_dir);
 	return 0;
 }

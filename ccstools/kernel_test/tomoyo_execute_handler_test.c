@@ -17,7 +17,7 @@ int main(int raw_argc, char *raw_argv[])
 	char *cp2;
 	FILE *fp;
 	int error;
-	Init();
+	ccs_test_init();
 	memset(buffer, 0, sizeof(buffer));
 	fp = fopen(proc_policy_process_status, "r+");
 	if (!fp)

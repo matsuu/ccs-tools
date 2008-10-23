@@ -52,7 +52,7 @@ static void try_io(const char *policy, const char should_success)
 	write(fd, "\n", 1);
 }
 
-static void StagePolicyIOTest(void)
+static void stage_policy_io_test(void)
 {
 	int i;
 	policy_file = proc_policy_system_policy;
@@ -230,7 +230,7 @@ static void StagePolicyIOTest(void)
 
 int main(int argc, char *argv[])
 {
-	Init();
-	StagePolicyIOTest();
+	ccs_test_init();
+	stage_policy_io_test();
 	return 0;
 }

@@ -20,7 +20,7 @@ static int child(void *arg)
 static int domain_fd = EOF;
 static int is_enforce = 0;
 
-static void ShowPrompt(const char *str)
+static void show_prompt(const char *str)
 {
 	if (domain_fd != EOF)
 		printf("Testing %34s: (%s) ", str, "should success");
@@ -30,7 +30,7 @@ static void ShowPrompt(const char *str)
 	errno = 0;
 }
 
-static void ShowResult(int result)
+static void show_result(int result)
 {
 	if (domain_fd != EOF) {
 		if (result != EOF)
@@ -54,13 +54,13 @@ static void ShowResult(int result)
 	}
 }
 
-static void SetCapability(const char *capability)
+static void set_capability(const char *capability)
 {
 	static char buffer[1024];
 	memset(buffer, 0, sizeof(buffer));
 	snprintf(buffer, sizeof(buffer) - 1, "MAC_FOR_CAPABILITY::%s=%d\n",
 		 capability, is_enforce ? 3 : 2);
-	WriteStatus(buffer);
+	write_status(buffer);
 	if (domain_fd != EOF) {
 		snprintf(buffer, sizeof(buffer) - 1, "allow_capability %s\n",
 			 capability);
@@ -68,13 +68,13 @@ static void SetCapability(const char *capability)
 	}
 }
 
-static void UnsetCapability(const char *capability)
+static void unset_capability(const char *capability)
 {
 	static char buffer[1024];
 	memset(buffer, 0, sizeof(buffer));
 	snprintf(buffer, sizeof(buffer) - 1, "MAC_FOR_CAPABILITY::%s=%d\n",
 		 capability, 0);
-	WriteStatus(buffer);
+	write_status(buffer);
 	if (domain_fd != EOF) {
 		snprintf(buffer, sizeof(buffer) - 1,
 			 "delete allow_capability %s\n", capability);
@@ -82,20 +82,20 @@ static void UnsetCapability(const char *capability)
 	}
 }
 
-static void StageCapabilityTest(void)
+static void stage_capability_test(void)
 {
 	int fd;
 	char tmp1[128];
 	char tmp2[128];
 	memset(tmp1, 0, sizeof(tmp1));
 	memset(tmp2, 0, sizeof(tmp2));
-	SetCapability("inet_tcp_create");
-	ShowPrompt("inet_tcp_create");
+	set_capability("inet_tcp_create");
+	show_prompt("inet_tcp_create");
 	fd = socket(AF_INET, SOCK_STREAM, 0);
-	ShowResult(fd);
+	show_result(fd);
 	if (fd != EOF)
 		close(fd);
-	UnsetCapability("inet_tcp_create");
+	unset_capability("inet_tcp_create");
 
 	{
 		struct sockaddr_in addr;
@@ -110,17 +110,17 @@ static void StageCapabilityTest(void)
 		fd1 = socket(AF_INET, SOCK_STREAM, 0);
 		bind(fd1, (struct sockaddr *) &addr, sizeof(addr));
 		getsockname(fd1, (struct sockaddr *) &addr, &size);
-		SetCapability("inet_tcp_listen");
-		ShowPrompt("inet_tcp_listen");
-		ShowResult(listen(fd1, 5));
-		UnsetCapability("inet_tcp_listen");
+		set_capability("inet_tcp_listen");
+		show_prompt("inet_tcp_listen");
+		show_result(listen(fd1, 5));
+		unset_capability("inet_tcp_listen");
 
 		fd2 = socket(AF_INET, SOCK_STREAM, 0);
-		SetCapability("inet_tcp_connect");
-		ShowPrompt("inet_tcp_connect");
-		ShowResult(connect(fd2, (struct sockaddr *) &addr,
+		set_capability("inet_tcp_connect");
+		show_prompt("inet_tcp_connect");
+		show_result(connect(fd2, (struct sockaddr *) &addr,
 				   sizeof(addr)));
-		UnsetCapability("inet_tcp_connect");
+		unset_capability("inet_tcp_connect");
 
 		if (fd2 != EOF)
 			close(fd2);
@@ -128,82 +128,82 @@ static void StageCapabilityTest(void)
 			close(fd1);
 	}
 
-	SetCapability("use_inet_udp");
-	ShowPrompt("use_inet_udp");
+	set_capability("use_inet_udp");
+	show_prompt("use_inet_udp");
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
-	ShowResult(fd);
+	show_result(fd);
 	if (fd != EOF)
 		close(fd);
-	UnsetCapability("use_inet_udp");
+	unset_capability("use_inet_udp");
 
-	SetCapability("use_inet_ip");
-	ShowPrompt("use_inet_ip");
+	set_capability("use_inet_ip");
+	show_prompt("use_inet_ip");
 	fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-	ShowResult(fd);
+	show_result(fd);
 	if (fd != EOF)
 		close(fd);
-	UnsetCapability("use_inet_ip");
+	unset_capability("use_inet_ip");
 
-	SetCapability("use_route");
-	ShowPrompt("use_route");
+	set_capability("use_route");
+	show_prompt("use_route");
 	fd = socket(AF_ROUTE, SOCK_RAW, 0);
-	ShowResult(fd);
+	show_result(fd);
 	if (fd != EOF)
 		close(fd);
-	UnsetCapability("use_route");
+	unset_capability("use_route");
 
-	SetCapability("use_packet");
-	ShowPrompt("use_packet");
+	set_capability("use_packet");
+	show_prompt("use_packet");
 	fd = socket(AF_PACKET, SOCK_RAW, 0);
-	ShowResult(fd);
+	show_result(fd);
 	if (fd != EOF)
 		close(fd);
-	UnsetCapability("use_packet");
+	unset_capability("use_packet");
 
-	SetCapability("use_kernel_module");
+	set_capability("use_kernel_module");
 	if (!is_kernel26) {
-		ShowPrompt("use_kernel_module(create_module())");
-		ShowResult((int) create_module("", 0));
+		show_prompt("use_kernel_module(create_module())");
+		show_result((int) create_module("", 0));
 	}
-	ShowPrompt("use_kernel_module(init_module())");
-	ShowResult(init_module("", NULL));
-	ShowPrompt("use_kernel_module(delete_module())");
-	ShowResult(delete_module(""));
-	UnsetCapability("use_kernel_module");
+	show_prompt("use_kernel_module(init_module())");
+	show_result(init_module("", NULL));
+	show_prompt("use_kernel_module(delete_module())");
+	show_result(delete_module(""));
+	unset_capability("use_kernel_module");
 
-	SetCapability("create_fifo");
-	ShowPrompt("create_fifo");
+	set_capability("create_fifo");
+	show_prompt("create_fifo");
 	strcpy(tmp1, "/tmp/XXXXXX");
 	close(mkstemp(tmp1));
 	unlink(tmp1);
-	ShowResult(mknod(tmp1, S_IFIFO, 0));
+	show_result(mknod(tmp1, S_IFIFO, 0));
 	unlink(tmp1);
-	UnsetCapability("create_fifo");
+	unset_capability("create_fifo");
 
-	SetCapability("create_block_dev");
-	ShowPrompt("create_block_dev");
+	set_capability("create_block_dev");
+	show_prompt("create_block_dev");
 	strcpy(tmp1, "/tmp/XXXXXX");
 	close(mkstemp(tmp1));
 	unlink(tmp1);
-	ShowResult(mknod(tmp1, S_IFBLK, MKDEV(1, 0)));
+	show_result(mknod(tmp1, S_IFBLK, MKDEV(1, 0)));
 	unlink(tmp1);
-	UnsetCapability("create_block_dev");
+	unset_capability("create_block_dev");
 
-	SetCapability("create_char_dev");
-	ShowPrompt("create_char_dev");
+	set_capability("create_char_dev");
+	show_prompt("create_char_dev");
 	strcpy(tmp1, "/tmp/XXXXXX");
 	close(mkstemp(tmp1));
 	unlink(tmp1);
-	ShowResult(mknod(tmp1, S_IFCHR, MKDEV(1, 3)));
+	show_result(mknod(tmp1, S_IFCHR, MKDEV(1, 3)));
 	unlink(tmp1);
-	UnsetCapability("create_char_dev");
+	unset_capability("create_char_dev");
 
-	SetCapability("create_unix_socket");
-	ShowPrompt("create_unix_socket(mknod)");
+	set_capability("create_unix_socket");
+	show_prompt("create_unix_socket(mknod)");
 	strcpy(tmp1, "/tmp/XXXXXX");
 	close(mkstemp(tmp1));
 	unlink(tmp1);
-	ShowResult(mknod(tmp1, S_IFSOCK, 0));
+	show_result(mknod(tmp1, S_IFSOCK, 0));
 	unlink(tmp1);
 	{
 		struct sockaddr_un addr;
@@ -213,40 +213,40 @@ static void StageCapabilityTest(void)
 		strcpy(tmp1, "/tmp/XXXXXX");
 		strncpy(addr.sun_path, tmp1, sizeof(addr.sun_path) - 1);
 		fd = socket(AF_UNIX, SOCK_STREAM, 0);
-		ShowPrompt("create_unix_socket(bind)");
-		ShowResult(bind(fd, (struct sockaddr *) &addr, sizeof(addr)));
+		show_prompt("create_unix_socket(bind)");
+		show_result(bind(fd, (struct sockaddr *) &addr, sizeof(addr)));
 		unlink(tmp1);
 		if (fd != EOF)
 			close(fd);
 	}
-	UnsetCapability("create_unix_socket");
+	unset_capability("create_unix_socket");
 
-	SetCapability("SYS_MOUNT");
-	ShowPrompt("SYS_MOUNT");
-	ShowResult(mount("/", "/", "nonexistent", 0, NULL));
-	UnsetCapability("SYS_MOUNT");
+	set_capability("SYS_MOUNT");
+	show_prompt("SYS_MOUNT");
+	show_result(mount("/", "/", "nonexistent", 0, NULL));
+	unset_capability("SYS_MOUNT");
 
-	SetCapability("SYS_UMOUNT");
-	ShowPrompt("SYS_UMOUNT");
-	ShowResult(umount("/"));
-	UnsetCapability("SYS_UMOUNT");
+	set_capability("SYS_UMOUNT");
+	show_prompt("SYS_UMOUNT");
+	show_result(umount("/"));
+	unset_capability("SYS_UMOUNT");
 	if (access("/", W_OK))
 		mount("", "/", "", MS_REMOUNT, NULL);
 
-	SetCapability("SYS_REBOOT");
-	ShowPrompt("SYS_REBOOT");
-	ShowResult(reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
+	set_capability("SYS_REBOOT");
+	show_prompt("SYS_REBOOT");
+	show_result(reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
 			  0x0000C0DE /* Use invalid value so that the system
 					won't reboot. */, NULL));
-	UnsetCapability("SYS_REBOOT");
+	unset_capability("SYS_REBOOT");
 
-	SetCapability("SYS_CHROOT");
-	ShowPrompt("SYS_CHROOT");
-	ShowResult(chroot("/"));
-	UnsetCapability("SYS_CHROOT");
+	set_capability("SYS_CHROOT");
+	show_prompt("SYS_CHROOT");
+	show_result(chroot("/"));
+	unset_capability("SYS_CHROOT");
 
-	SetCapability("SYS_PIVOT_ROOT");
-	ShowPrompt("SYS_PIVOT_ROOT");
+	set_capability("SYS_PIVOT_ROOT");
+	show_prompt("SYS_PIVOT_ROOT");
 
 	{
 		int error;
@@ -257,40 +257,40 @@ static void StageCapabilityTest(void)
 			error += 0; /* Dummy. */
 		free(stack);
 		errno = WIFEXITED(error) ? WEXITSTATUS(error) : -1;
-		ShowResult(errno ? EOF : 0);
-		UnsetCapability("SYS_PIVOT_ROOT");
+		show_result(errno ? EOF : 0);
+		unset_capability("SYS_PIVOT_ROOT");
 	}
 
 	signal(SIGINT, SIG_IGN);
-	SetCapability("SYS_KILL");
-	ShowPrompt("SYS_KILL(sys_kill())");
-	ShowResult(kill(pid, SIGINT));
-	ShowPrompt("SYS_KILL(sys_tkill())");
-	ShowResult(tkill(gettid(), SIGINT));
+	set_capability("SYS_KILL");
+	show_prompt("SYS_KILL(sys_kill())");
+	show_result(kill(pid, SIGINT));
+	show_prompt("SYS_KILL(sys_tkill())");
+	show_result(tkill(gettid(), SIGINT));
 	if (is_kernel26) {
 #ifdef __NR_tgkill
-		ShowPrompt("SYS_KILL(sys_tgkill())");
-		ShowResult(tgkill(pid, gettid(), SIGINT));
+		show_prompt("SYS_KILL(sys_tgkill())");
+		show_result(tgkill(pid, gettid(), SIGINT));
 #endif
 	}
-	UnsetCapability("SYS_KILL");
+	unset_capability("SYS_KILL");
 	signal(SIGINT, SIG_DFL);
 
-	SetCapability("SYS_KEXEC_LOAD");
+	set_capability("SYS_KEXEC_LOAD");
 	if (is_kernel26) {
 #ifdef __NR_sys_kexec_load
-		ShowPrompt("SYS_KEXEC_LOAD");
-		ShowResult(sys_kexec_load(0, 0, NULL, 0));
+		show_prompt("SYS_KEXEC_LOAD");
+		show_result(sys_kexec_load(0, 0, NULL, 0));
 #endif
 	}
-	UnsetCapability("SYS_KEXEC_LOAD");
+	unset_capability("SYS_KEXEC_LOAD");
 
 	{
 		int pty_fd = EOF;
 		int status = 0;
 		int pipe_fd[2] = { EOF, EOF };
 		pipe(pipe_fd);
-		SetCapability("SYS_VHANGUP");
+		set_capability("SYS_VHANGUP");
 		switch (forkpty(&pty_fd, NULL, NULL, NULL)) {
 		case 0:
 			errno = 0;
@@ -308,11 +308,11 @@ static void StageCapabilityTest(void)
 			wait(NULL);
 			close(pipe_fd[0]);
 			close(pty_fd);
-			ShowPrompt("SYS_VHANGUP");
+			show_prompt("SYS_VHANGUP");
 			errno = status;
-			ShowResult(status ? EOF : 0);
+			show_result(status ? EOF : 0);
 		}
-		UnsetCapability("SYS_VHANGUP");
+		unset_capability("SYS_VHANGUP");
 	}
 
 	{
@@ -320,106 +320,106 @@ static void StageCapabilityTest(void)
 		struct timezone tz;
 		struct timex buf;
 		time_t now = time(NULL);
-		SetCapability("SYS_TIME");
-		ShowPrompt("SYS_TIME(stime())");
-		ShowResult(stime(&now));
+		set_capability("SYS_TIME");
+		show_prompt("SYS_TIME(stime())");
+		show_result(stime(&now));
 		gettimeofday(&tv, &tz);
-		ShowPrompt("SYS_TIME(settimeofday())");
-		ShowResult(settimeofday(&tv, &tz));
+		show_prompt("SYS_TIME(settimeofday())");
+		show_result(settimeofday(&tv, &tz));
 		memset(&buf, 0, sizeof(buf));
 		buf.modes = 0x100; /* Use invalid value so that the clock won't
 				      change. */
-		ShowPrompt("SYS_TIME(adjtimex())");
-		ShowResult(adjtimex(&buf));
-		UnsetCapability("SYS_TIME");
+		show_prompt("SYS_TIME(adjtimex())");
+		show_result(adjtimex(&buf));
+		unset_capability("SYS_TIME");
 	}
 
-	SetCapability("SYS_NICE");
-	ShowPrompt("SYS_NICE(nice())");
-	ShowResult(nice(0));
-	ShowPrompt("SYS_NICE(setpriority())");
-	ShowResult(setpriority(PRIO_PROCESS, pid,
+	set_capability("SYS_NICE");
+	show_prompt("SYS_NICE(nice())");
+	show_result(nice(0));
+	show_prompt("SYS_NICE(setpriority())");
+	show_result(setpriority(PRIO_PROCESS, pid,
 			       getpriority(PRIO_PROCESS, pid)));
-	UnsetCapability("SYS_NICE");
+	unset_capability("SYS_NICE");
 
 	{
 		char buffer[4096];
 		memset(buffer, 0, sizeof(buffer));
-		SetCapability("SYS_SETHOSTNAME");
+		set_capability("SYS_SETHOSTNAME");
 		gethostname(buffer, sizeof(buffer) - 1);
-		ShowPrompt("SYS_SETHOSTNAME(sethostname())");
-		ShowResult(sethostname(buffer, strlen(buffer)));
+		show_prompt("SYS_SETHOSTNAME(sethostname())");
+		show_result(sethostname(buffer, strlen(buffer)));
 		getdomainname(buffer, sizeof(buffer) - 1);
-		ShowPrompt("SYS_SETHOSTNAME(setdomainname())");
-		ShowResult(setdomainname(buffer, strlen(buffer)));
-		UnsetCapability("SYS_SETHOSTNAME");
+		show_prompt("SYS_SETHOSTNAME(setdomainname())");
+		show_result(setdomainname(buffer, strlen(buffer)));
+		unset_capability("SYS_SETHOSTNAME");
 	}
 
-	SetCapability("SYS_LINK");
-	ShowPrompt("SYS_LINK");
+	set_capability("SYS_LINK");
+	show_prompt("SYS_LINK");
 	strcpy(tmp1, "/tmp/link_source_XXXXXX");
 	close(mkstemp(tmp1));
 	strcpy(tmp2, "/tmp/link_target_XXXXXX");
-	ShowResult(link(tmp1, tmp2));
+	show_result(link(tmp1, tmp2));
 	unlink(tmp2);
 	unlink(tmp1);
-	UnsetCapability("SYS_LINK");
+	unset_capability("SYS_LINK");
 
-	SetCapability("SYS_SYMLINK");
-	ShowPrompt("SYS_SYMLINK");
+	set_capability("SYS_SYMLINK");
+	show_prompt("SYS_SYMLINK");
 	strcpy(tmp1, "/tmp/symlink_target_XXXXXX");
 	close(mkstemp(tmp1));
 	strcpy(tmp2, "/tmp/symlink_source_XXXXXX");
-	ShowResult(symlink(tmp1, tmp2));
+	show_result(symlink(tmp1, tmp2));
 	unlink(tmp2);
 	unlink(tmp1);
-	UnsetCapability("SYS_SYMLINK");
+	unset_capability("SYS_SYMLINK");
 
-	SetCapability("SYS_RENAME");
-	ShowPrompt("SYS_RENAME");
+	set_capability("SYS_RENAME");
+	show_prompt("SYS_RENAME");
 	strcpy(tmp1, "/tmp/rename_old_XXXXXX");
 	close(mkstemp(tmp1));
 	strcpy(tmp2, "/tmp/rename_new_XXXXXX");
-	ShowResult(rename(tmp1, tmp2));
+	show_result(rename(tmp1, tmp2));
 	unlink(tmp2);
 	unlink(tmp1);
-	UnsetCapability("SYS_RENAME");
+	unset_capability("SYS_RENAME");
 
-	SetCapability("SYS_UNLINK");
-	ShowPrompt("SYS_UNLINK");
+	set_capability("SYS_UNLINK");
+	show_prompt("SYS_UNLINK");
 	strcpy(tmp1, "/tmp/unlinkXXXXXX");
 	close(mkstemp(tmp1));
-	ShowResult(unlink(tmp1));
-	UnsetCapability("SYS_UNLINK");
+	show_result(unlink(tmp1));
+	unset_capability("SYS_UNLINK");
 	unlink(tmp1);
 
-	SetCapability("SYS_CHMOD");
-	ShowPrompt("SYS_CHMOD");
-	ShowResult(chmod("/dev/null", 0));
+	set_capability("SYS_CHMOD");
+	show_prompt("SYS_CHMOD");
+	show_result(chmod("/dev/null", 0));
 	chmod("/dev/null", 0666);
-	UnsetCapability("SYS_CHMOD");
+	unset_capability("SYS_CHMOD");
 
-	SetCapability("SYS_CHOWN");
-	ShowPrompt("SYS_CHOWN");
-	ShowResult(chown("/dev/null", 1, 1));
+	set_capability("SYS_CHOWN");
+	show_prompt("SYS_CHOWN");
+	show_result(chown("/dev/null", 1, 1));
 	chown("/dev/null", 0, 0);
-	UnsetCapability("SYS_CHOWN");
+	unset_capability("SYS_CHOWN");
 
-	SetCapability("SYS_IOCTL");
+	set_capability("SYS_IOCTL");
 	{
 		int fd = open("/dev/null", O_RDONLY);
-		ShowPrompt("SYS_IOCTL");
-		ShowResult(ioctl(fd, 0 /* Use invalid value so that nothing
+		show_prompt("SYS_IOCTL");
+		show_result(ioctl(fd, 0 /* Use invalid value so that nothing
 					  happen. */));
 		close(fd);
 	}
-	UnsetCapability("SYS_IOCTL");
+	unset_capability("SYS_IOCTL");
 
 	{
 		int status = 0;
 		int pipe_fd[2] = { EOF, EOF };
 		pipe(pipe_fd);
-		SetCapability("SYS_PTRACE");
+		set_capability("SYS_PTRACE");
 		switch (fork()) {
 		case 0:
 			errno = 0;
@@ -435,25 +435,25 @@ static void StageCapabilityTest(void)
 			read(pipe_fd[0], &status, sizeof(status));
 			wait(NULL);
 			close(pipe_fd[0]);
-			ShowPrompt("SYS_PTRACE");
+			show_prompt("SYS_PTRACE");
 			errno = status;
-			ShowResult(status ? EOF : 0);
+			show_result(status ? EOF : 0);
 		}
-		UnsetCapability("SYS_PTRACE");
+		unset_capability("SYS_PTRACE");
 	}
 }
 
 int main(int argc, char *argv[])
 {
-	PreInit();
-	Init();
+	ccs_test_pre_init();
+	ccs_test_init();
 	printf("***** Testing capability hooks in enforce mode. *****\n");
 	is_enforce = 1;
-	StageCapabilityTest();
+	stage_capability_test();
 	printf("\n\n");
 	printf("***** Testing capability hooks in permissive mode. *****\n");
 	is_enforce = 0;
-	StageCapabilityTest();
+	stage_capability_test();
 	printf("\n\n");
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
 	printf("***** Testing capability hooks in enforce mode with policy. "
@@ -468,9 +468,9 @@ int main(int argc, char *argv[])
 		write(domain_fd, self_domain, strlen(self_domain));
 		write(domain_fd, "\n", 1);
 	}
-	StageCapabilityTest();
+	stage_capability_test();
 	printf("\n\n");
 	close(domain_fd);
-	ClearStatus();
+	clear_status();
 	return 0;
 }

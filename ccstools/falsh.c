@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/20
+ * Version: 1.6.5-pre   2008/10/23
  *
  * This program is intended to provide a login shell
  * to allow users do extra authentications (CERBERUS) safely.
@@ -28,7 +28,7 @@
 #include <signal.h>
 #include <wordexp.h>
 
-static int Shell(const char *commandline)
+static int do_shell(const char *commandline)
 {
 	int status;
 	int err;
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 	char *line;
 	int shelllevel = 0;
 	if (argc == 3 && !strcmp(argv[1], "-c"))
-		return Shell(argv[2]);
+		return do_shell(argv[2]);
 	else if (argc != 1)
 		return 1;
 	{
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 			break;
 		if (*line) {
 			add_history(line);
-			Shell(line);
+			do_shell(line);
 		}
 		free(line);
 		line = NULL;

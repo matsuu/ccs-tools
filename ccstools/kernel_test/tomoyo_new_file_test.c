@@ -125,7 +125,7 @@ static void rmdir2(const char *pathname)
 	errno = 0;
 }
 
-static void StageFileTest(void)
+static void stage_file_test(void)
 {
 	char *filename = "";
 	policy = "allow_read /proc/sys/net/ipv4/ip_local_port_range "
@@ -548,7 +548,7 @@ static void StageFileTest(void)
 int main(int argc, char *argv[])
 {
 	char *cp;
-	Init();
+	ccs_test_init();
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
 	exception_fd = open(proc_policy_exception_policy, O_WRONLY);
 	{
@@ -566,9 +566,9 @@ int main(int argc, char *argv[])
 	}
 	cp = "255-MAX_REJECT_LOG=1024\n";
 	write(profile_fd, cp, strlen(cp));
-	StageFileTest();
+	stage_file_test();
 	cp = "use_profile 0\n";
 	write(domain_fd, cp, strlen(cp));
-	ClearStatus();
+	clear_status();
 	return 0;
 }

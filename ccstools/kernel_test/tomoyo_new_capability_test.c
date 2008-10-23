@@ -91,25 +91,25 @@ static void show_result(int result, char should_success)
 	}
 }
 
-static void SetCapability(void)
+static void set_capability(void)
 {
 	static char buffer[1024];
 	memset(buffer, 0, sizeof(buffer));
 	snprintf(buffer, sizeof(buffer) - 1,
 		 "MAC_FOR_CAPABILITY::%s=enforcing\n", capability);
-	WriteStatus(buffer);
+	write_status(buffer);
 }
 
-static void UnsetCapability(void)
+static void unset_capability(void)
 {
 	static char buffer[1024];
 	memset(buffer, 0, sizeof(buffer));
 	snprintf(buffer, sizeof(buffer) - 1,
 		 "MAC_FOR_CAPABILITY::%s=disabled\n", capability);
-	WriteStatus(buffer);
+	write_status(buffer);
 }
 
-static void StageCapabilityTest(void)
+static void stage_capability_test(void)
 {
 	char tmp1[128];
 	char tmp2[128];
@@ -117,7 +117,7 @@ static void StageCapabilityTest(void)
 	memset(tmp2, 0, sizeof(tmp2));
 
 	capability = "inet_tcp_create";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		int fd = socket(AF_INET, SOCK_STREAM, 0);
 		show_result(fd, 1);
@@ -129,7 +129,7 @@ static void StageCapabilityTest(void)
 		if (fd != EOF)
 			close(fd);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	{
 		int fd1 = socket(AF_INET, SOCK_STREAM, 0);
@@ -149,16 +149,16 @@ static void StageCapabilityTest(void)
 		getsockname(fd1, (struct sockaddr *) &addr, &size);
 
 		capability = "inet_tcp_listen";
-		SetCapability();
+		set_capability();
 		if (write_policy()) {
 			show_result(listen(fd1, 5), 1);
 			delete_policy();
 			show_result(listen(fd2, 5), 0);
 		}
-		UnsetCapability();
+		unset_capability();
 
 		capability = "inet_tcp_connect";
-		SetCapability();
+		set_capability();
 		if (write_policy()) {
 			show_result(connect(fd3, (struct sockaddr *) &addr,
 					    sizeof(addr)), 1);
@@ -166,7 +166,7 @@ static void StageCapabilityTest(void)
 			show_result(connect(fd4, (struct sockaddr *) &addr,
 					    sizeof(addr)), 0);
 		}
-		UnsetCapability();
+		unset_capability();
 
 		if (fd1 != EOF)
 			close(fd1);
@@ -179,7 +179,7 @@ static void StageCapabilityTest(void)
 	}
 
 	capability = "use_inet_udp";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		int fd = socket(AF_INET, SOCK_DGRAM, 0);
 		show_result(fd, 1);
@@ -191,10 +191,10 @@ static void StageCapabilityTest(void)
 		if (fd != EOF)
 			close(fd);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "use_inet_ip";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		int fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 		show_result(fd, 1);
@@ -206,10 +206,10 @@ static void StageCapabilityTest(void)
 		if (fd != EOF)
 			close(fd);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "use_route";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		int fd = socket(AF_ROUTE, SOCK_RAW, 0);
 		show_result(fd, 1);
@@ -221,10 +221,10 @@ static void StageCapabilityTest(void)
 		if (fd != EOF)
 			close(fd);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "use_packet";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		int fd = socket(AF_PACKET, SOCK_RAW, 0);
 		show_result(fd, 1);
@@ -236,10 +236,10 @@ static void StageCapabilityTest(void)
 		if (fd != EOF)
 			close(fd);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "use_kernel_module";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		if (!is_kernel26)
 			show_result((int) create_module("", 0), 1);
@@ -251,10 +251,10 @@ static void StageCapabilityTest(void)
 		show_result(init_module("", NULL), 0);
 		show_result(delete_module(""), 0);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "create_fifo";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		strcpy(tmp1, "/tmp/XXXXXX");
 		close(mkstemp(tmp1));
@@ -265,10 +265,10 @@ static void StageCapabilityTest(void)
 		show_result(mknod(tmp1, S_IFIFO, 0), 0);
 		unlink(tmp1);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "create_block_dev";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		strcpy(tmp1, "/tmp/XXXXXX");
 		close(mkstemp(tmp1));
@@ -279,10 +279,10 @@ static void StageCapabilityTest(void)
 		show_result(mknod(tmp1, S_IFBLK, MKDEV(1, 0)), 0);
 		unlink(tmp1);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "create_char_dev";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		strcpy(tmp1, "/tmp/XXXXXX");
 		close(mkstemp(tmp1));
@@ -293,10 +293,10 @@ static void StageCapabilityTest(void)
 		show_result(mknod(tmp1, S_IFCHR, MKDEV(1, 3)), 0);
 		unlink(tmp1);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "create_unix_socket";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		strcpy(tmp1, "/tmp/XXXXXX");
 		close(mkstemp(tmp1));
@@ -327,19 +327,19 @@ static void StageCapabilityTest(void)
 		if (fd2 != EOF)
 			close(fd2);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_MOUNT";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		show_result(mount("/", "/", "nonexistent", 0, NULL), 1);
 		delete_policy();
 		show_result(mount("/", "/", "nonexistent", 0, NULL), 0);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_UMOUNT";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		show_result(umount("/"), 1);
 		if (access("/", W_OK))
@@ -349,10 +349,10 @@ static void StageCapabilityTest(void)
 		if (access("/", W_OK))
 			mount("", "/", "", MS_REMOUNT, NULL);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_REBOOT";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		show_result(reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
 				   0x0000C0DE /* Use invalid value so that
@@ -364,19 +364,19 @@ static void StageCapabilityTest(void)
 						 the system won't reboot. */,
 				   NULL), 0);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_CHROOT";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		show_result(chroot("/"), 1);
 		delete_policy();
 		show_result(chroot("/"), 0);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_PIVOT_ROOT";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		int error;
 		char *stack = malloc(8192);
@@ -393,11 +393,11 @@ static void StageCapabilityTest(void)
 		show_result(errno ? EOF : 0, 0);
 		free(stack);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	signal(SIGINT, SIG_IGN);
 	capability = "SYS_KILL";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		show_result(kill(pid, SIGINT), 1);
 		show_result(tkill(gettid(), SIGINT), 1);
@@ -413,11 +413,11 @@ static void StageCapabilityTest(void)
 			show_result(tgkill(pid, gettid(), SIGINT), 0);
 #endif
 	}
-	UnsetCapability();
+	unset_capability();
 	signal(SIGINT, SIG_DFL);
 
 	capability = "SYS_KEXEC_LOAD";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 #ifdef __NR_sys_kexec_load
 		if (is_kernel26)
@@ -429,10 +429,10 @@ static void StageCapabilityTest(void)
 			show_result(sys_kexec_load(0, 0, NULL, 0), 0);
 #endif
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_VHANGUP";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		int pty_fd = EOF, status = 0;
 		int pipe_fd[2] = { EOF, EOF };
@@ -481,10 +481,10 @@ static void StageCapabilityTest(void)
 			show_result(status ? EOF : 0, 0);
 		}
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_TIME";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		struct timeval tv;
 		struct timezone tz;
@@ -507,10 +507,10 @@ static void StageCapabilityTest(void)
 				      won't change. */
 		show_result(adjtimex(&buf), 0);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_NICE";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		show_result(nice(0), 1);
 		show_result(setpriority(PRIO_PROCESS, pid,
@@ -520,10 +520,10 @@ static void StageCapabilityTest(void)
 		show_result(setpriority(PRIO_PROCESS, pid,
 					getpriority(PRIO_PROCESS, pid)), 0);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_SETHOSTNAME";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		char buffer[4096];
 		memset(buffer, 0, sizeof(buffer));
@@ -537,10 +537,10 @@ static void StageCapabilityTest(void)
 		getdomainname(buffer, sizeof(buffer) - 1);
 		show_result(setdomainname(buffer, strlen(buffer)), 0);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_LINK";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		strcpy(tmp1, "/tmp/link_source_XXXXXX");
 		close(mkstemp(tmp1));
@@ -556,10 +556,10 @@ static void StageCapabilityTest(void)
 		unlink(tmp2);
 		unlink(tmp1);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_SYMLINK";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		strcpy(tmp1, "/tmp/symlink_target_XXXXXX");
 		close(mkstemp(tmp1));
@@ -575,10 +575,10 @@ static void StageCapabilityTest(void)
 		unlink(tmp2);
 		unlink(tmp1);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_RENAME";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		strcpy(tmp1, "/tmp/rename_old_XXXXXX");
 		close(mkstemp(tmp1));
@@ -594,10 +594,10 @@ static void StageCapabilityTest(void)
 		unlink(tmp2);
 		unlink(tmp1);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_UNLINK";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		strcpy(tmp1, "/tmp/unlinkXXXXXX");
 		close(mkstemp(tmp1));
@@ -607,31 +607,31 @@ static void StageCapabilityTest(void)
 		close(mkstemp(tmp1));
 		show_result(unlink(tmp1), 0);
 	}
-	UnsetCapability();
+	unset_capability();
 	unlink(tmp1);
 
 	capability = "SYS_CHMOD";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		show_result(chmod("/dev/null", 0222), 1);
 		delete_policy();
 		show_result(chmod("/dev/null", 0444), 0);
 	}
-	UnsetCapability();
+	unset_capability();
 	chmod("/dev/null", 0666);
 
 	capability = "SYS_CHOWN";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		show_result(chown("/dev/null", 1, 1), 1);
 		delete_policy();
 		show_result(chown("/dev/null", 2, 2), 0);
 	}
-	UnsetCapability();
+	unset_capability();
 	chown("/dev/null", 0, 0);
 
 	capability = "SYS_IOCTL";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDONLY);
 		show_result(ioctl(fd, 0 /* Use invalid value so that nothing
@@ -641,10 +641,10 @@ static void StageCapabilityTest(void)
 					   happen. */), 0);
 		close(fd);
 	}
-	UnsetCapability();
+	unset_capability();
 
 	capability = "SYS_PTRACE";
-	SetCapability();
+	set_capability();
 	if (write_policy()) {
 		int status = 0;
 		int pipe_fd[2] = { EOF, EOF };
@@ -689,12 +689,12 @@ static void StageCapabilityTest(void)
 			show_result(status ? EOF : 0, 0);
 		}
 	}
-	UnsetCapability();
+	unset_capability();
 }
 
 int main(int argc, char *argv[])
 {
-	Init();
+	ccs_test_init();
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
 	{
 		int self_fd = open(proc_policy_self_domain, O_RDONLY);
@@ -704,8 +704,8 @@ int main(int argc, char *argv[])
 		write(domain_fd, self_domain, strlen(self_domain));
 		write(domain_fd, "\n", 1);
 	}
-	StageCapabilityTest();
+	stage_capability_test();
 	close(domain_fd);
-	ClearStatus();
+	clear_status();
 	return 0;
 }

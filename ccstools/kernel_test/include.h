@@ -97,7 +97,7 @@ static const char *proc_policy_dir    = "/proc/ccs/",
 	*proc_policy_process_status   = "/proc/ccs/.process_status",
 	*proc_policy_self_domain      = "/proc/ccs/self_domain";
 
-static void PreInit(void)
+static void ccs_test_pre_init(void)
 {
 	if (access("/sys/kernel/security/tomoyo/", F_OK) == 0) {
 		proc_policy_dir              = "/sys/kernel/security/tomoyo/";
@@ -143,13 +143,13 @@ static int profile_fd = EOF;
 static int is_kernel26 = 0;
 static pid_t pid = 0;
 
-static void WriteStatus(const char *cp)
+static void write_status(const char *cp)
 {
 	write(profile_fd, "255-", 4);
 	write(profile_fd, cp, strlen(cp));
 }
 
-static void ClearStatus(void)
+static void clear_status(void)
 {
 	FILE *fp = fopen(proc_policy_profile, "r");
 	static char buffer[4096];
@@ -185,9 +185,9 @@ static void ClearStatus(void)
 	fclose(fp);
 }
 
-static void Init(void)
+static void ccs_test_init(void)
 {
-	PreInit();
+	ccs_test_pre_init();
 	pid = getpid();
 	if (access(proc_policy_dir, F_OK)) {
 		fprintf(stderr, "You can't use this program for this kernel."
@@ -204,7 +204,7 @@ static void Init(void)
 			"run this program.\n", proc_policy_manager);
 		exit(1);
 	}
-	ClearStatus();
+	clear_status();
 	{
 		FILE *fp = fopen("/proc/sys/kernel/osrelease", "r");
 		int version = 0;

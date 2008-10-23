@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/20
+ * Version: 1.6.5-pre   2008/10/23
  *
  * This tool is intended to limit local port numbers that clients
  * will use when connecting to servers, so that servers can enforce
@@ -52,7 +52,7 @@
 #include <unistd.h>
 #include <grp.h>
 
-static in_addr_t GetHostByNameAlias(const char *strHostName)
+static in_addr_t get_host_by_name_alias(const char *strHostName)
 {
 	in_addr_t IP;
 	IP = inet_addr(strHostName);
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 		setgid(-1);
 		setuid(-1);
 	}
-	forward_connect_ip = ntohl(GetHostByNameAlias(argv[1]));
+	forward_connect_ip = ntohl(get_host_by_name_alias(argv[1]));
 	forward_connect_port = atoi(argv[2]);
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = htonl(forward_connect_ip);

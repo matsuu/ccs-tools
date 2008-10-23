@@ -14,7 +14,7 @@ static FILE *fp_domain = NULL;
 static FILE *fp_exception = NULL;
 static FILE *fp_level = NULL;
 
-static void SetLevel(const int i)
+static void set_level(const int i)
 {
 	fprintf(fp_level, "255-MAC_FOR_FILE=%d\n", i);
 	fflush(fp_level);
@@ -44,12 +44,12 @@ static void test(int rw_loop, int truncate_loop, int append_loop,
 		fprintf(fp_domain, "delete %d %s\n", i, buffer);
 	fflush(fp_domain);
 	for (level = 0; level < 4; level++) {
-		SetLevel(0);
+		set_level(0);
 		if (create_loop == 1)
 			unlink(buffer);
 		else
 			close(open(buffer, O_CREAT, 0666));
-		SetLevel(level);
+		set_level(level);
 		fd = open(buffer, flags, 0666);
 		if (fd != EOF)
 			close(fd);
@@ -87,7 +87,7 @@ static void test(int rw_loop, int truncate_loop, int append_loop,
 int main(int argc, char *argv[])
 {
 	static char self_domain[4096];
-	PreInit();
+	ccs_test_pre_init();
 	fp_level = fopen(proc_policy_profile, "w");
 	if (!fp_level) {
 		fprintf(stderr, "Can't open %s\n", proc_policy_profile);

@@ -80,7 +80,7 @@ static void try_exec(const char *policy, char *argv[], char *envp[],
 	}
 }
 
-static void StageExecTest(void)
+static void stage_exec_test(void)
 {
 	int i;
 	static char *argv[128];
@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
 {
 	const char *cp;
 	int self_fd;
-	Init();
+	ccs_test_init();
 	self_fd = open(proc_policy_self_domain, O_RDONLY);
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
 	memset(self_domain, 0, sizeof(self_domain));
@@ -197,9 +197,9 @@ int main(int argc, char *argv[])
 	write(domain_fd, "\n", 1);
 	cp = "255-MAC_FOR_FILE=enforcing\n";
 	write(profile_fd, cp, strlen(cp));
-	StageExecTest();
+	stage_exec_test();
 	cp = "255-MAC_FOR_FILE=disabled\n";
 	write(profile_fd, cp, strlen(cp));
-	ClearStatus();
+	clear_status();
 	return 0;
 }

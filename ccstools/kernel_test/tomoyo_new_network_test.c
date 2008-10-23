@@ -90,7 +90,7 @@ static void show_result2(int result)
 	}
 }
 
-static void StageNetworkTest(void)
+static void stage_network_test(void)
 {
 	int i;
 
@@ -283,7 +283,7 @@ static void StageNetworkTest(void)
 
 int main(int argc, char *argv[])
 {
-	Init();
+	ccs_test_init();
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
 	{
 		int self_fd = open(proc_policy_self_domain, O_RDONLY);
@@ -293,10 +293,10 @@ int main(int argc, char *argv[])
 		write(domain_fd, self_domain, strlen(self_domain));
 		write(domain_fd, "\n", 1);
 	}
-	WriteStatus("MAC_FOR_NETWORK=enforcing\n");
-	WriteStatus("MAX_REJECT_LOG=1024\n");
-	StageNetworkTest();
+	write_status("MAC_FOR_NETWORK=enforcing\n");
+	write_status("MAX_REJECT_LOG=1024\n");
+	stage_network_test();
 	close(domain_fd);
-	ClearStatus();
+	clear_status();
 	return 0;
 }
