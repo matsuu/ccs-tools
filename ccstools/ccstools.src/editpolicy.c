@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.4+   2008/09/10
+ * Version: 1.6.5-pre   2008/10/23
  *
  */
 #include "ccstools.h"
@@ -1185,38 +1185,31 @@ usage:
 #define DIRECTIVE_ALLOW_REWRITE                    24
 #define DIRECTIVE_ALLOW_ARGV0                      25
 #define DIRECTIVE_ALLOW_SIGNAL                     26
-#define DIRECTIVE_ALLOW_NETWORK_UDP_BIND           27
-#define DIRECTIVE_ALLOW_NETWORK_UDP_CONNECT        28
-#define DIRECTIVE_ALLOW_NETWORK_TCP_BIND           29
-#define DIRECTIVE_ALLOW_NETWORK_TCP_LISTEN         30
-#define DIRECTIVE_ALLOW_NETWORK_TCP_CONNECT        31
-#define DIRECTIVE_ALLOW_NETWORK_TCP_ACCEPT         32
-#define DIRECTIVE_ALLOW_NETWORK_RAW_BIND           33
-#define DIRECTIVE_ALLOW_NETWORK_RAW_CONNECT        34
-#define DIRECTIVE_ALLOW_ENV                        35
-#define DIRECTIVE_ADDRESS_GROUP                    36
-#define DIRECTIVE_AGGREGATOR                       37
-#define DIRECTIVE_ALIAS                            38
-#define DIRECTIVE_ALLOW_CAPABILITY                 39
-#define DIRECTIVE_ALLOW_CHROOT                     40
-#define DIRECTIVE_ALLOW_MOUNT                      41
-#define DIRECTIVE_ALLOW_PIVOT_ROOT                 42
-#define DIRECTIVE_DENY_AUTOBIND                    43
-#define DIRECTIVE_DENY_REWRITE                     44
-#define DIRECTIVE_DENY_UNMOUNT                     45
-#define DIRECTIVE_FILE_PATTERN                     46
-#define DIRECTIVE_EXECUTE_HANDLER                  47
-#define DIRECTIVE_DENIED_EXECUTE_HANDLER           48
-#define DIRECTIVE_IGNORE_GLOBAL_ALLOW_ENV          49
-#define DIRECTIVE_IGNORE_GLOBAL_ALLOW_READ         50
-#define DIRECTIVE_INITIALIZE_DOMAIN                51
-#define DIRECTIVE_KEEP_DOMAIN                      52
-#define DIRECTIVE_NO_INITIALIZE_DOMAIN             53
-#define DIRECTIVE_NO_KEEP_DOMAIN                   54
-#define DIRECTIVE_PATH_GROUP                       55
-#define DIRECTIVE_QUOTA_EXCEEDED                   56
-#define DIRECTIVE_USE_PROFILE                      57
-#define MAX_DIRECTIVE_INDEX                        58
+#define DIRECTIVE_ALLOW_NETWORK                    27
+#define DIRECTIVE_ALLOW_ENV                        28
+#define DIRECTIVE_ADDRESS_GROUP                    29
+#define DIRECTIVE_AGGREGATOR                       30
+#define DIRECTIVE_ALIAS                            31
+#define DIRECTIVE_ALLOW_CAPABILITY                 32
+#define DIRECTIVE_ALLOW_CHROOT                     33
+#define DIRECTIVE_ALLOW_MOUNT                      34
+#define DIRECTIVE_ALLOW_PIVOT_ROOT                 35
+#define DIRECTIVE_DENY_AUTOBIND                    36
+#define DIRECTIVE_DENY_REWRITE                     37
+#define DIRECTIVE_DENY_UNMOUNT                     38
+#define DIRECTIVE_FILE_PATTERN                     39
+#define DIRECTIVE_EXECUTE_HANDLER                  40
+#define DIRECTIVE_DENIED_EXECUTE_HANDLER           41
+#define DIRECTIVE_IGNORE_GLOBAL_ALLOW_ENV          42
+#define DIRECTIVE_IGNORE_GLOBAL_ALLOW_READ         43
+#define DIRECTIVE_INITIALIZE_DOMAIN                44
+#define DIRECTIVE_KEEP_DOMAIN                      45
+#define DIRECTIVE_NO_INITIALIZE_DOMAIN             46
+#define DIRECTIVE_NO_KEEP_DOMAIN                   47
+#define DIRECTIVE_PATH_GROUP                       48
+#define DIRECTIVE_QUOTA_EXCEEDED                   49
+#define DIRECTIVE_USE_PROFILE                      50
+#define MAX_DIRECTIVE_INDEX                        51
 
 static struct {
 	const char *original;
@@ -1251,22 +1244,7 @@ static struct {
 	[DIRECTIVE_ALLOW_REWRITE]    = { "allow_rewrite", NULL, 0, 0 },
 	[DIRECTIVE_ALLOW_ARGV0]      = { "allow_argv0", NULL, 0, 0 },
 	[DIRECTIVE_ALLOW_SIGNAL]     = { "allow_signal", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_NETWORK_UDP_BIND] = {
-		"allow_network UDP bind", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_NETWORK_UDP_CONNECT] = {
-		"allow_network UDP connect", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_NETWORK_TCP_BIND] = {
-		"allow_network TCP bind", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_NETWORK_TCP_LISTEN] = {
-		"allow_network TCP listen", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_NETWORK_TCP_CONNECT] = {
-		"allow_network TCP connect", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_NETWORK_TCP_ACCEPT] = {
-		"allow_network TCP accept", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_NETWORK_RAW_BIND] = {
-		"allow_network RAW bind", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_NETWORK_RAW_CONNECT] = {
-		"allow_network RAW connect", NULL, 0, 0 },
+	[DIRECTIVE_ALLOW_NETWORK]    = { "allow_network", NULL, 0, 0 },
 	[DIRECTIVE_ALLOW_ENV]        = { "allow_env", NULL, 0, 0 },
 	[DIRECTIVE_ADDRESS_GROUP]    = { "address_group", NULL, 0, 0 },
 	[DIRECTIVE_AGGREGATOR]       = { "aggregator", NULL, 0, 0 },
@@ -2501,14 +2479,15 @@ static int select_item(const int current)
 	return 0;
 }
 
-static void split_acl(char *data, struct path_info *arg1,
-		      struct path_info *arg2, struct path_info *arg3)
+static u8 split_acl(const u8 index, char *data, struct path_info *arg1,
+		    struct path_info *arg2, struct path_info *arg3)
 {
 	/* data = w[0] w[1] ... w[n-1] w[n] if c[0] c[1] ... c[m] ; set ... */
 	/*                                                                  */
 	/* arg1 = w[0]                                                      */
 	/* arg2 = w[1] ... w[n-1] w[n]                                      */
 	/* arg3 = if c[0] c[1] ... c[m] ; set ...                           */
+	u8 subtype = 0;
 	char *cp;
 	arg1->name = data;
 	cp = strstr(data, " if ");
@@ -2529,6 +2508,28 @@ static void split_acl(char *data, struct path_info *arg1,
 		cp = "";
 ok:
 	arg3->name = cp;
+	if (index == DIRECTIVE_ALLOW_NETWORK) {
+		/*
+		 * Prune protocol component and operation component so that
+		 * arg1 will point to IP address component.
+		 */
+		if (str_starts(data, "UDP bind "))
+			subtype = 1;
+		else if (str_starts(data, "UDP connect "))
+			subtype = 2;
+		else if (str_starts(data, "TCP bind "))
+			subtype = 3;
+		else if (str_starts(data, "TCP listen "))
+			subtype = 4;
+		else if (str_starts(data, "TCP connect "))
+			subtype = 5;
+		else if (str_starts(data, "TCP accept "))
+			subtype = 6;
+		else if (str_starts(data, "RAW bind "))
+			subtype = 7;
+		else if (str_starts(data, "RAW connect "))
+			subtype = 8;
+	}
 	cp = strchr(data, ' ');
 	if (cp)
 		*cp++ = '\0';
@@ -2538,6 +2539,7 @@ ok:
 	fill_path_info(arg1);
 	fill_path_info(arg2);
 	fill_path_info(arg3);
+	return subtype;
 }
 
 static int sort_type = 1;
@@ -2640,6 +2642,8 @@ static void try_optimize(const int current)
 	struct path_info darg1;
 	struct path_info darg2;
 	struct path_info darg3;
+	u8 subtype1;
+	u8 subtype2;
 	if (current < 0)
 		return;
 	s_index = generic_acl_list[current].directive;
@@ -2649,7 +2653,7 @@ static void try_optimize(const int current)
 	if (!cp)
 		return;
 
-	split_acl(cp, &sarg1, &sarg2, &sarg3);
+	subtype1 = split_acl(s_index, cp, &sarg1, &sarg2, &sarg3);
 
 	get();
 	for (index = 0; index < list_item_count[current_screen]; index++) {
@@ -2704,7 +2708,11 @@ static void try_optimize(const int current)
 		if (!memchr(shared_buffer, '\0', shared_buffer_len))
 			continue; /* Line too long. */
 
-		split_acl(shared_buffer, &darg1, &darg2, &darg3);
+		subtype2 = split_acl(d_index, shared_buffer, &darg1, &darg2,
+				     &darg3);
+
+		if (subtype1 != subtype2)
+			continue;
 
 		/* Compare condition part. */
 		if (pathcmp(&sarg3, &darg3))
@@ -2753,14 +2761,7 @@ static void try_optimize(const int current)
 			if (strcmp(sarg1.name, darg1.name))
 				continue;
 			break;
-		case DIRECTIVE_ALLOW_NETWORK_UDP_BIND:
-		case DIRECTIVE_ALLOW_NETWORK_UDP_CONNECT:
-		case DIRECTIVE_ALLOW_NETWORK_TCP_BIND:
-		case DIRECTIVE_ALLOW_NETWORK_TCP_LISTEN:
-		case DIRECTIVE_ALLOW_NETWORK_TCP_CONNECT:
-		case DIRECTIVE_ALLOW_NETWORK_TCP_ACCEPT:
-		case DIRECTIVE_ALLOW_NETWORK_RAW_BIND:
-		case DIRECTIVE_ALLOW_NETWORK_RAW_CONNECT:
+		case DIRECTIVE_ALLOW_NETWORK:
 			if (!compare_address(&sarg1, &darg1))
 				continue;
 			break;
@@ -2806,14 +2807,7 @@ static void try_optimize(const int current)
 			if (c && c != ' ')
 				continue;
 			break;
-		case DIRECTIVE_ALLOW_NETWORK_UDP_BIND:
-		case DIRECTIVE_ALLOW_NETWORK_UDP_CONNECT:
-		case DIRECTIVE_ALLOW_NETWORK_TCP_BIND:
-		case DIRECTIVE_ALLOW_NETWORK_TCP_LISTEN:
-		case DIRECTIVE_ALLOW_NETWORK_TCP_CONNECT:
-		case DIRECTIVE_ALLOW_NETWORK_TCP_ACCEPT:
-		case DIRECTIVE_ALLOW_NETWORK_RAW_BIND:
-		case DIRECTIVE_ALLOW_NETWORK_RAW_CONNECT:
+		case DIRECTIVE_ALLOW_NETWORK:
 			/* Port number component. */
 			switch (sscanf(sarg2.name, "%u-%u", &smin, &smax)) {
 			case 1:
