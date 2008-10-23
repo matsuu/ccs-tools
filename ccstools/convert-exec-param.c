@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/20
+ * Version: 1.6.5-pre   2008/10/23
  *
  */
 #include <stdio.h>
@@ -42,6 +42,10 @@ int main(int argc, char *argv[])
 		/* Get argc value. */
 		if (sscanf(cp1 + 1, "argc=%d", &argc) != 1)
 			goto out;
+
+		if (!argc)
+			continue;
+
 		cp1 = strstr(buffer[0], " argv[]={ ");
 		if (!cp1)
 			goto out;
