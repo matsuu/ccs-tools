@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/20
+ * Version: 1.6.5-pre   2008/10/24
  *
  */
 #include <stdio.h>
@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 		return 1;
 	} else if (time_to_wait && write(query_fd, "", 0) != 0) {
 		fprintf(stderr, "You need to register this program to %s to "
-			"run this program.\n", proc_policy_query);
+			"run this program.\n", "/proc/ccs/manager");
 		return 1;
 	}
 	close(0);

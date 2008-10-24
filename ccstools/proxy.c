@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/23
+ * Version: 1.6.5-pre   2008/10/24
  *
  * This tool is intended to limit local port numbers that clients
  * will use when connecting to servers, so that servers can enforce
@@ -15,7 +15,6 @@
  *
  *   gcc -Wall -O3 -o path_to_output proxy.c
  *   chown 0:0 path_to_output
- *   chmod 4755 path_to_output
  *
  * where the path_to_output is the location you want to place the binary.
  *
@@ -36,6 +35,11 @@
  * You may append to ~/.ssh/config or /etc/ssh/ssh_config
  * if you want to use this tool by default.
  *
+ * You need to turn SUID bit on (or give CAP_NET_BIND_SERVICE capability) like
+ *
+ *   chmod 4755 path_to_output
+ *
+ * if you want to allow non root user to use local port less than 1024.
  */
 #include <arpa/inet.h>
 #include <errno.h>

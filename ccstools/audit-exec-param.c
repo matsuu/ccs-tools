@@ -5,13 +5,17 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/20
+ * Version: 1.6.5-pre   2008/10/24
  *
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 int main(int raw_argc, char *raw_argv[])
 {
@@ -21,6 +25,20 @@ int main(int raw_argc, char *raw_argv[])
 	char *filename;
 	char **argv;
 	char **envp;
+	{
+		char buffer[1024];
+		int fd = open("/proc/ccs/.process_status", O_RDWR);
+		memset(buffer, 0, sizeof(buffer));
+		snprintf(buffer, sizeof(buffer) - 1, "info %d\n", getpid());
+		write(fd, buffer, strlen(buffer));
+		buffer[0] = '\0';
+		read(fd, buffer, sizeof(buffer) - 1);
+		close(fd);
+		if (!strstr(buffer, " execute_handler=yes")) {
+			fprintf(stderr, "FATAL: I'm not execute_handler.\n");
+			return 1;
+		}
+	}
 	if (raw_argc < 7)
 		return 1;
 	filename = raw_argv[4];

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/23
+ * Version: 1.6.5-pre   2008/10/24
  *
  */
 #include <stdio.h>
@@ -76,8 +76,10 @@ int main(int argc, char *argv[])
 		i = getc(stdin);
 		if (i)
 			ungetc(i, stdin);
-		if (!fgets(buffer[2], sizeof(buffer[2]) - 1, stdin) ||
-		    (cp1 = strchr(buffer[2], '\n')) == NULL)
+		if (!fgets(buffer[2], sizeof(buffer[2]) - 1, stdin))
+			goto out;
+		cp1 = strchr(buffer[2], '\n');
+		if (!cp1)
 			goto out;
 		*cp1-- = '\0';
 		while (*cp1 == ' ')
