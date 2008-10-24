@@ -3472,9 +3472,12 @@ static void policy_daemon(void)
 		msg.msg_controllen = sizeof(cmsg_buf);
 		memset(shared_buffer, 0, shared_buffer_len);
 		errno = 0;
-		if (recvmsg(persistent_fd, &msg, 0) > 0 &&
-		    (cmsg = CMSG_FIRSTHDR(&msg)) != NULL &&
-		    cmsg->cmsg_level == SOL_SOCKET &&
+		if (recvmsg(persistent_fd, &msg, 0) <= 0)
+			break;
+		cmsg = CMSG_FIRSTHDR(&msg);
+		if (!cmsg)
+			break;
+		if (cmsg->cmsg_level == SOL_SOCKET &&
 		    cmsg->cmsg_type == SCM_RIGHTS &&
 		    cmsg->cmsg_len == CMSG_LEN(sizeof(int))) {
 			const int fd = *(int *) CMSG_DATA(cmsg);
