@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/20
+ * Version: 1.6.5-pre   2008/10/29
  *
  */
 #include "include.h"
@@ -259,16 +259,16 @@ static void try_signal(const char *condition, const unsigned char s0,
 	snprintf(buffer, sizeof(buffer) - 1, "select pid=%d\n", pid);
 	write(domain_fd, buffer, strlen(buffer));
 	snprintf(buffer, sizeof(buffer) - 1, "allow_signal %d %s %s", sig,
-		 self_domain, condition);
+		 "<kernel>", condition);
 	printf("%s: ", buffer);
 	fflush(stdout);
 	write(domain_fd, buffer, strlen(buffer));
 	write(domain_fd, "\n", 1);
 	errno = 0;
-	kill(pid, sig);
+	kill(1, sig);
 	err = errno;
 	snprintf(buffer, sizeof(buffer) - 1, "allow_signal %d %s %s", sig,
-		 self_domain, condition);
+		 "<kernel>", condition);
 	write(domain_fd, "delete ", 7);
 	write(domain_fd, buffer, strlen(buffer));
 	write(domain_fd, "\n", 1);
