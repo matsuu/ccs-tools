@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/23
+ * Version: 1.6.5-pre   2008/11/06
  */
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -209,7 +209,7 @@ static int parse_script(const char *argv1)
 
 static int do_auth(void)
 {
-	char password[16];
+	char password[17];
 	char buffer[8192];
 	{ /* Create password. */
 		int i = 0;
@@ -219,7 +219,7 @@ static int do_auth(void)
 			return 1;
 		}
 		memset(password, 0, sizeof(password));
-		while (i < sizeof(password)) {
+		while (i < sizeof(password) - 1) {
 			const unsigned int c = fgetc(fp);
 			if (c < 10)
 				password[i++] = c + '0';
