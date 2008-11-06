@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 2.2.0-pre   2008/06/25
+# Version: 2.2.0-pre   2008/11/06
 #
 
 cd ${0%/*}
@@ -519,6 +519,13 @@ make_exception() {
 	    echo 'file_pattern /var/lib/init.d/treecache.\?\?\?\?\?\?\?'
 	fi
 	
+	echo 'file_pattern /etc/group.\$'
+	echo 'file_pattern /etc/gshadow.\$'
+	echo 'file_pattern /etc/passwd.\$'
+	echo 'file_pattern /etc/shadow.\$'
+	echo 'file_pattern /var/cache/logwatch/logwatch.\*/'
+	echo 'file_pattern /var/cache/logwatch/logwatch.\*/\*'
+	echo 'file_pattern /var/tmp/sqlite_\*'
 	echo 'file_pattern /tmp/ib\?\?\?\?\?\?'
 	echo 'file_pattern /tmp/PerlIO_\?\?\?\?\?\?'
 	[ -d /var/run/hald/ ] && echo 'file_pattern /var/run/hald/acl-list.\?\?\?\?\?\?'
