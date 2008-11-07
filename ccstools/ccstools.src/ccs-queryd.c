@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/20
+ * Version: 1.6.5-pre   2008/11/07
  *
  */
 #include "ccstools.h"
@@ -590,6 +590,13 @@ int ccsqueryd_main(int argc, char *argv[])
 		}
 		first = false;
 		prev_serial = serial;
+		/* Clear pending input. */;
+		timeout(0);
+		while (true) {
+			int c = getch2();
+			if (c == EOF || c == ERR)
+				break;
+		}
 		timeout(1000);
 		if (!strncmp(buffer, "#timestamp=", 11)) {
 			if (handle_query_new_format(serial))
