@@ -17,7 +17,7 @@ Usage: ccs-findtemp < list_of_pathnames
 
 This program reads list of pathnames from standard input and checks the existence of pathnames, and dumps the nonexistent pathnames.
 
-The nonexistent pathnames are likely used as temporal pathnames. So find the naming rules from similar nonexistent pathnames and append the pattern to /etc/ccs/exception_policy.conf and /proc/ccs/exception_policy .
+The nonexistent pathnames are likely used as temporary pathnames. So find the naming rules from similar nonexistent pathnames and append the pattern to /etc/ccs/exception_policy.conf and /proc/ccs/exception_policy .
 
 You can pass the content of /etc/ccs/domain_policy.conf or /proc/ccs/domain_policy using redirection or pipes to the standard input of this program.
 
@@ -28,7 +28,7 @@ Examples:
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Detect TOMOYO Linux's temporal pathnames" $0 | gzip -9 > man8/ccs-findtemp.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Detect TOMOYO Linux's temporary pathnames" $0 | gzip -9 > man8/ccs-findtemp.8.gz
 [SEE ALSO]
 
  ccs-patternize (8)
