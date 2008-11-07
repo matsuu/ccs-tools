@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/24
+ * Version: 1.6.5-pre   2008/11/07
  *
  */
 #include <stdio.h>
@@ -25,7 +25,14 @@ int main(int raw_argc, char *raw_argv[])
 	char *filename;
 	char **argv;
 	char **envp;
-	{
+	if (1) {
+		int fd = open("/proc/ccs/.execute_handler", 0);
+		close(fd);
+		if (fd == EOF) {
+			fprintf(stderr, "FATAL: I'm not execute_handler.\n");
+			return 1;
+		}
+	} else {
 		char buffer[1024];
 		int fd = open("/proc/ccs/.process_status", O_RDWR);
 		memset(buffer, 0, sizeof(buffer));
