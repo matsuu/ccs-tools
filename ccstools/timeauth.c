@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/23
+ * Version: 1.6.5-pre   2008/11/07
  */
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -227,10 +227,14 @@ static void make_mode(const char *argv0)
 		gettimeofday(&tv0, &tz);
 		key = getc(stdin);
 		gettimeofday(&tv1, &tz);
+#if 1
+		fputc(key, stderr);
+#else
 		if (key != '\n')
 			fputc('*', stderr);
 		else
 			fputc('\n', stderr);
+#endif
 		interval = (tv1.tv_sec - tv0.tv_sec) * 1000
 			+ (tv1.tv_usec - tv0.tv_usec) / 1000;
 		if (trial == 0) {
@@ -450,10 +454,14 @@ static int do_auth(void)
 			gettimeofday(&tv0, &tz);
 			key = getc(stdin);
 			gettimeofday(&tv1, &tz);
+#if 1
+			fputc(key, stderr);
+#else
 			if (key != '\n')
 				putchar('*');
 			else
 				putchar('\n');
+#endif
 			interval = (tv1.tv_sec - tv0.tv_sec) * 1000
 				+ (tv1.tv_usec - tv0.tv_usec) / 1000;
 			if (!failed && pos < authdata_list_len) {
