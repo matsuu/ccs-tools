@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-tomoyo-init 1.6.4
+tomoyo-init 1.6.5
 
 Copyright (C) 2005-2008 NTT DATA CORPORATION.
 
@@ -19,15 +19,15 @@ This program is automatically called to load policy from files into kernel when 
 
 This program copies the following files.
 
-   /etc/tomoyo/system_policy.conf => /sys/kernel/security/tomoyo/system_policy
+   /etc/tomoyo/system_policy.base + /etc/tomoyo/system_policy.conf => /sys/kernel/security/tomoyo/system_policy
 
-   /etc/tomoyo/exception_policy.conf => /sys/kernel/security/tomoyo/exception_policy
+   /etc/tomoyo/exception_policy.base + /etc/tomoyo/exception_policy.conf => /sys/kernel/security/tomoyo/exception_policy
 
-   /etc/tomoyo/domain_policy.conf => /sys/kernel/security/tomoyo/domain_policy
+   /etc/tomoyo/domain_policy.base + /etc/tomoyo/domain_policy.conf => /sys/kernel/security/tomoyo/domain_policy
 
-   /etc/tomoyo/profile.conf => /sys/kernel/security/tomoyo/profile
+   /etc/tomoyo/profile.base + /etc/tomoyo/profile.conf => /sys/kernel/security/tomoyo/profile
 
-   /etc/tomoyo/manager.conf => /sys/kernel/security/tomoyo/manager
+   /etc/tomoyo/manager.base + /etc/tomoyo/manager.conf => /sys/kernel/security/tomoyo/manager
 
 Examples:
 

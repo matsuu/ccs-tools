@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-init 1.6.4
+ccs-init 1.6.5
 
 Copyright (C) 2005-2008 NTT DATA CORPORATION.
 
@@ -19,15 +19,15 @@ This program is automatically called to load policy from files into kernel when 
 
 This program copies the following files.
 
-   /etc/ccs/system_policy.conf => /proc/ccs/system_policy
+   /etc/ccs/system_policy.base + /etc/ccs/system_policy.conf => /proc/ccs/system_policy
 
-   /etc/ccs/exception_policy.conf => /proc/ccs/exception_policy
+   /etc/ccs/exception_policy.base + /etc/ccs/exception_policy.conf => /proc/ccs/exception_policy
 
-   /etc/ccs/domain_policy.conf => /proc/ccs/domain_policy
+   /etc/ccs/domain_policy.base + /etc/ccs/domain_policy.conf => /proc/ccs/domain_policy
 
-   /etc/ccs/profile.conf => /proc/ccs/profile
+   /etc/ccs/profile.base + /etc/ccs/profile.conf => /proc/ccs/profile
 
-   /etc/ccs/manager.conf => /proc/ccs/manager
+   /etc/ccs/manager.base + /etc/ccs/manager.conf => /proc/ccs/manager
 
 If /etc/ccs/ccs-post-init is an executable file, /etc/ccs/ccs-post-init is also executed.
 You can use /etc/ccs/ccs-post-init for additional initialization purpose.
