@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/23
+ * Version: 1.6.5-pre   2008/11/09
  *
  */
 #include "ccstools.h"
@@ -1454,12 +1454,20 @@ static int generic_acl_compare0(const void *a, const void *b)
 
 static void read_generic_policy(void)
 {
-	FILE *fp;
+	FILE *fp = NULL;
 	bool flag = false;
 	while (generic_acl_list_count)
 		free((void *)
 		     generic_acl_list[--generic_acl_list_count].operand);
-	fp = open_read(policy_file);
+	if (!offline_mode && current_screen == SCREEN_ACL_LIST) {
+		fp = fopen(policy_file, "r+");
+		if (fp) {
+			fprintf(fp, "select domain=%s\n", current_domain);
+			fflush(fp);
+		}
+	}
+	if (!fp)
+		fp = open_read(policy_file);
 	if (!fp)
 		return;
 	get();
