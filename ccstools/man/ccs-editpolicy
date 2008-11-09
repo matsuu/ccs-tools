@@ -17,16 +17,16 @@ Usage: ccs-editpolicy [{s|e|d}]
 
 This program edits TOMOYO Linux's policy currently loaded in the kernel.
 
- s     Set initial screen to system_policy editor.
+ s     Set initial screen to system policy editor.
 
- e     Set initial screen to exception_policy editor.
+ e     Set initial screen to exception policy editor.
 
- d     Set initial screen to domain_policy editor. This is default.
+ d     Set initial screen to domain policy editor. This is default.
 
 Examples:
 
 # ccs-editpolicy
- Start policy editor with domain_policy editor screen.
+ Start policy editor with domain policy editor screen.
 
 Usage with images are available at http://tomoyo.sourceforge.jp/en/1.6.x/tool-editpolicy.html
 

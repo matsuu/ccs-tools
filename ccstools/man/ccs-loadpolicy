@@ -19,13 +19,13 @@ This program loads TOMOYO Linux's policy from files or standard input into kerne
 
  -     Read policy from stdin. Specify only one of "sedpm" option when you use this option.
 
- s     Load system_policy. ( /etc/ccs/system_policy.base + /etc/ccs/system_policy.conf => /proc/ccs/system_policy )
+ s     Load system policy. ( /etc/ccs/system_policy.base + /etc/ccs/system_policy.conf => /proc/ccs/system_policy )
 
- e     Load exception_policy. ( /etc/ccs/exception_policy.base + /etc/ccs/exception_policy.conf => /proc/ccs/exception_policy )
+ e     Load exception policy. ( /etc/ccs/exception_policy.base + /etc/ccs/exception_policy.conf => /proc/ccs/exception_policy )
 
- d     Load domain_policy. ( /etc/ccs/domain_policy.base + /etc/ccs/domain_policy.conf => /proc/ccs/domain_policy )
+ d     Load domain policy. ( /etc/ccs/domain_policy.base + /etc/ccs/domain_policy.conf => /proc/ccs/domain_policy )
 
- a     Load system_policy, exception_policy and domain_policy.
+ a     Load system policy, exception policy and domain policy.
 
  p     Load profile. ( /etc/ccs/profile.base + /etc/ccs/profile.conf => /proc/ccs/profile )
 
@@ -46,10 +46,10 @@ Examples:
  Add "allow_execute /sbin/init" to "<kernel>" domain.
 
 # ccs-loadpolicy df
- Replace currently loaded domain policy with /etc/ccs/domain_policy.base and /etc/ccs/domain_policy.conf .
+ Replace currently loaded domain policy with /etc/ccs/domain_policy.base + /etc/ccs/domain_policy.conf .
 
 # ccs-loadpolicy d
- Append /etc/ccs/domain_policy.base and /etc/ccs/domain_policy.conf into currently loaded domain policy.
+ Append /etc/ccs/domain_policy.base + /etc/ccs/domain_policy.conf into currently loaded domain policy.
 
 EOF
 else

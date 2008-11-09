@@ -24,7 +24,7 @@ You can pass the content of /etc/ccs/domain_policy.conf or /proc/ccs/domain_poli
 Examples:
 
 # ccs-findtemp < /proc/ccs/domain_policy
- Search for nonexistent pathnames from domain_policy.
+ Search for nonexistent pathnames from domain policy.
 
 EOF
 else

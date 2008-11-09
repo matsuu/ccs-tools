@@ -17,11 +17,11 @@ Usage: ccs-checkpolicy {s|e|d} < policy_to_check
 
 This program validates TOMOYO Linux's policy.
 
- s     Interpret input as system_policy. ( /etc/ccs/system_policy.conf )
+ s     Interpret input as system policy. ( /etc/ccs/system_policy.conf )
 
- e     Interpret input as exception_policy. ( /etc/ccs/exception_policy.conf )
+ e     Interpret input as exception policy. ( /etc/ccs/exception_policy.conf )
 
- d     Interpret input as domain_policy. ( /etc/ccs/domain_policy.conf )
+ d     Interpret input as domain policy. ( /etc/ccs/domain_policy.conf )
 
 Examples:
 
