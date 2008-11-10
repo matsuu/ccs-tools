@@ -3703,6 +3703,7 @@ int editpolicy_main(int argc, char *argv[])
 				symlink(filename, "exception_policy.conf");
 			}
 		}
+		clear_domain_policy();
 		filename = make_filename("domain_policy", now);
 		if (save_domain_policy_with_diff(NULL,
 						 open_read(DOMAIN_POLICY_FILE),
