@@ -1,10 +1,10 @@
 #! /bin/sh
 #
-# fgrep for domain /proc/{ccs,tomoyo}/domain_policy .
+# fgrep for domain /proc/ccs/domain_policy .
 #
-# Copyright (C) 2005-2007  NTT DATA CORPORATION
+# Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 1.5.1   2007/10/19
+# Version: 1.6.5   2008/11/11
 #
 # Usage: domainmatch string_to_find
 #

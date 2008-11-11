@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/11/08
+ * Version: 1.6.5   2008/11/11
  *
  */
 #include <stdio.h>
@@ -104,6 +104,5 @@ int main(int raw_argc, char *raw_argv[])
 		execve(filename, argv, envp);
 		break;
 	}
-	//execve(filename, argv, envp);
 	return 1;
 }

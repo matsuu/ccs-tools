@@ -31,15 +31,17 @@ install: all
 
 CC=gcc
 
-CFLAGS=-Wall -g -O2 ${shell $(CC) -Wno-pointer-sign -S -o /dev/null -x c - < /dev/null > /dev/null 2>&1 && echo "-Wno-pointer-sign"}
+CFLAGS=-Wall -O2 ${shell $(CC) -Wno-pointer-sign -S -o /dev/null -x c - < /dev/null > /dev/null 2>&1 && echo "-Wno-pointer-sign"}
 
 /usr/include/curses.h:
 	@echo "/usr/include/curses.h is missing."
 	@echo "Run 'yum install ncurses-devel' or 'apt-get install libncurses5-dev'"
+	sleep 10
 
 /usr/include/readline/readline.h:
 	@echo "/usr/include/readline/readline.h is missing."
 	@echo "Run 'yum install readline-devel' or 'apt-get install libreadline5-dev'"
+	sleep 10
 
 ccstools: ccstools.src/*.c ccstools.src/*.h /usr/include/curses.h
 	$(CC) $(CFLAGS) -o ccstools ccstools.src/*.c -lncurses -DCOLOR_ON

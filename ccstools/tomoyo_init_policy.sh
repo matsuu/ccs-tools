@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 2.2.0-pre   2008/11/06
+# Version: 2.2.0-pre   2008/11/11
 #
 
 cd ${0%/*}

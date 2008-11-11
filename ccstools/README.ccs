@@ -1,7 +1,7 @@
 About this package:
 
 This package contains userland programs
-for TOMOYO Linux version 1.6.4 .
+for TOMOYO Linux version 1.6.5 .
 This package is released under the GPLv2.
 
 http://tomoyo.sourceforge.jp/
@@ -371,3 +371,7 @@ Version 1.6.4 2008/09/03   Bug fix release.
   No changes for tools.
 
   Only programs for testing kernel were updated.
+
+Version 1.6.5 2008/11/11   Third anniversary release.
+
+  Updated coding style and fixed some bugs.

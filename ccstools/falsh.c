@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5-pre   2008/10/23
+ * Version: 1.6.5   2008/11/11
  *
  * This program is intended to provide a login shell
  * to allow users do extra authentications (CERBERUS) safely.
