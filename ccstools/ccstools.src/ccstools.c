@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5   2008/11/11
+ * Version: 1.6.5+   2008/11/16
  *
  */
 #include "ccstools.h"
@@ -48,7 +48,7 @@ static bool is_hexadecimal(const char c)
 
 static bool is_alphabet_char(const char c)
 {
-	return (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
 }
 
 static u8 make_byte(const u8 c1, const u8 c2, const u8 c3)
