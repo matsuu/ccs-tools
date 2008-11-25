@@ -24,7 +24,7 @@ static void _printw(const char *fmt, ...)
 	va_end(args);
 	buffer = malloc(len);
 	if (!buffer)
-		return;
+		out_of_memory();
 	va_start(args, fmt);
 	len = vsnprintf(buffer, len, fmt, args);
 	va_end(args);
@@ -35,10 +35,33 @@ static void _printw(const char *fmt, ...)
 	free(buffer);
 }
 
+static int send_encoded(const int fd, const char *fmt, ...)
+	__attribute__ ((format(printf, 2, 3)));
+
+static int send_encoded(const int fd, const char *fmt, ...)
+{
+	va_list args;
+	int i;
+	int len;
+	char *buffer;
+	va_start(args, fmt);
+	len = vsnprintf((char *) &i, sizeof(i) - 1, fmt, args) + 16;
+	va_end(args);
+	buffer = malloc(len);
+	if (!buffer)
+		out_of_memory();
+	va_start(args, fmt);
+	len = vsnprintf(buffer, len, fmt, args);
+	va_end(args);
+	len = send(fd, buffer, strlen(buffer), 0);
+	free(buffer);
+	return len;
+}
+
 static bool has_retry_counter = false;
 static unsigned short int retries = 0;
 
-static void do_check_update(FILE *fp_out)
+static void do_check_update(const int fd)
 {
 	FILE *fp_in = fopen(proc_policy_exception_policy, "r");
 	char **pathnames = NULL;
@@ -69,19 +92,15 @@ static void do_check_update(FILE *fp_out)
 	}
 	fclose(fp_in);
 	while (true) {
-		char buffer[16384];
 		struct stat64 buf;
 		static time_t last_modified = 0;
 		int i;
-		fflush(fp_out);
 		sleep(1);
 		for (i = 0; i < pathnames_len; i++) {
 			int j;
 			if (!stat64(pathnames[i], &buf))
 				continue;
-			fprintf(fp_out, "-");
-			fprintf_encoded(fp_out, pathnames[i]);
-			fprintf(fp_out, "\n");
+			send_encoded(fd, "-%s", pathnames[i]);
 			free(pathnames[i]);
 			pathnames_len--;
 			for (j = i; j < pathnames_len; j++)
@@ -124,9 +143,7 @@ static void do_check_update(FILE *fp_out)
 				if (!cp)
 					out_of_memory();
 				pathnames[pathnames_len++] = cp;
-				fprintf(fp_out, "+");
-				fprintf_encoded(fp_out, pathnames[i]);
-				fprintf(fp_out, "\n");
+				send_encoded(fd, "+%s", pathnames[i]);
 			}
 			free(real_pathname);
 		}
@@ -144,20 +161,12 @@ static void handle_update(const int fd)
 {
 	static FILE *fp = NULL;
 	static char pathname[8192];
-	static int pathname_len = 0;
 	int c;
 	if (!fp)
 		fp = fopen(proc_policy_exception_policy, "w");
-	if (!pathname_len)
-		memset(pathname, 0, sizeof(pathname));
-	while (read(fd, pathname + pathname_len, 1) == 1 &&
-	       pathname[pathname_len] != '\n' &&
-	       pathname_len < sizeof(pathname) - 1)
-		pathname_len++;
-	if (!pathname_len)
+	memset(pathname, 0, sizeof(pathname));
+	if (recv(fd, pathname, sizeof(pathname) - 1, 0) == EOF)
 		return;
-	pathname[pathname_len] = '\0';
-	pathname_len = 0;
 	if (check_update == GLOBALLY_READABLE_FILES_UPDATE_AUTO) {
 		if (pathname[0] == '-')
 			fprintf(fp, KEYWORD_DELETE);
@@ -522,13 +531,13 @@ int ccsqueryd_main(int argc, char *argv[])
 		return 1;
 	}
 	if (check_update != GLOBALLY_READABLE_FILES_UPDATE_NONE) {
-		pipe(pipe_fd);
+		socketpair(AF_UNIX, SOCK_DGRAM, 0, pipe_fd);
 		switch (fork()) {
 		case 0:
 			close(domain_policy_fd);
 			close(query_fd);
 			close(pipe_fd[0]);
-			do_check_update(fdopen(pipe_fd[1], "w"));
+			do_check_update(pipe_fd[1]);
 			_exit(0);
 		case -1:
 			fprintf(stderr, "Can't fork().\n");
