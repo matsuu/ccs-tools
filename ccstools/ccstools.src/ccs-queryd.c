@@ -44,16 +44,37 @@ static int send_encoded(const int fd, const char *fmt, ...)
 	int i;
 	int len;
 	char *buffer;
+	char *sp;
+	char *dp;
 	va_start(args, fmt);
 	len = vsnprintf((char *) &i, sizeof(i) - 1, fmt, args) + 16;
 	va_end(args);
-	buffer = malloc(len);
+	buffer = malloc(len * 5);
 	if (!buffer)
 		out_of_memory();
 	va_start(args, fmt);
-	len = vsnprintf(buffer, len, fmt, args);
+	vsnprintf(buffer, len, fmt, args);
 	va_end(args);
-	len = send(fd, buffer, strlen(buffer), 0);
+	sp = buffer;
+	dp = buffer + len;
+	while (true) {
+		unsigned char c = *(const unsigned char *) sp++;
+		if (!c) {
+			*dp++ = '\0';
+			break;
+		} else if (c == '\\') {
+			*dp++ = '\\';
+			*dp++ = '\\';
+		} else if (c > ' ' && c < 127) {
+			*dp++ = c;
+		} else {
+			*dp++ = '\\';
+			*dp++ = (c >> 6) + '0';
+			*dp++ = ((c >> 3) & 7) + '0';
+			*dp++ = (c & 7) + '0';
+		}
+	}
+	len = send(fd, buffer + len, strlen(buffer + len), 0);
 	free(buffer);
 	return len;
 }
