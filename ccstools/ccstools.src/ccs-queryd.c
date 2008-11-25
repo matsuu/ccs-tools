@@ -10,6 +10,31 @@
  */
 #include "ccstools.h"
 
+static void _printw(const char *fmt, ...)
+	__attribute__ ((format(printf, 1, 2)));
+
+static void _printw(const char *fmt, ...)
+{
+	va_list args;
+	int i;
+	int len;
+	char *buffer;
+	va_start(args, fmt);
+	len = vsnprintf((char *) &i, sizeof(i) - 1, fmt, args) + 16;
+	va_end(args);
+	buffer = malloc(len);
+	if (!buffer)
+		return;
+	va_start(args, fmt);
+	len = vsnprintf(buffer, len, fmt, args);
+	va_end(args);
+	for (i = 0; i < len; i++) {
+		addch(buffer[i]);
+		refresh();
+	}
+	free(buffer);
+}
+
 static bool has_retry_counter = false;
 static unsigned short int retries = 0;
 
@@ -129,6 +154,8 @@ static void handle_update(const int fd)
 	       pathname[pathname_len] != '\n' &&
 	       pathname_len < sizeof(pathname) - 1)
 		pathname_len++;
+	if (!pathname_len)
+		return;
 	pathname[pathname_len] = '\0';
 	pathname_len = 0;
 	if (check_update == GLOBALLY_READABLE_FILES_UPDATE_AUTO) {
@@ -136,32 +163,28 @@ static void handle_update(const int fd)
 			fprintf(fp, KEYWORD_DELETE);
 		fprintf(fp, KEYWORD_ALLOW_READ "%s\n", pathname + 1);
 		fflush(fp);
-		printw("The pathname %s was %s globally readable file.\n\n",
+		_printw("The pathname %s was %s globally readable file.\n\n",
 		       pathname + 1, (pathname[0] == '-') ?
 		       "deleted. Deleted from" : "created. Appended to");
-		refresh();
 		return;
 	}
-	printw("The pathname %s was %s globally readable file? ('Y'es/'N'o):",
+	_printw("The pathname %s was %s globally readable file? ('Y'es/'N'o):",
 	       pathname + 1, (pathname[0] == '-') ?
 	       "deleted. Delete from" : "created. Append to");
-	refresh();
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
 			break;
 		write(query_fd, "\n", 1);
 	}
-	printw("%c\n", c);
-	refresh();
+	_printw("%c\n", c);
 	if (c == 'Y' || c == 'y') {
 		if (pathname[0] == '-')
 			fprintf(fp, KEYWORD_DELETE);
 		fprintf(fp, KEYWORD_ALLOW_READ "%s\n", pathname + 1);
 		fflush(fp);
 	}
-	printw("\n");
-	refresh();
+	_printw("\n");
 }
 
 static bool convert_path_info(FILE *fp, const struct path_info *pattern,
@@ -267,12 +290,12 @@ static bool handle_query_new_format(unsigned int serial)
 	time_t stamp;
 	char *cp = strstr(buffer, " pid=");
 	if (!cp || sscanf(cp + 5, "%u", &pid) != 1) {
-		printw("ERROR: Unsupported query.\n");
+		_printw("ERROR: Unsupported query.\n");
 		return false;
 	}
 	cp = strchr(buffer, '\0');
 	if (*(cp - 1) != '\n') {
-		printw("ERROR: Unsupported query.\n");
+		_printw("ERROR: Unsupported query.\n");
 		return false;
 	}
 	*(cp - 1) = '\0';
@@ -282,26 +305,25 @@ static bool handle_query_new_format(unsigned int serial)
 	}
 	if (pid != prev_pid) {
 		if (prev_pid)
-			printw("----------------------------------------\n");
+			_printw("----------------------------------------\n");
 		prev_pid = pid;
 	}
 	if (sscanf(buffer, "#timestamp=%lu", &stamp) == 1) {
 		cp = strchr(buffer, ' ');
 		if (cp) {
 			struct tm *tm = localtime(&stamp);
-			printw("#%04d-%02d-%02d %02d:%02d:%02d#",
+			_printw("#%04d-%02d-%02d %02d:%02d:%02d#",
 			       tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
 			       tm->tm_hour, tm->tm_min, tm->tm_sec);
 			memmove(buffer, cp, strlen(cp) + 1);
 		}
 	}
-	printw("%s\n", buffer);
+	_printw("%s\n", buffer);
 	/* Is this domain query? */
 	if (strstr(buffer, "\n#"))
 		goto not_domain_query;
-	printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o%s):",
+	_printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o%s):",
 	       has_retry_counter ? "/'R'etry" : "");
-	refresh();
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
@@ -310,8 +332,7 @@ static bool handle_query_new_format(unsigned int serial)
 			break;
 		write(query_fd, "\n", 1);
 	}
-	printw("%c\n", c);
-	refresh();
+	_printw("%c\n", c);
 
 	/* Append to domain policy. */
 	if (c != 'A' && c != 'a')
@@ -328,10 +349,9 @@ static bool handle_query_new_format(unsigned int serial)
 	line = simple_readline(y, 0, "Enter new entry> ", readline_history,
 			       readline_history_count, 4000, 8);
 	scrollok(stdscr, TRUE);
-	printw("\n");
-	refresh();
+	_printw("\n");
 	if (!line || !*line) {
-		printw("None added.\n");
+		_printw("None added.\n");
 		goto not_append;
 	}
 	readline_history_count = simple_add_history(line, readline_history,
@@ -341,9 +361,8 @@ static bool handle_query_new_format(unsigned int serial)
 	write(domain_policy_fd, "\n", 1);
 	write(domain_policy_fd, line, strlen(line));
 	write(domain_policy_fd, "\n", 1);
-	printw("Added '%s'.\n", line);
+	_printw("Added '%s'.\n", line);
 not_append:
-	refresh();
 	free(line);
 write_answer:
 	/* Write answer. */
@@ -355,12 +374,10 @@ write_answer:
 		c = 2;
 	snprintf(buffer, buffer_len - 1, "A%u=%u\n", serial, c);
 	write(query_fd, buffer, strlen(buffer));
-	printw("\n");
-	refresh();
+	_printw("\n");
 	return true;
 not_domain_query:
-	printw("Allow? ('Y'es/'N'o%s):", has_retry_counter ? "/'R'etry" : "");
-	refresh();
+	_printw("Allow? ('Y'es/'N'o%s):", has_retry_counter ? "/'R'etry" : "");
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
@@ -368,8 +385,7 @@ not_domain_query:
 			break;
 		write(query_fd, "\n", 1);
 	}
-	printw("%c\n", c);
-	refresh();
+	_printw("%c\n", c);
 	goto write_answer;
 }
 
@@ -399,13 +415,12 @@ static bool handle_query_old_format(unsigned int serial)
 	/* Check for same domain. */
 	*cp++ = '\0';
 	if (strcmp(buffer, prev_buffer)) {
-		printw("----------------------------------------\n");
+		_printw("----------------------------------------\n");
 		memmove(prev_buffer, buffer, strlen(buffer) + 1);
 	}
-	printw("%s\n", buffer);
-	printw("%s", cp);
-	printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o):");
-	refresh();
+	_printw("%s\n", buffer);
+	_printw("%s", cp);
+	_printw("Allow? ('Y'es/Yes and 'A'ppend to policy/'N'o):");
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n' ||
@@ -413,8 +428,7 @@ static bool handle_query_old_format(unsigned int serial)
 			break;
 		write(query_fd, "\n", 1);
 	}
-	printw("%c\n", c);
-	refresh();
+	_printw("%c\n", c);
 
 	/* Append to domain policy. */
 	if (c != 'A' && c != 'a')
@@ -431,10 +445,9 @@ static bool handle_query_old_format(unsigned int serial)
 	line = simple_readline(y, 0, "Enter new entry> ", readline_history,
 			       readline_history_count, 4000, 8);
 	scrollok(stdscr, TRUE);
-	printw("\n");
-	refresh();
+	_printw("\n");
 	if (!line || !*line) {
-		printw("None added.\n");
+		_printw("None added.\n");
 		goto not_append;
 	}
 	readline_history_count = simple_add_history(line, readline_history,
@@ -444,12 +457,11 @@ static bool handle_query_old_format(unsigned int serial)
 	write(domain_policy_fd, "\n", 1);
 	write(domain_policy_fd, line, strlen(line));
 	write(domain_policy_fd, "\n", 1);
-	printw("Added '%s'.\n", line);
+	_printw("Added '%s'.\n", line);
 not_append:
 	free(line);
 write_answer:
-	refresh();
-	printw("\n");
+	_printw("\n");
 	/* Write answer. */
 	if (c == 'Y' || c == 'y' || c == 'A' || c == 'a')
 		c = 1;
@@ -459,18 +471,17 @@ write_answer:
 	write(query_fd, buffer, strlen(buffer));
 	return true;
 not_domain_query:
-	printw("----------------------------------------\n");
+	_printw("----------------------------------------\n");
 	prev_buffer[0] = '\0';
-	printw("%s", buffer);
-	printw("Allow? ('Y'es/'N'o):");
-	refresh();
+	_printw("%s", buffer);
+	_printw("Allow? ('Y'es/'N'o):");
 	while (true) {
 		c = getch2();
 		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
 			break;
 		write(query_fd, "\n", 1);
 	}
-	printw("%c\n", c);
+	_printw("%c\n", c);
 	goto write_answer;
 }
 
