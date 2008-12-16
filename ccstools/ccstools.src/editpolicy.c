@@ -1445,10 +1445,25 @@ static int string_acl_compare(const void *a, const void *b)
 {
 	const struct generic_acl *a0 = (struct generic_acl *) a;
 	const struct generic_acl *b0 = (struct generic_acl *) b;
-	const char *a2 = a0->operand;
-	const char *b2 = b0->operand;
-	return strcmp(a2, b2);
+	const char *a1 = a0->operand;
+	const char *b1 = b0->operand;
+	return strcmp(a1, b1);
 }
+
+static int profile_entry_compare(const void *a, const void *b)
+{
+	const struct generic_acl *a0 = (struct generic_acl *) a;
+	const struct generic_acl *b0 = (struct generic_acl *) b;
+	const char *a1 = a0->operand;
+	const char *b1 = b0->operand;
+	const int a2 = atoi(a1);
+	const int b2 = atoi(b1);
+	if (a2 == b2)
+		return strcmp(a1, b1);
+	else
+		return a2 - b2;
+}
+
 
 static void read_generic_policy(void)
 {
@@ -1520,6 +1535,10 @@ static void read_generic_policy(void)
 	case SCREEN_EXCEPTION_LIST:
 		qsort(generic_acl_list, generic_acl_list_count,
 		      sizeof(struct generic_acl), generic_acl_compare0);
+		break;
+	case SCREEN_PROFILE_LIST:
+		qsort(generic_acl_list, generic_acl_list_count,
+		      sizeof(struct generic_acl), profile_entry_compare);
 		break;
 	default:
 		qsort(generic_acl_list, generic_acl_list_count,
@@ -2200,6 +2219,13 @@ static int show_acl_line(int index, int list_indent)
 	return strlen(cp1) + strlen(cp2) + 8 + list_indent;
 }
 
+static int show_profile_line(int index)
+{
+	const char *cp = generic_acl_list[index].operand;
+	printw("%s", eat(cp));
+	return strlen(cp);
+}
+
 static int show_literal_line(int index)
 {
 	const char *cp = generic_acl_list[index].operand;
@@ -2207,6 +2233,35 @@ static int show_literal_line(int index)
 	       generic_acl_list[index].selected ? '&' : ' ',
 	       index, eat(cp));
 	return strlen(cp) + 8;
+}
+
+static int show_meminfo_line(int index)
+{
+	unsigned int now = 0;
+	unsigned int quota = 0;
+	const char *data = generic_acl_list[index].operand;
+	get();
+	if (sscanf(data, "Shared: %u (Quota: %u)", &now, &quota) >= 1)
+		shprintf("Memory for string data    = %10u bytes    "
+			 "Quota = %10u bytes",
+			 now, quota ? quota : -1);
+	else if (sscanf(data, "Private: %u (Quota: %u)", &now, &quota) >= 1)
+		shprintf("Memory for numeric data   = %10u bytes    "
+			 "Quota = %10u bytes",
+			 now, quota ? quota : -1);
+	else if (sscanf(data, "Dynamic: %u (Quota: %u)", &now, &quota) >= 1)
+		shprintf("Memory for temporary data = %10u bytes    "
+			 "Quota = %10u bytes",
+			 now, quota ? quota : -1);
+	else if (sscanf(data, "Total: %u", &now) == 1)
+		shprintf("Total memory in use       = %10u bytes", now);
+	else
+		shprintf("%s", data);
+	if (shared_buffer[0])
+		printw("%s", eat(shared_buffer));
+	now = strlen(shared_buffer);
+	put();
+	return now;
 }
 
 static void show_list(struct domain_policy *dp)
@@ -2280,6 +2335,14 @@ static void show_list(struct domain_policy *dp)
 		case SCREEN_EXCEPTION_LIST:
 		case SCREEN_ACL_LIST:
 			tmp_col = show_acl_line(index, list_indent);
+			break;
+		/*
+		case SCREEN_PROFILE_LIST:
+			tmp_col = show_profile_line(index); 
+			break;
+		*/
+		case SCREEN_MEMINFO_LIST:
+			tmp_col = show_meminfo_line(index);
 			break;
 		default:
 			tmp_col = show_literal_line(index);
@@ -3228,11 +3291,12 @@ static void show_command_key(void)
 	default:
 		printw("Insert     Copy an entry at the cursor position to "
 		       "history buffer.\n");
+		printw("Space      Invert selection state of an entry at "
+		       "the cursor position.\n");
+		printw("C/c        Copy selection state of an entry at "
+		       "the cursor position to all entries below the cursor "
+		       "position.\n");
 	}
-	printw("Space      Invert selection state of an entry at the cursor "
-	       "position.\n");
-	printw("C/c        Copy selection state of an entry at the cursor "
-	       "position to all entries below the cursor position.\n");
 	switch (current_screen) {
 	case SCREEN_DOMAIN_LIST:
 		printw("A/a        Add a new domain.\n");
@@ -3789,8 +3853,10 @@ int editpolicy_main(int argc, char *argv[])
 			current_screen = SCREEN_PROFILE_LIST;
 		else if (!strcmp(argv[1], "m"))
 			current_screen = SCREEN_MANAGER_LIST;
+		else if (!strcmp(argv[1], "q"))
+			current_screen = SCREEN_MEMINFO_LIST;
 		else {
-			printf("Usage: %s [s|e|d|p|m]\n", argv[0]);
+			printf("Usage: %s [s|e|d|p|m|q]\n", argv[0]);
 			return 1;
 		}
 	}
