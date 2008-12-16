@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5   2008/11/11
+ * Version: 1.6.6-pre   2008/12/16
  *
  */
 #include "ccstools.h"
@@ -87,15 +87,9 @@ int ccsauditd_main(int argc, char *argv[])
 	}
 	syslog(LOG_WARNING, "Started.\n");
 	while (true) {
-		static const int buffer_len = 16384;
-		static char *buffer = NULL;
+		char buffer[16384];
 		char timestamp[128];
 		fd_set rfds;
-		if (!buffer) {
-			buffer = malloc(buffer_len);
-			if (!buffer)
-				break;
-		}
 		FD_ZERO(&rfds);
 		for (i = 0; i < CCS_AUDITD_MAX_FILES; i++)
 			FD_SET(fd_in[i], &rfds);
@@ -109,8 +103,8 @@ int ccsauditd_main(int argc, char *argv[])
 			struct tm *tm;
 			if (!FD_ISSET(fd_in[i], &rfds))
 				continue;
-			memset(buffer, 0, buffer_len);
-			if (read(fd_in[i], buffer, buffer_len - 1) < 0)
+			memset(buffer, 0, sizeof(buffer));
+			if (read(fd_in[i], buffer, sizeof(buffer) - 1) < 0)
 				continue;
 			memset(timestamp, 0, sizeof(timestamp));
 			if (sscanf(buffer, "#timestamp=%lu", &stamp) != 1)

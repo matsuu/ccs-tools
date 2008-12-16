@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5   2008/11/11
+ * Version: 1.6.6-pre   2008/12/16
  *
  */
 #include "ccstools.h"
@@ -62,11 +62,10 @@ static int status_fd = EOF;
 static const char *read_info(const pid_t pid, int *profile)
 {
 	char *cp; /* caller must use get()/put(). */
-	memset(shared_buffer, 0, shared_buffer_len);
-	snprintf(shared_buffer, shared_buffer_len - 1, "%d\n", pid);
+	shprintf("%d\n", pid);
 	write(status_fd, shared_buffer, strlen(shared_buffer));
-	memset(shared_buffer, 0, shared_buffer_len);
-	read(status_fd, shared_buffer, shared_buffer_len - 1);
+	memset(shared_buffer, 0, sizeof(shared_buffer));
+	read(status_fd, shared_buffer, sizeof(shared_buffer) - 1);
 	cp = strchr(shared_buffer, ' ');
 	if (cp) {
 		*profile = atoi(cp + 1);
@@ -134,7 +133,7 @@ static void dump_unprocessed(void)
 int ccstree_main(int argc, char *argv[])
 {
 	const char *policy_file = proc_policy_process_status;
-	static bool show_all = false;
+	static _Bool show_all = false;
 	if (access(proc_policy_dir, F_OK)) {
 		fprintf(stderr, "You can't use this command "
 			"for this kernel.\n");

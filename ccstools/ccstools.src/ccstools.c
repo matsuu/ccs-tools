@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5+   2008/11/16
+ * Version: 1.6.6-pre   2008/12/16
  *
  */
 #include "ccstools.h"
@@ -18,7 +18,7 @@ void out_of_memory(void)
 	exit(1);
 }
 
-bool str_starts(char *str, const char *begin)
+_Bool str_starts(char *str, const char *begin)
 {
 	const int len = strlen(begin);
 	if (strncmp(str, begin, len))
@@ -27,26 +27,26 @@ bool str_starts(char *str, const char *begin)
 	return true;
 }
 
-static bool is_byte_range(const char *str)
+static _Bool is_byte_range(const char *str)
 {
 	return *str >= '0' && *str++ <= '3' &&
 		*str >= '0' && *str++ <= '7' &&
 		*str >= '0' && *str <= '7';
 }
 
-static bool is_decimal(const char c)
+static _Bool is_decimal(const char c)
 {
 	return c >= '0' && c <= '9';
 }
 
-static bool is_hexadecimal(const char c)
+static _Bool is_hexadecimal(const char c)
 {
 	return (c >= '0' && c <= '9') ||
 		(c >= 'A' && c <= 'F') ||
 		(c >= 'a' && c <= 'f');
 }
 
-static bool is_alphabet_char(const char c)
+static _Bool is_alphabet_char(const char c)
 {
 	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
 }
@@ -60,7 +60,7 @@ void normalize_line(unsigned char *line)
 {
 	unsigned char *sp = line;
 	unsigned char *dp = line;
-	bool first = true;
+	_Bool first = true;
 	while (*sp && (*sp <= ' ' || 127 <= *sp))
 		sp++;
 	while (*sp) {
@@ -182,14 +182,14 @@ static int const_part_length(const char *filename)
 	return len;
 }
 
-bool is_domain_def(const unsigned char *domainname)
+_Bool is_domain_def(const unsigned char *domainname)
 {
 	return !strncmp(domainname, ROOT_NAME, ROOT_NAME_LEN) &&
 		(domainname[ROOT_NAME_LEN] == '\0'
 		 || domainname[ROOT_NAME_LEN] == ' ');
 }
 
-bool is_correct_domain(const unsigned char *domainname)
+_Bool is_correct_domain(const unsigned char *domainname)
 {
 	if (!domainname || strncmp(domainname, ROOT_NAME, ROOT_NAME_LEN))
 		goto out;
@@ -260,7 +260,7 @@ void fprintf_encoded(FILE *fp, const char *pathname)
 	}
 }
 
-bool decode(const char *ascii, char *bin)
+_Bool decode(const char *ascii, char *bin)
 {
 	while (true) {
 		char c = *ascii++;
@@ -301,10 +301,10 @@ bool decode(const char *ascii, char *bin)
 	return true;
 }
 
-bool is_correct_path(const char *filename, const s8 start_type,
+_Bool is_correct_path(const char *filename, const s8 start_type,
 		     const s8 pattern_type, const s8 end_type)
 {
-	bool contains_pattern = false;
+	_Bool contains_pattern = false;
 	unsigned char c;
 	if (!filename)
 		goto out;
@@ -378,7 +378,7 @@ out:
 	return false;
 }
 
-static bool file_matches_pattern2(const char *filename,
+static _Bool file_matches_pattern2(const char *filename,
 				  const char *filename_end,
 				  const char *pattern, const char *pattern_end)
 {
@@ -487,12 +487,12 @@ static bool file_matches_pattern2(const char *filename,
 	return filename == filename_end && pattern == pattern_end;
 }
 
-bool file_matches_pattern(const char *filename, const char *filename_end,
+_Bool file_matches_pattern(const char *filename, const char *filename_end,
 			  const char *pattern, const char *pattern_end)
 {
 	const char *pattern_start = pattern;
-	bool first = true;
-	bool result;
+	_Bool first = true;
+	_Bool result;
 	while (pattern < pattern_end - 1) {
 		/* Split at "\-" pattern. */
 		if (*pattern++ != '\\' || *pattern++ != '-')
@@ -511,7 +511,7 @@ bool file_matches_pattern(const char *filename, const char *filename_end,
 	return first ? result : !result;
 }
 
-bool path_matches_pattern(const struct path_info *filename,
+_Bool path_matches_pattern(const struct path_info *filename,
 			  const struct path_info *pattern)
 {
 	/*
@@ -561,7 +561,7 @@ int string_compare(const void *a, const void *b)
 	return strcmp(*(char **) a, *(char **) b);
 }
 
-bool pathcmp(const struct path_info *a, const struct path_info *b)
+_Bool pathcmp(const struct path_info *a, const struct path_info *b)
 {
 	return a->hash != b->hash || strcmp(a->name, b->name);
 }
@@ -588,7 +588,7 @@ const struct path_info *savename(const char *name)
 	unsigned int hash;
 	struct free_memory_block_list *fmb = &fmb_list;
 	int len;
-	static bool first_call = true;
+	static _Bool first_call = true;
 	if (!name)
 		return NULL;
 	len = strlen(name) + 1;
@@ -652,33 +652,41 @@ out:
 	return ptr ? &ptr->entry : NULL;
 }
 
-char *shared_buffer = NULL;
-static int buffer_lock = 0;
+char shared_buffer[sizeof(shared_buffer)];
+static _Bool buffer_locked = false;
 
 void get(void)
 {
-	if (buffer_lock)
+	if (buffer_locked)
 		out_of_memory();
-	if (!shared_buffer) {
-		shared_buffer = malloc(shared_buffer_len);
-		if (!shared_buffer)
-			out_of_memory();
-	}
-	buffer_lock++;
+	buffer_locked = true;
 }
 
 void put(void)
 {
-	if (buffer_lock != 1)
+	if (!buffer_locked)
 		out_of_memory();
-	buffer_lock--;
+	buffer_locked = false;
 }
 
-bool freadline(FILE *fp)
+void shprintf(const char *fmt, ...)
+{
+	va_list args;
+	if (!buffer_locked)
+		out_of_memory();
+	memset(shared_buffer, 0, sizeof(shared_buffer));
+	va_start(args, fmt);
+	vsnprintf(shared_buffer, sizeof(shared_buffer) - 1, fmt, args);
+	va_end(args);
+}
+
+_Bool freadline(FILE *fp)
 {
 	char *cp;
-	memset(shared_buffer, 0, shared_buffer_len);
-	if (!fgets(shared_buffer, shared_buffer_len - 1, fp))
+	if (!buffer_locked)
+		out_of_memory();
+	memset(shared_buffer, 0, sizeof(shared_buffer));
+	if (!fgets(shared_buffer, sizeof(shared_buffer) - 1, fp))
 		return false;
 	cp = strchr(shared_buffer, '\n');
 	if (!cp)
@@ -707,6 +715,7 @@ const char *proc_policy_dir           = "/proc/ccs/",
 	*proc_policy_manager          = "/proc/ccs/manager",
 	*disk_policy_manager          = "/etc/ccs/manager.conf",
 	*base_policy_manager          = "/etc/ccs/manager.base",
+	*proc_policy_meminfo          = "/proc/ccs/meminfo",
 	*proc_policy_query            = "/proc/ccs/query",
 	*proc_policy_grant_log        = "/proc/ccs/grant_log",
 	*proc_policy_reject_log       = "/proc/ccs/reject_log",
@@ -715,6 +724,7 @@ const char *proc_policy_dir           = "/proc/ccs/",
 
 int main(int argc, char *argv[])
 {
+	int ret = 0;
 	const char *argv0 = argv[0];
 	if (!argv0) {
 		fprintf(stderr, "Function not specified.\n");
@@ -755,6 +765,8 @@ int main(int argc, char *argv[])
 			= "/etc/tomoyo/manager.conf";
 		base_policy_manager
 			= "/etc/tomoyo/manager.base";
+		proc_policy_meminfo
+			= "/sys/kernel/security/tomoyo/meminfo";
 		proc_policy_query
 			= "/sys/kernel/security/tomoyo/query";
 		proc_policy_grant_log
@@ -765,90 +777,48 @@ int main(int argc, char *argv[])
 			= "/sys/kernel/security/tomoyo/.domain_status";
 		proc_policy_process_status
 			= "/sys/kernel/security/tomoyo/.process_status";
-	} else if (!access("/proc/tomoyo/", F_OK)) {
-		proc_policy_dir
-			= "/proc/tomoyo/";
-		disk_policy_dir
-			= "/etc/tomoyo/";
-		proc_policy_domain_policy
-			= "/proc/tomoyo/domain_policy";
-		disk_policy_domain_policy
-			= "/etc/tomoyo/domain_policy.conf";
-		base_policy_domain_policy
-			= "/etc/tomoyo/domain_policy.base";
-		proc_policy_exception_policy
-			= "/proc/tomoyo/exception_policy";
-		disk_policy_exception_policy
-			= "/etc/tomoyo/exception_policy.conf";
-		base_policy_exception_policy
-			= "/etc/tomoyo/exception_policy.base";
-		proc_policy_system_policy
-			= "/proc/tomoyo/system_policy";
-		disk_policy_system_policy
-			= "/etc/tomoyo/system_policy.conf";
-		base_policy_system_policy
-			= "/etc/tomoyo/system_policy.base";
-		proc_policy_profile
-			= "/proc/tomoyo/profile";
-		disk_policy_profile
-			= "/etc/tomoyo/profile.conf";
-		base_policy_profile
-			= "/etc/tomoyo/profile.base";
-		proc_policy_manager
-			= "/proc/tomoyo/manager";
-		disk_policy_manager
-			= "/etc/tomoyo/manager.conf";
-		base_policy_manager
-			= "/etc/tomoyo/manager.base";
-		proc_policy_query
-			= "/proc/tomoyo/query";
-		proc_policy_grant_log
-			= "/proc/tomoyo/grant_log";
-		proc_policy_reject_log
-			= "/proc/tomoyo/reject_log";
-		proc_policy_domain_status
-			= "/proc/tomoyo/.domain_status";
-		proc_policy_process_status
-			= "/proc/tomoyo/.process_status";
 	}
 	if (strrchr(argv0, '/'))
 		argv0 = strrchr(argv0, '/') + 1;
 retry:
 	if (!strcmp(argv0, "sortpolicy"))
-		return sortpolicy_main(argc, argv);
-	if (!strcmp(argv0, "setprofile"))
-		return setprofile_main(argc, argv);
-	if (!strcmp(argv0, "setlevel"))
-		return setlevel_main(argc, argv);
-	if (!strcmp(argv0, "diffpolicy"))
-		return diffpolicy_main(argc, argv);
-	if (!strcmp(argv0, "savepolicy"))
-		return savepolicy_main(argc, argv);
-	if (!strcmp(argv0, "pathmatch"))
-		return pathmatch_main(argc, argv);
-	if (!strcmp(argv0, "loadpolicy"))
-		return loadpolicy_main(argc, argv);
-	if (!strcmp(argv0, "ld-watch"))
-		return ldwatch_main(argc, argv);
-	if (!strcmp(argv0, "findtemp"))
-		return findtemp_main(argc, argv);
-	if (!strcmp(argv0, "editpolicy") ||
-	    !strcmp(argv0, "editpolicy_offline"))
-		return editpolicy_main(argc, argv);
-	if (!strcmp(argv0, "checkpolicy"))
-		return checkpolicy_main(argc, argv);
-	if (!strcmp(argv0, "ccstree"))
-		return ccstree_main(argc, argv);
-	if (!strcmp(argv0, "ccs-queryd"))
-		return ccsqueryd_main(argc, argv);
-	if (!strcmp(argv0, "ccs-auditd"))
-		return ccsauditd_main(argc, argv);
-	if (!strcmp(argv0, "patternize"))
-		return patternize_main(argc, argv);
-	if (!strncmp(argv0, "ccs-", 4)) {
+		ret = sortpolicy_main(argc, argv);
+	else if (!strcmp(argv0, "setprofile"))
+		ret = setprofile_main(argc, argv);
+	else if (!strcmp(argv0, "setlevel"))
+		ret = setlevel_main(argc, argv);
+	else if (!strcmp(argv0, "diffpolicy"))
+		ret = diffpolicy_main(argc, argv);
+	else if (!strcmp(argv0, "savepolicy"))
+		ret = savepolicy_main(argc, argv);
+	else if (!strcmp(argv0, "pathmatch"))
+		ret = pathmatch_main(argc, argv);
+	else if (!strcmp(argv0, "loadpolicy"))
+		ret = loadpolicy_main(argc, argv);
+	else if (!strcmp(argv0, "ld-watch"))
+		ret = ldwatch_main(argc, argv);
+	else if (!strcmp(argv0, "findtemp"))
+		ret = findtemp_main(argc, argv);
+	else if (!strcmp(argv0, "editpolicy") ||
+		 !strcmp(argv0, "editpolicy_offline"))
+		ret = editpolicy_main(argc, argv);
+	else if (!strcmp(argv0, "checkpolicy"))
+		ret = checkpolicy_main(argc, argv);
+	else if (!strcmp(argv0, "ccstree"))
+		ret = ccstree_main(argc, argv);
+	else if (!strcmp(argv0, "ccs-queryd"))
+		ret = ccsqueryd_main(argc, argv);
+	else if (!strcmp(argv0, "ccs-auditd"))
+		ret = ccsauditd_main(argc, argv);
+	else if (!strcmp(argv0, "patternize"))
+		ret = patternize_main(argc, argv);
+	else if (!strncmp(argv0, "ccs-", 4)) {
 		argv0 += 4;
 		goto retry;
-	}
+	} else
+		goto show_version;
+	return ret;
+show_version:
 	/*
 	 * Unlike busybox, I don't use argv[1] if argv[0] is the name of this
 	 * program because it is dangerous to allow updating policies via
@@ -856,7 +826,7 @@ retry:
 	 * You should use either "symbolic links with 'alias' directive" or
 	 * "hard links".
 	 */
-	printf("ccstools version 1.6.5 build 2008/11/11\n");
+	printf("ccstools version 1.6.6-pre build 2008/12/16\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }

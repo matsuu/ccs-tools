@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5   2008/11/11
+ * Version: 1.6.6-pre   2008/12/16
  *
  */
 #include "ccstools.h"
@@ -54,5 +54,8 @@ int findtemp_main(int argc, char *argv[])
 	      string_compare);
 	for (i = 0; i < pattern_list_count; i++)
 		printf("%s\n", pattern_list[i]);
+	for (i = 0; i < pattern_list_count; i++)
+		free((void *) pattern_list[i]);
+	free(pattern_list);
 	return 0;
 }

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5   2008/11/11
+ * Version: 1.6.6-pre   2008/12/16
  *
  */
 #include "ccstools.h"
@@ -79,7 +79,7 @@ static int send_encoded(const int fd, const char *fmt, ...)
 	return len;
 }
 
-static bool has_retry_counter = false;
+static _Bool has_retry_counter = false;
 static unsigned short int retries = 0;
 
 static void do_check_update(const int fd)
@@ -181,7 +181,7 @@ static int check_update = GLOBALLY_READABLE_FILES_UPDATE_AUTO;
 static void handle_update(const int fd)
 {
 	static FILE *fp = NULL;
-	static char pathname[8192];
+	char pathname[8192];
 	int c;
 	if (!fp)
 		fp = fopen(proc_policy_exception_policy, "w");
@@ -217,10 +217,10 @@ static void handle_update(const int fd)
 	_printw("\n");
 }
 
-static bool convert_path_info(FILE *fp, const struct path_info *pattern,
+static _Bool convert_path_info(FILE *fp, const struct path_info *pattern,
 			      const char *new)
 {
-	bool modified = false;
+	_Bool modified = false;
 	const char *cp = pattern->name;
 	int depth = 0;
 	while (*cp)
@@ -238,7 +238,7 @@ static bool convert_path_info(FILE *fp, const struct path_info *pattern,
 		while (*cp) {
 			char c;
 			struct path_info old;
-			bool matched;
+			_Bool matched;
 			if (*cp != '/' || --d)
 				continue;
 			cp++;
@@ -261,9 +261,9 @@ out:
 	return modified;
 }
 
-static bool check_path_info(const char *buffer)
+static _Bool check_path_info(const char *buffer)
 {
-	bool modified = false;
+	_Bool modified = false;
 	static struct path_info *update_list = NULL;
 	static int update_list_len = 0;
 	char *sp = strdup(buffer);
@@ -309,7 +309,7 @@ static int readline_history_count = 0;
 static const int buffer_len = 32768;
 static char *buffer = NULL;
 
-static bool handle_query_new_format(unsigned int serial)
+static _Bool handle_query_new_format(unsigned int serial)
 {
 	int c = 0;
 	int y;
@@ -419,7 +419,7 @@ not_domain_query:
 	goto write_answer;
 }
 
-static bool handle_query_old_format(unsigned int serial)
+static _Bool handle_query_old_format(unsigned int serial)
 {
 	int c = 0;
 	int y;
@@ -581,7 +581,7 @@ int ccsqueryd_main(int argc, char *argv[])
 	refresh();
 	scrollok(stdscr, TRUE);
 	while (true) {
-		static bool first = true;
+		static _Bool first = true;
 		static unsigned int prev_serial = 0;
 		fd_set rfds;
 		unsigned int serial;

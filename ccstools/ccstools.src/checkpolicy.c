@@ -5,12 +5,12 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5   2008/11/11
+ * Version: 1.6.6-pre   2008/12/16
  *
  */
 #include "ccstools.h"
 
-static bool strendswith(const char *name, const char *tail)
+static _Bool strendswith(const char *name, const char *tail)
 {
 	int len;
 	if (!name || !tail)
@@ -66,45 +66,118 @@ static unsigned int line = 0;
 static unsigned int errors = 0;
 static unsigned int warnings = 0;
 
-static bool check_condition(char *condition)
+static _Bool check_condition(char *condition)
 {
-	enum { TASK_UID, TASK_EUID, TASK_SUID, TASK_FSUID, TASK_GID, TASK_EGID,
-	       TASK_SGID, TASK_FSGID, TASK_PID, TASK_PPID, PATH1_UID,
-	       PATH1_GID, PATH1_INO, PATH1_PARENT_UID, PATH1_PARENT_GID,
-	       PATH1_PARENT_INO, PATH2_PARENT_UID, PATH2_PARENT_GID,
-	       PATH2_PARENT_INO, EXEC_ARGC, EXEC_ENVC, EXEC_ARGV, EXEC_ENVP,
-	       TASK_STATE_0, TASK_STATE_1, TASK_STATE_2, MAX_KEYWORD };
-	static struct {
-		const char *keyword;
-		const int keyword_len; /* strlen(keyword) */
-	} condition_control_keyword[MAX_KEYWORD] = {
-		[TASK_UID]         = { "task.uid",           8 },
-		[TASK_EUID]        = { "task.euid",          9 },
-		[TASK_SUID]        = { "task.suid",          9 },
-		[TASK_FSUID]       = { "task.fsuid",        10 },
-		[TASK_GID]         = { "task.gid",           8 },
-		[TASK_EGID]        = { "task.egid",          9 },
-		[TASK_SGID]        = { "task.sgid",          9 },
-		[TASK_FSGID]       = { "task.fsgid",        10 },
-		[TASK_PID]         = { "task.pid",           8 },
-		[TASK_PPID]        = { "task.ppid",          9 },
-		[PATH1_UID]        = { "path1.uid",          9 },
-		[PATH1_GID]        = { "path1.gid",          9 },
-		[PATH1_INO]        = { "path1.ino",          9 },
-		[PATH1_PARENT_UID] = { "path1.parent.uid",  16 },
-		[PATH1_PARENT_GID] = { "path1.parent.gid",  16 },
-		[PATH1_PARENT_INO] = { "path1.parent.ino",  16 },
-		[PATH2_PARENT_UID] = { "path2.parent.uid",  16 },
-		[PATH2_PARENT_GID] = { "path2.parent.gid",  16 },
-		[PATH2_PARENT_INO] = { "path2.parent.ino",  16 },
-		[EXEC_ARGC]        = { "exec.argc",          9 },
-		[EXEC_ENVC]        = { "exec.envc",          9 },
-		[EXEC_ARGV]        = { "exec.argv[",        10 },
-		[EXEC_ENVP]        = { "exec.envp[\"",      11 },
-		[TASK_STATE_0]     = { "task.state[0]",     13 },
-		[TASK_STATE_1]     = { "task.state[1]",     13 },
-		[TASK_STATE_2]     = { "task.state[2]",     13 },
+	enum { TASK_UID,
+	       TASK_EUID,
+	       TASK_SUID,
+	       TASK_FSUID,
+	       TASK_GID,
+	       TASK_EGID,
+	       TASK_SGID,
+	       TASK_FSGID,
+	       TASK_PID,
+	       TASK_PPID,
+	       EXEC_ARGC,
+	       EXEC_ENVC,
+	       TASK_STATE_0,
+	       TASK_STATE_1,
+	       TASK_STATE_2,
+	       TYPE_SOCKET,
+	       TYPE_SYMLINK,
+	       TYPE_FILE,
+	       TYPE_BLOCK_DEV,
+	       TYPE_DIRECTORY,
+	       TYPE_CHAR_DEV,
+	       TYPE_FIFO,
+	       MODE_SETUID,
+	       MODE_SETGID,
+	       MODE_STICKY,
+	       MODE_OWNER_READ,
+	       MODE_OWNER_WRITE,
+	       MODE_OWNER_EXECUTE,
+	       MODE_GROUP_READ,
+	       MODE_GROUP_WRITE,
+	       MODE_GROUP_EXECUTE,
+	       MODE_OTHERS_READ,
+	       MODE_OTHERS_WRITE,
+	       MODE_OTHERS_EXECUTE,
+	       TASK_TYPE,
+	       TASK_EXECUTE_HANDLER,
+	       PATH1_UID,
+	       PATH1_GID,
+	       PATH1_INO,
+	       PATH1_PARENT_UID,
+	       PATH1_PARENT_GID,
+	       PATH1_PARENT_INO,
+	       PATH2_PARENT_UID,
+	       PATH2_PARENT_GID,
+	       PATH2_PARENT_INO,
+	       PATH1_TYPE,
+	       PATH1_DEV_MAJOR,
+	       PATH1_DEV_MINOR,
+	       PATH1_MODE,
+	       PATH1_PARENT_MODE,
+	       PATH2_PARENT_MODE,
+	       EXEC_ARGV,
+	       EXEC_ENVP,
+	       MAX_KEYWORD };
+	static const char *condition_control_keyword[MAX_KEYWORD] = {
+		[TASK_UID]             = "task.uid",
+		[TASK_EUID]            = "task.euid",
+		[TASK_SUID]            = "task.suid",
+		[TASK_FSUID]           = "task.fsuid",
+		[TASK_GID]             = "task.gid",
+		[TASK_EGID]            = "task.egid",
+		[TASK_SGID]            = "task.sgid",
+		[TASK_FSGID]           = "task.fsgid",
+		[TASK_PID]             = "task.pid",
+		[TASK_PPID]            = "task.ppid",
+		[EXEC_ARGC]            = "exec.argc",
+		[EXEC_ENVC]            = "exec.envc",
+		[TASK_STATE_0]         = "task.state[0]",
+		[TASK_STATE_1]         = "task.state[1]",
+		[TASK_STATE_2]         = "task.state[2]",
+		[TYPE_SOCKET]          = "socket",
+		[TYPE_SYMLINK]         = "symlink",
+		[TYPE_FILE]            = "file",
+		[TYPE_BLOCK_DEV]       = "block",
+		[TYPE_DIRECTORY]       = "directory",
+		[TYPE_CHAR_DEV]        = "char",
+		[TYPE_FIFO]            = "fifo",
+		[MODE_SETUID]          = "setuid",
+		[MODE_SETGID]          = "setgid",
+		[MODE_STICKY]          = "sticky",
+		[MODE_OWNER_READ]      = "owner_read",
+		[MODE_OWNER_WRITE]     = "owner_write",
+		[MODE_OWNER_EXECUTE]   = "owner_execute",
+		[MODE_GROUP_READ]      = "group_read",
+		[MODE_GROUP_WRITE]     = "group_write",
+		[MODE_GROUP_EXECUTE]   = "group_execute",
+		[MODE_OTHERS_READ]     = "others_read",
+		[MODE_OTHERS_WRITE]    = "others_write",
+		[MODE_OTHERS_EXECUTE]  = "others_execute",
+		[TASK_TYPE]            = "task.type",
+		[TASK_EXECUTE_HANDLER] = "execute_handler",
+		[PATH1_UID]            = "path1.uid",
+		[PATH1_GID]            = "path1.gid",
+		[PATH1_INO]            = "path1.ino",
+		[PATH1_PARENT_UID]     = "path1.parent.uid",
+		[PATH1_PARENT_GID]     = "path1.parent.gid",
+		[PATH1_PARENT_INO]     = "path1.parent.ino",
+		[PATH2_PARENT_UID]     = "path2.parent.uid",
+		[PATH2_PARENT_GID]     = "path2.parent.gid",
+		[PATH2_PARENT_INO]     = "path2.parent.ino",
+		[PATH1_TYPE]           = "path1.type",
+		[PATH1_DEV_MAJOR]      = "path1.major",
+		[PATH1_DEV_MINOR]      = "path1.minor",
+		[PATH1_MODE]           = "path1.perm",
+		[PATH1_PARENT_MODE]    = "path1.parent.perm",
+		[PATH2_PARENT_MODE]    = "path2.parent.perm",
+		[EXEC_ARGV]            = "exec.argv[",
+		[EXEC_ENVP]            = "exec.envp[\"",
 	};
+	static u8 condition_control_keyword_len[MAX_KEYWORD];
 	char *start = condition;
 	u8 left;
 	u8 right;
@@ -114,6 +187,13 @@ static bool check_condition(char *condition)
 	unsigned long right_min = 0;
 	unsigned long right_max = 0;
 	u8 post_state[4] = { 0, 0, 0, 0 };
+	_Bool first = true;
+	if (first) {
+		first = false;
+		for (i = 0; i < MAX_KEYWORD; i++)
+			condition_control_keyword_len[i]
+				= strlen(condition_control_keyword[i]);
+	}
 	condition = strstr(condition, "; set ");
 	if (condition) {
 		*condition = '\0';
@@ -153,9 +233,9 @@ static bool check_condition(char *condition)
 		if (!*condition)
 			break;
 		for (left = 0; left < MAX_KEYWORD; left++) {
-			int len = condition_control_keyword[left].keyword_len;
+			int len = condition_control_keyword_len[left];
 			if (strncmp(condition,
-				    condition_control_keyword[left].keyword,
+				    condition_control_keyword[left],
 				    len))
 				continue;
 			condition += len;
@@ -235,9 +315,9 @@ static bool check_condition(char *condition)
 			continue;
 		}
 		for (right = 0; right < MAX_KEYWORD; right++) {
-			int len = condition_control_keyword[right].keyword_len;
+			int len = condition_control_keyword_len[right];
 			if (strncmp(condition,
-				    condition_control_keyword[right].keyword,
+				    condition_control_keyword[right],
 				    len))
 				continue;
 			condition += len;
@@ -256,7 +336,7 @@ static bool check_condition(char *condition)
 	}
 	return true;
 out:
-	printf("%u: ERROR: '%s' is a illegal condition.\n", line, start);
+	printf("%u: ERROR: '%s' is an illegal condition.\n", line, start);
 	errors++;
 	return false;
 }
@@ -699,9 +779,9 @@ static void check_address_group_policy(char *data)
 static void check_domain_policy(void)
 {
 	static int domain = EOF;
-	bool is_delete = false;
-	bool is_select = false;
-	bool is_undelete = false;
+	_Bool is_delete = false;
+	_Bool is_select = false;
+	_Bool is_undelete = false;
 	if (str_starts(shared_buffer, KEYWORD_DELETE))
 		is_delete = true;
 	else if (str_starts(shared_buffer, KEYWORD_SELECT))
@@ -744,18 +824,15 @@ static void check_domain_policy(void)
 		/* Nothing to do. */
 	} else if (!strcmp(shared_buffer, "ignore_global_allow_env")) {
 		/* Nothing to do. */
-	} else if (str_starts(shared_buffer, "execute_handler ")) {
+	} else if (str_starts(shared_buffer, "execute_handler ") ||
+		   str_starts(shared_buffer, "denied_execute_handler ")) {
 		if (!is_correct_path(shared_buffer, 1, -1, -1)) {
 			printf("%u: ERROR: '%s' is a bad pathname.\n",
 			       line, shared_buffer);
 			errors++;
 		}
-	} else if (str_starts(shared_buffer, "denied_execute_handler ")) {
-		if (!is_correct_path(shared_buffer, 1, -1, -1)) {
-			printf("%u: ERROR: '%s' is a bad pathname.\n",
-			       line, shared_buffer);
-			errors++;
-		}
+	} else if (!strcmp(shared_buffer, "transition_failed")) {
+		/* Nothing to do. */
 	} else if (!strcmp(shared_buffer, "quota_exceeded")) {
 		/* Nothing to do. */
 	} else {
@@ -908,8 +985,8 @@ int checkpolicy_main(int argc, char *argv[])
 		return 0;
 	}
 	get();
-	while (memset(shared_buffer, 0, shared_buffer_len),
-	       fgets(shared_buffer, shared_buffer_len - 1, stdin)) {
+	while (memset(shared_buffer, 0, sizeof(shared_buffer)),
+	       fgets(shared_buffer, sizeof(shared_buffer) - 1, stdin)) {
 		char *cp = strchr(shared_buffer, '\n');
 		line++;
 		if (!cp) {

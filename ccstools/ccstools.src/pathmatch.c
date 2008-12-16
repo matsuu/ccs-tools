@@ -5,12 +5,12 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5   2008/11/11
+ * Version: 1.6.6-pre   2008/12/16
  *
  */
 #include "ccstools.h"
 
-static bool print_path_needs_separator = false;
+static _Bool print_path_needs_separator = false;
 
 static void print_path(const char *dir, const char *file, const char *trailer)
 {
@@ -61,7 +61,7 @@ static int scandir_filter(const struct dirent *buf)
 	return 0;
 }
 
-static bool scandir_target_is_dir = false;
+static _Bool scandir_target_is_dir = false;
 static int scandir_target_depth = 0;
 static char **scandir_target_part = NULL;
 
@@ -152,5 +152,8 @@ int pathmatch_main(int argc, char *argv[])
 			do_pathmatch_main(shared_buffer);
 		put();
 	}
+	free(scandir_target_part);
+	scandir_target_part = NULL;
+	scandir_target_depth = 0;
 	return 0;
 }

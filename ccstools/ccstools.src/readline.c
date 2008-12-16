@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5   2008/11/11
+ * Version: 1.6.6-pre   2008/12/16
  *
  */
 #include "ccstools.h"
@@ -114,7 +114,7 @@ char *simple_readline(const int start_y, const int start_x, const char *prompt,
 	int line_pos = 0;
 	int cur_pos = 0;
 	int history_pos = 0;
-	bool tmp_saved = false;
+	_Bool tmp_saved = false;
 	static char *buffer = NULL;
 	static char *tmp_buffer = NULL;
 	{

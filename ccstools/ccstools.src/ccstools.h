@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5   2008/11/11
+ * Version: 1.6.6-pre   2008/12/16
  *
  */
 
@@ -40,19 +40,18 @@
 #include <time.h>
 #include <unistd.h>
 
-#define bool _Bool
 #define true     1
 #define false    0
-
-#define SYSTEM_POLICY_FILE    "system_policy"
-#define EXCEPTION_POLICY_FILE "exception_policy"
-#define DOMAIN_POLICY_FILE    "domain_policy"
 
 #define SCREEN_SYSTEM_LIST    0
 #define SCREEN_EXCEPTION_LIST 1
 #define SCREEN_DOMAIN_LIST    2
 #define SCREEN_ACL_LIST       3
-#define MAXSCREEN             4
+#define SCREEN_PROFILE_LIST   4
+#define SCREEN_MANAGER_LIST   5
+#define SCREEN_QUERY_LIST     6
+#define SCREEN_MEMINFO_LIST   7
+#define MAXSCREEN             8
 
 #define POLICY_TYPE_UNKNOWN          0
 #define POLICY_TYPE_DOMAIN_POLICY    1
@@ -110,8 +109,6 @@
 #define ROOT_NAME                        "<kernel>"
 #define ROOT_NAME_LEN                    (sizeof(ROOT_NAME) - 1)
 
-#define shared_buffer_len 8192
-
 #define CCSTOOLS_CONFIG_FILE "/usr/lib/ccs/ccstools.conf"
 
 /***** CONSTANTS DEFINITION END *****/
@@ -120,12 +117,12 @@
 
 struct path_info {
 	const char *name;
-	u32 hash;          /* = full_name_hash(name, strlen(name)) */
-	u16 total_len;     /* = strlen(name)                       */
-	u16 const_len;     /* = const_part_length(name)            */
-	bool is_dir;       /* = strendswith(name, "/")             */
-	bool is_patterned; /* = path_contains_pattern(name)        */
-	u16 depth;         /* = path_depth(name)                   */
+	u32 hash;           /* = full_name_hash(name, strlen(name)) */
+	u16 total_len;      /* = strlen(name)                       */
+	u16 const_len;      /* = const_part_length(name)            */
+	_Bool is_dir;       /* = strendswith(name, "/")             */
+	_Bool is_patterned; /* = path_contains_pattern(name)        */
+	u16 depth;          /* = path_depth(name)                   */
 };
 
 struct path_group_entry {
@@ -137,7 +134,7 @@ struct path_group_entry {
 struct ip_address_entry {
 	u8 min[16];
 	u8 max[16];
-	bool is_ipv6;
+	_Bool is_ipv6;
 };
 
 struct address_group_entry {
@@ -165,15 +162,15 @@ struct dll_pathname_entry {
 struct domain_initializer_entry {
 	const struct path_info *domainname;    /* This may be NULL */
 	const struct path_info *program;
-	bool is_not;
-	bool is_last_name;
+	_Bool is_not;
+	_Bool is_last_name;
 };
 
 struct domain_keeper_entry {
 	const struct path_info *domainname;
 	const struct path_info *program;       /* This may be NULL */
-	bool is_not;
-	bool is_last_name;
+	_Bool is_not;
+	_Bool is_last_name;
 };
 
 struct domain_info {
@@ -182,19 +179,19 @@ struct domain_info {
 	const struct domain_keeper_entry *d_k; /* This may be NULL */
 	const struct path_info **string_ptr;
 	int string_count;
-	int number; /* domain number (-1 if is_dis or is_dd) */
+	int number;   /* domain number (-1 if is_dis or is_dd) */
 	u8 profile;
-	bool is_dis; /* domain initializer source */
-	bool is_dit; /* domain initializer target */
-	bool is_dk;  /* domain keeper */
-	bool is_du;  /* unreachable domain */
-	bool is_dd;  /* deleted domain */
+	_Bool is_dis; /* domain initializer source */
+	_Bool is_dit; /* domain initializer target */
+	_Bool is_dk;  /* domain keeper */
+	_Bool is_du;  /* unreachable domain */
+	_Bool is_dd;  /* deleted domain */
 };
 
 struct task_entry {
 	pid_t pid;
 	pid_t ppid;
-	bool done;
+	_Bool done;
 };
 
 /***** STRUCTURES DEFINITION END *****/
@@ -203,21 +200,21 @@ struct task_entry {
 
 void out_of_memory(void);
 void normalize_line(unsigned char *line);
-bool is_domain_def(const unsigned char *domainname);
-bool is_correct_domain(const unsigned char *domainname);
+_Bool is_domain_def(const unsigned char *domainname);
+_Bool is_correct_domain(const unsigned char *domainname);
 void fprintf_encoded(FILE *fp, const char *pathname);
-bool decode(const char *ascii, char *bin);
-bool is_correct_path(const char *filename, const s8 start_type,
-		     const s8 pattern_type, const s8 end_type);
-bool file_matches_pattern(const char *filename, const char *filename_end,
-			  const char *pattern, const char *pattern_end);
+_Bool decode(const char *ascii, char *bin);
+_Bool is_correct_path(const char *filename, const s8 start_type,
+		      const s8 pattern_type, const s8 end_type);
+_Bool file_matches_pattern(const char *filename, const char *filename_end,
+			   const char *pattern, const char *pattern_end);
 int string_compare(const void *a, const void *b);
-bool pathcmp(const struct path_info *a, const struct path_info *b);
+_Bool pathcmp(const struct path_info *a, const struct path_info *b);
 void fill_path_info(struct path_info *ptr);
 const struct path_info *savename(const char *name);
-bool str_starts(char *str, const char *begin);
-bool path_matches_pattern(const struct path_info *pathname0,
-			  const struct path_info *pattern0);
+_Bool str_starts(char *str, const char *begin);
+_Bool path_matches_pattern(const struct path_info *pathname0,
+			   const struct path_info *pattern0);
 char *make_filename(const char *prefix, const time_t time);
 
 int sortpolicy_main(int argc, char *argv[]);
@@ -235,11 +232,13 @@ int ccstree_main(int argc, char *argv[]);
 int ccsqueryd_main(int argc, char *argv[]);
 int ccsauditd_main(int argc, char *argv[]);
 int patternize_main(int argc, char *argv[]);
+void shprintf(const char *fmt, ...)
+	__attribute__ ((format(printf, 1, 2)));
 
-char *shared_buffer;
+extern char shared_buffer[8192];
 void get(void);
 void put(void);
-bool freadline(FILE *fp);
+_Bool freadline(FILE *fp);
 
 char *simple_readline(const int start_y, const int start_x, const char *prompt,
 		      const char *history[], const int history_count,
@@ -268,6 +267,7 @@ const char *proc_policy_dir,
 	*proc_policy_manager,
 	*disk_policy_manager,
 	*base_policy_manager,
+	*proc_policy_meminfo,
 	*proc_policy_query,
 	*proc_policy_grant_log,
 	*proc_policy_reject_log,

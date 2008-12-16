@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5   2008/11/11
+ * Version: 1.6.6-pre   2008/12/16
  *
  */
 #include "ccstools.h"
@@ -15,7 +15,7 @@ int setprofile_main(int argc, char *argv[])
 	FILE *fp_in;
 	FILE *fp_out;
 	unsigned int profile = 0;
-	bool recursive = false;
+	_Bool recursive = false;
 	int i;
 	int start = 2;
 	if (argc > 1 && !strcmp(argv[1], "-r")) {
@@ -44,7 +44,7 @@ int setprofile_main(int argc, char *argv[])
 		close(fd);
 	}
 	{
-		bool profile_found = false;
+		_Bool profile_found = false;
 		FILE *fp = fopen(proc_policy_profile, "r");
 		if (!fp) {
 			fprintf(stderr, "Can't open policy file.\n");
