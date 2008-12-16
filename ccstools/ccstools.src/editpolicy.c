@@ -1450,20 +1450,33 @@ static int string_acl_compare(const void *a, const void *b)
 	return strcmp(a1, b1);
 }
 
+static int profile_sort_type = 0;
+
 static int profile_entry_compare(const void *a, const void *b)
 {
 	const struct generic_acl *a0 = (struct generic_acl *) a;
 	const struct generic_acl *b0 = (struct generic_acl *) b;
 	const char *a1 = a0->operand;
 	const char *b1 = b0->operand;
-	const int a2 = atoi(a1);
-	const int b2 = atoi(b1);
-	if (a2 == b2)
-		return strcmp(a1, b1);
-	else
-		return a2 - b2;
+	const int a2 = a0->directive;
+	const int b2 = b0->directive;
+	if (profile_sort_type == 0) {
+		if (a2 == b2)
+			return strcmp(a1, b1);
+		else
+			return a2 - b2;
+	} else {
+		const int a3 = strcspn(a1, "="); 
+		const int b3 = strcspn(b1, "=");
+		const int c = strncmp(a1, b1, a3 >= b3 ? b3 : a3);
+		if (c)
+			return c;
+		if (a3 != b3)
+			return a3 - b3;
+		else
+			return a2 - b2;
+	}
 }
-
 
 static void read_generic_policy(void)
 {
@@ -1507,6 +1520,14 @@ static void read_generic_policy(void)
 			directive = find_directive(true, shared_buffer);
 			if (directive == DIRECTIVE_NONE)
 				continue;
+			break;
+		case SCREEN_PROFILE_LIST:
+			cp = strchr(shared_buffer, '-');
+			if (!cp)
+				continue;
+			*cp++ = '\0';
+			directive = atoi(shared_buffer);
+			memmove(shared_buffer, cp, strlen(cp) + 1);
 			break;
 		default:
 			directive = DIRECTIVE_NONE;
@@ -2222,8 +2243,13 @@ static int show_acl_line(int index, int list_indent)
 static int show_profile_line(int index)
 {
 	const char *cp = generic_acl_list[index].operand;
-	printw("%s", eat(cp));
-	return strlen(cp);
+	const u8 profile = generic_acl_list[index].directive;
+	char number[8];
+	snprintf(number, sizeof(number) - 1, "%3u-", profile);
+	printw("%c%4d: %s", generic_acl_list[index].selected ? '&' : ' ',
+	       index, eat(number));
+	printw("%s ", eat(cp));
+	return strlen(number) + strlen(cp) + 8;
 }
 
 static int show_literal_line(int index)
@@ -2336,11 +2362,9 @@ static void show_list(struct domain_policy *dp)
 		case SCREEN_ACL_LIST:
 			tmp_col = show_acl_line(index, list_indent);
 			break;
-		/*
 		case SCREEN_PROFILE_LIST:
 			tmp_col = show_profile_line(index); 
 			break;
-		*/
 		case SCREEN_MEMINFO_LIST:
 			tmp_col = show_meminfo_line(index);
 			break;
@@ -2639,7 +2663,7 @@ ok:
 	return subtype;
 }
 
-static int sort_type = 1;
+static int acl_sort_type = 1;
 
 static int generic_acl_compare(const void *a, const void *b)
 {
@@ -2649,7 +2673,7 @@ static int generic_acl_compare(const void *a, const void *b)
 	const char *b1 = directives[b0->directive].alias;
 	const char *a2 = a0->operand;
 	const char *b2 = b0->operand;
-	if (sort_type == 0) {
+	if (acl_sort_type == 0) {
 		const int ret = strcmp(a1, b1);
 		if (ret)
 			return ret;
@@ -2800,8 +2824,7 @@ static void try_optimize(struct domain_policy *dp, const int current)
 			/* Source and dest start with different directive. */
 			continue;
 		}
-		strncpy(shared_buffer, generic_acl_list[index].operand,
-			sizeof(shared_buffer));
+		shprintf("%s", generic_acl_list[index].operand);
 		if (!memchr(shared_buffer, '\0', sizeof(shared_buffer)))
 			continue; /* Line too long. */
 
@@ -3165,12 +3188,12 @@ static void set_level(struct domain_policy *dp, int current)
 		if (!generic_acl_list[index].selected)
 			continue;
 		get();
-		strncpy(shared_buffer, generic_acl_list[index].operand,
-			sizeof(shared_buffer) - 1);
+		shprintf("%s", generic_acl_list[index].operand);
 		cp = strchr(shared_buffer, '=');
 		if (cp)
 			*cp = '\0';
-		fprintf(fp, "%s=%s\n", shared_buffer, line);
+		fprintf(fp, "%u-%s=%s\n", generic_acl_list[index].directive,
+			shared_buffer, line);
 		put();
 	}
 	fclose(fp);
@@ -3199,8 +3222,7 @@ static void set_quota(struct domain_policy *dp, int current)
 		if (!generic_acl_list[index].selected)
 			continue;
 		get();
-		strncpy(shared_buffer, generic_acl_list[index].operand,
-			sizeof(shared_buffer) - 1);
+		shprintf("%s", generic_acl_list[index].operand);
 		cp = strchr(shared_buffer, ':');
 		if (cp)
 			*cp = '\0';
@@ -3328,6 +3350,8 @@ static void show_command_key(void)
 	case SCREEN_ACL_LIST:
 		printw("O/o        Set selection state to other entries "
 		       "included in an entry at the cursor position.\n");
+		/* Fall through. */
+	case SCREEN_PROFILE_LIST:
 		printw("@          Switch sort type.\n");
 	}
 	printw("Arrow-keys and PageUp/PageDown/Home/End keys "
@@ -3621,10 +3645,14 @@ start2:
 				try_optimize(dp, current);
 			break;
 		case '@':
-			if (current_screen != SCREEN_ACL_LIST)
-				break;
-			sort_type = (sort_type + 1) % 2;
-			goto start;
+			if (current_screen == SCREEN_ACL_LIST) {
+				acl_sort_type = (acl_sort_type + 1) % 2;
+				goto start;
+			} else if (current_screen == SCREEN_PROFILE_LIST) {
+				profile_sort_type = (profile_sort_type + 1) % 2;
+				goto start;
+			}
+			break;
 		case 'w':
 		case 'W':
 			return select_window(dp, current);
