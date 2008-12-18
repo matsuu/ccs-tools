@@ -10,155 +10,6 @@
  */
 #include "ccstools.h"
 
-/* add color start */
-#ifdef COLOR_ON
-
-enum color_pair {
-	NORMAL, DOMAIN_HEAD, DOMAIN_CURSOR, SYSTEM_HEAD, SYSTEM_CURSOR,
-	EXCEPTION_HEAD, EXCEPTION_CURSOR, ACL_HEAD, ACL_CURSOR, DISP_ERR
-};
-
-static void editpolicy_color_init(void)
-{
-	static struct color_env_t {
-		enum color_pair	tag;
-		short int fore;
-		short int back;
-		const char *name;
-	} color_env[] = {
-		{ DOMAIN_HEAD,      COLOR_BLACK,
-		  COLOR_GREEN,      "DOMAIN_HEAD" },
-		{ DOMAIN_CURSOR,    COLOR_BLACK,
-		  COLOR_GREEN,      "DOMAIN_CURSOR" },
-		{ SYSTEM_HEAD,      COLOR_WHITE,
-		  COLOR_BLUE,       "SYSTEM_HEAD" },
-		{ SYSTEM_CURSOR,    COLOR_WHITE,
-		  COLOR_BLUE,       "SYSTEM_CURSOR" },
-		{ EXCEPTION_HEAD,   COLOR_BLACK,
-		  COLOR_CYAN,       "EXCEPTION_HEAD" },
-		{ EXCEPTION_CURSOR, COLOR_BLACK,
-		  COLOR_CYAN,       "EXCEPTION_CURSOR" },
-		{ ACL_HEAD,         COLOR_BLACK,
-		  COLOR_YELLOW,     "ACL_HEAD" },
-		{ ACL_CURSOR,       COLOR_BLACK,
-		  COLOR_YELLOW,     "ACL_CURSOR" },
-		{ NORMAL,           COLOR_WHITE,
-		  COLOR_BLACK,      NULL }
-	};
-	FILE *fp = fopen(CCSTOOLS_CONFIG_FILE, "r");
-	int i;
-	if (!fp)
-		goto use_default;
-	get();
-	while (freadline(fp)) {
-		char *cp;
-		if (!str_starts(shared_buffer, "editpolicy.line_color "))
-			continue;
-		cp = strchr(shared_buffer, '=');
-		if (!cp)
-			continue;
-		*cp++ = '\0';
-		normalize_line(shared_buffer);
-		normalize_line(cp);
-		if (!*shared_buffer || !*cp)
-			continue;
-		for (i = 0; color_env[i].name; i++) {
-			short int fore;
-			short int back;
-			if (strcmp(shared_buffer, color_env[i].name))
-				continue;
-			if (strlen(cp) != 2)
-				break;
-			fore = (*cp++) - '0'; /* foreground color */
-			back = (*cp) - '0';   /* background color */
-			if (fore < 0 || fore > 7 || back < 0 || back > 7)
-				break;
-			color_env[i].fore = fore;
-			color_env[i].back = back;
-			break;
-		}
-	}
-	put();
-	fclose(fp);
-use_default:
-	start_color();
-	for (i = 0; color_env[i].name; i++) {
-		struct color_env_t *colorp = &color_env[i];
-		init_pair(colorp->tag, colorp->fore, colorp->back);
-	}
-	init_pair(DISP_ERR, COLOR_RED, COLOR_BLACK); /* error message */
-}
-
-static void editpolicy_color_save(const _Bool flg)
-{
-	static attr_t save_color = NORMAL;
-	if (flg)
-		save_color = getattrs(stdscr);
-	else
-		attrset(save_color);
-}
-
-static inline void editpolicy_color_change(const attr_t attr, const _Bool flg)
-{
-	if (flg)
-		attron(COLOR_PAIR(attr));
-	else
-		attroff(COLOR_PAIR(attr));
-}
-
-static inline void editpolicy_attr_change(const attr_t attr, const _Bool flg)
-{
-	if (flg)
-		attron(attr);
-	else
-		attroff(attr);
-}
-
-static inline void editpolicy_sttr_save(void)
-{
-	editpolicy_color_save(true);
-}
-
-static inline void editpolicy_sttr_restore(void)
-{
-	editpolicy_color_save(false);
-}
-
-static inline int editpolicy_color_head(const int screen)
-{
-	if (screen == SCREEN_DOMAIN_LIST)
-		return DOMAIN_HEAD;
-	if (screen == SCREEN_SYSTEM_LIST)
-		return SYSTEM_HEAD;
-	if (screen == SCREEN_EXCEPTION_LIST)
-		return EXCEPTION_HEAD;
-	return ACL_HEAD;
-}
-
-static inline int editpolicy_color_cursor(const int screen)
-{
-	if (screen == SCREEN_DOMAIN_LIST)
-		return DOMAIN_CURSOR;
-	if (screen == SCREEN_SYSTEM_LIST)
-		return SYSTEM_CURSOR;
-	if (screen == SCREEN_EXCEPTION_LIST)
-		return EXCEPTION_CURSOR;
-	return ACL_CURSOR;
-}
-
-#else /* no color */
-
-#define editpolicy_color_init()
-#define editpolicy_color_change(attr, flg)
-#define editpolicy_attr_change(attr, flg)
-#define editpolicy_sttr_save()
-#define editpolicy_sttr_restore()
-#define editpolicy_color_head()
-#define editpolicy_color_cursor()
-
-#endif
-/* add color end */
-
 static _Bool readonly_mode = false;
 static unsigned int refresh_interval = 0;
 static _Bool need_reload = false;
@@ -171,10 +22,8 @@ static void sigalrm_handler(int sig)
 static FILE *open_write(const char *filename);
 _Bool offline_mode = false;
 
-static struct path_group_entry *path_group_list = NULL;
-static int path_group_list_len = 0;
-static struct address_group_entry *address_group_list = NULL;
-static int address_group_list_len = 0;
+struct path_group_entry *path_group_list = NULL;
+int path_group_list_len = 0;
 
 static const char *get_last_name(const struct domain_policy *dp,
 				 const int index)
@@ -329,122 +178,6 @@ static _Bool is_deleted_domain(struct domain_policy *dp, const int index)
 
 /***** editpolicy start *****/
 
-#define DIRECTIVE_NONE                              0
-#define DIRECTIVE_1                                 1
-#define DIRECTIVE_2                                 2
-#define DIRECTIVE_3                                 3
-#define DIRECTIVE_4                                 4
-#define DIRECTIVE_5                                 5
-#define DIRECTIVE_6                                 6
-#define DIRECTIVE_7                                 7
-#define DIRECTIVE_ALLOW_EXECUTE                     8
-#define DIRECTIVE_ALLOW_READ                        9
-#define DIRECTIVE_ALLOW_WRITE                      10
-#define DIRECTIVE_ALLOW_READ_WRITE                 11
-#define DIRECTIVE_ALLOW_CREATE                     12
-#define DIRECTIVE_ALLOW_UNLINK                     13
-#define DIRECTIVE_ALLOW_MKDIR                      14
-#define DIRECTIVE_ALLOW_RMDIR                      15
-#define DIRECTIVE_ALLOW_MKFIFO                     16
-#define DIRECTIVE_ALLOW_MKSOCK                     17
-#define DIRECTIVE_ALLOW_MKBLOCK                    18
-#define DIRECTIVE_ALLOW_MKCHAR                     19
-#define DIRECTIVE_ALLOW_TRUNCATE                   20
-#define DIRECTIVE_ALLOW_SYMLINK                    21
-#define DIRECTIVE_ALLOW_LINK                       22
-#define DIRECTIVE_ALLOW_RENAME                     23
-#define DIRECTIVE_ALLOW_REWRITE                    24
-#define DIRECTIVE_ALLOW_ARGV0                      25
-#define DIRECTIVE_ALLOW_SIGNAL                     26
-#define DIRECTIVE_ALLOW_NETWORK                    27
-#define DIRECTIVE_ALLOW_ENV                        28
-#define DIRECTIVE_ADDRESS_GROUP                    29
-#define DIRECTIVE_AGGREGATOR                       30
-#define DIRECTIVE_ALIAS                            31
-#define DIRECTIVE_ALLOW_CAPABILITY                 32
-#define DIRECTIVE_ALLOW_CHROOT                     33
-#define DIRECTIVE_ALLOW_MOUNT                      34
-#define DIRECTIVE_ALLOW_PIVOT_ROOT                 35
-#define DIRECTIVE_DENY_AUTOBIND                    36
-#define DIRECTIVE_DENY_REWRITE                     37
-#define DIRECTIVE_DENY_UNMOUNT                     38
-#define DIRECTIVE_FILE_PATTERN                     39
-#define DIRECTIVE_EXECUTE_HANDLER                  40
-#define DIRECTIVE_DENIED_EXECUTE_HANDLER           41
-#define DIRECTIVE_IGNORE_GLOBAL_ALLOW_ENV          42
-#define DIRECTIVE_IGNORE_GLOBAL_ALLOW_READ         43
-#define DIRECTIVE_INITIALIZE_DOMAIN                44
-#define DIRECTIVE_KEEP_DOMAIN                      45
-#define DIRECTIVE_NO_INITIALIZE_DOMAIN             46
-#define DIRECTIVE_NO_KEEP_DOMAIN                   47
-#define DIRECTIVE_PATH_GROUP                       48
-#define DIRECTIVE_QUOTA_EXCEEDED                   49
-#define DIRECTIVE_USE_PROFILE                      50
-#define MAX_DIRECTIVE_INDEX                        51
-
-static struct {
-	const char *original;
-	const char *alias;
-	int original_len;
-	int alias_len;
-} directives[MAX_DIRECTIVE_INDEX] = {
-	[DIRECTIVE_NONE] = { "", NULL, 0, 0 },
-	[DIRECTIVE_1]  = { "1", NULL, 0, 0 },
-	[DIRECTIVE_2]  = { "2", NULL, 0, 0 },
-	[DIRECTIVE_3]  = { "3", NULL, 0, 0 },
-	[DIRECTIVE_4]  = { "4", NULL, 0, 0 },
-	[DIRECTIVE_5]  = { "5", NULL, 0, 0 },
-	[DIRECTIVE_6]  = { "6", NULL, 0, 0 },
-	[DIRECTIVE_7]  = { "7", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_EXECUTE]    = { "allow_execute", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_READ]       = { "allow_read", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_WRITE]      = { "allow_write", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_READ_WRITE] = { "allow_read/write", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_CREATE]     = { "allow_create", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_UNLINK]     = { "allow_unlink", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_MKDIR]      = { "allow_mkdir", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_RMDIR]      = { "allow_rmdir", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_MKFIFO]     = { "allow_mkfifo", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_MKSOCK]     = { "allow_mksock", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_MKBLOCK]    = { "allow_mkblock", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_MKCHAR]     = { "allow_mkchar", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_TRUNCATE]   = { "allow_truncate", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_SYMLINK]    = { "allow_symlink", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_LINK]       = { "allow_link", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_RENAME]     = { "allow_rename", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_REWRITE]    = { "allow_rewrite", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_ARGV0]      = { "allow_argv0", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_SIGNAL]     = { "allow_signal", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_NETWORK]    = { "allow_network", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_ENV]        = { "allow_env", NULL, 0, 0 },
-	[DIRECTIVE_ADDRESS_GROUP]    = { "address_group", NULL, 0, 0 },
-	[DIRECTIVE_AGGREGATOR]       = { "aggregator", NULL, 0, 0 },
-	[DIRECTIVE_ALIAS]            = { "alias", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_CAPABILITY] = { "allow_capability", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_CHROOT]     = { "allow_chroot", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_MOUNT]      = { "allow_mount", NULL, 0, 0 },
-	[DIRECTIVE_ALLOW_PIVOT_ROOT] = { "allow_pivot_root", NULL, 0, 0 },
-	[DIRECTIVE_DENY_AUTOBIND]    = { "deny_autobind", NULL, 0, 0 },
-	[DIRECTIVE_DENY_REWRITE]     = { "deny_rewrite", NULL, 0, 0 },
-	[DIRECTIVE_DENY_UNMOUNT]     = { "deny_unmount", NULL, 0, 0 },
-	[DIRECTIVE_FILE_PATTERN]     = { "file_pattern", NULL, 0, 0 },
-	[DIRECTIVE_EXECUTE_HANDLER]  = { "execute_handler", NULL, 0, 0 },
-	[DIRECTIVE_DENIED_EXECUTE_HANDLER] = {
-		"denied_execute_handler", NULL, 0, 0 },
-	[DIRECTIVE_IGNORE_GLOBAL_ALLOW_ENV] = {
-		"ignore_global_allow_env", NULL, 0, 0 },
-	[DIRECTIVE_IGNORE_GLOBAL_ALLOW_READ] = {
-		"ignore_global_allow_read", NULL, 0, 0 },
-	[DIRECTIVE_INITIALIZE_DOMAIN]    = { "initialize_domain", NULL, 0, 0 },
-	[DIRECTIVE_KEEP_DOMAIN]          = { "keep_domain", NULL, 0, 0 },
-	[DIRECTIVE_NO_INITIALIZE_DOMAIN] = {
-		"no_initialize_domain", NULL, 0, 0 },
-	[DIRECTIVE_NO_KEEP_DOMAIN]       = { "no_keep_domain", NULL, 0, 0 },
-	[DIRECTIVE_PATH_GROUP]       = { "path_group", NULL, 0, 0 },
-	[DIRECTIVE_QUOTA_EXCEEDED]   = { "quota_exceeded", NULL, 0, 0 },
-	[DIRECTIVE_USE_PROFILE]      = { "use_profile", NULL, 0, 0 },
-};
-
 static const char *policy_file = NULL;
 static const char *list_caption = NULL;
 static char *current_domain = NULL;
@@ -452,12 +185,8 @@ static char *current_domain = NULL;
 static int current_screen = SCREEN_DOMAIN_LIST;
 
 /* List for generic policy. */
-static struct generic_acl {
-	u8 directive;
-	u8 selected;
-	const char *operand;
-} *generic_acl_list = NULL;
-static int generic_acl_list_count = 0;
+struct generic_acl *generic_acl_list = NULL;
+int generic_acl_list_count = 0;
 
 static struct domain_keeper_entry *domain_keeper_list = NULL;
 static int domain_keeper_list_len = 0;
@@ -531,28 +260,6 @@ is_domain_initializer(const struct path_info *domainname, const char *program)
 
 /* UTILITY FUNCTIONS */
 
-static int persistent_fd = EOF;
-
-void send_fd(char *data, int *fd)
-{
-	struct msghdr msg;
-	struct iovec iov = { data, strlen(data) };
-	char cmsg_buf[CMSG_SPACE(sizeof(int))];
-	struct cmsghdr *cmsg = (struct cmsghdr *) cmsg_buf;
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_iov = &iov;
-	msg.msg_iovlen = 1;
-	msg.msg_control = cmsg_buf;
-	msg.msg_controllen = sizeof(cmsg_buf);
-	cmsg->cmsg_level = SOL_SOCKET;
-	cmsg->cmsg_type = SCM_RIGHTS;
-	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-	msg.msg_controllen = cmsg->cmsg_len;
-	memmove(CMSG_DATA(cmsg), fd, sizeof(int));
-	sendmsg(persistent_fd, &msg, 0);
-	close(*fd);
-}
-
 static FILE *open_write(const char *filename)
 {
 	if (offline_mode) {
@@ -579,7 +286,6 @@ out:
 	}
 }
 
-static u8 find_directive(const _Bool forward, char *line);
 static int generic_acl_compare(const void *a, const void *b);
 
 static int generic_acl_compare0(const void *a, const void *b)
@@ -872,133 +578,6 @@ static int add_path_group_policy(char *data, const _Bool is_delete)
 	return add_path_group_entry(data, cp, is_delete);
 }
 
-static struct path_group_entry *find_path_group(const char *group_name)
-{
-	int i;
-	for (i = 0; i < path_group_list_len; i++) {
-		if (!strcmp(group_name, path_group_list[i].group_name->name))
-			return &path_group_list[i];
-	}
-	return NULL;
-}
-
-static int parse_ip(const char *address, struct ip_address_entry *entry)
-{
-	unsigned int min[8];
-	unsigned int max[8];
-	int i;
-	int j;
-	memset(entry, 0, sizeof(*entry));
-	i = sscanf(address, "%u.%u.%u.%u-%u.%u.%u.%u",
-		   &min[0], &min[1], &min[2], &min[3],
-		   &max[0], &max[1], &max[2], &max[3]);
-	if (i == 4)
-		for (j = 0; j < 4; j++)
-			max[j] = min[j];
-	if (i == 4 || i == 8) {
-		for (j = 0; j < 4; j++) {
-			entry->min[j] = (u8) min[j];
-			entry->max[j] = (u8) max[j];
-		}
-		return 0;
-	}
-	i = sscanf(address, "%X:%X:%X:%X:%X:%X:%X:%X-%X:%X:%X:%X:%X:%X:%X:%X",
-		   &min[0], &min[1], &min[2], &min[3],
-		   &min[4], &min[5], &min[6], &min[7],
-		   &max[0], &max[1], &max[2], &max[3],
-		   &max[4], &max[5], &max[6], &max[7]);
-	if (i == 8)
-		for (j = 0; j < 8; j++)
-			max[j] = min[j];
-	if (i == 8 || i == 16) {
-		for (j = 0; j < 8; j++) {
-			entry->min[j * 2] = (u8) (min[j] >> 8);
-			entry->min[j * 2 + 1] = (u8) min[j];
-			entry->max[j * 2] = (u8) (max[j] >> 8);
-			entry->max[j * 2 + 1] = (u8) max[j];
-		}
-		entry->is_ipv6 = true;
-		return 0;
-	}
-	return -EINVAL;
-}
-
-static int add_address_group_entry(const char *group_name,
-				   const char *member_name,
-				   const _Bool is_delete)
-{
-	const struct path_info *saved_group_name;
-	int i;
-	int j;
-	struct ip_address_entry entry;
-	struct address_group_entry *group = NULL;
-	if (parse_ip(member_name, &entry))
-		return -EINVAL;
-	if (!is_correct_path(group_name, 0, 0, 0))
-		return -EINVAL;
-	saved_group_name = savename(group_name);
-	if (!saved_group_name)
-		return -ENOMEM;
-	for (i = 0; i < address_group_list_len; i++) {
-		group = &address_group_list[i];
-		if (saved_group_name != group->group_name)
-			continue;
-		for (j = 0; j < group->member_name_len; j++) {
-			if (memcmp(&group->member_name[j], &entry,
-				   sizeof(entry)))
-				continue;
-			if (!is_delete)
-				return 0;
-			while (j < group->member_name_len - 1)
-				group->member_name[j]
-					= group->member_name[j + 1];
-			group->member_name_len--;
-			return 0;
-		}
-		break;
-	}
-	if (is_delete)
-		return -ENOENT;
-	if (i == address_group_list_len) {
-		void *vp;
-		vp = realloc(address_group_list,
-			     (address_group_list_len + 1) *
-			     sizeof(struct address_group_entry));
-		if (!vp)
-			out_of_memory();
-		address_group_list = vp;
-		group = &address_group_list[address_group_list_len++];
-		memset(group, 0, sizeof(struct address_group_entry));
-		group->group_name = saved_group_name;
-	}
-	group->member_name = realloc(group->member_name,
-				     (group->member_name_len + 1) *
-				     sizeof(const struct ip_address_entry));
-	if (!group->member_name)
-		out_of_memory();
-	group->member_name[group->member_name_len++] = entry;
-	return 0;
-}
-
-static int add_address_group_policy(char *data, const _Bool is_delete)
-{
-	char *cp = strchr(data, ' ');
-	if (!cp)
-		return -EINVAL;
-	*cp++ = '\0';
-	return add_address_group_entry(data, cp, is_delete);
-}
-
-static struct address_group_entry *find_address_group(const char *group_name)
-{
-	int i;
-	for (i = 0; i < address_group_list_len; i++) {
-		if (!strcmp(group_name, address_group_list[i].group_name->name))
-			return &address_group_list[i];
-	}
-	return NULL;
-}
-
 static void assign_domain_initializer_source(struct domain_policy *dp,
 					     const struct path_info *domainname,
 					     const char *program)
@@ -1274,11 +853,10 @@ static void show_current(struct domain_policy *dp);
 
 static int window_width = 0;
 static int window_height = 0;
-static int current_y[MAXSCREEN];
 static int current_item_index[MAXSCREEN];
-static int list_item_count[MAXSCREEN];
+int current_y[MAXSCREEN];
+int list_item_count[MAXSCREEN];
 
-static const int header_lines = 3;
 static int body_lines = 0;
 
 static int max_eat_col[MAXSCREEN];
@@ -1611,7 +1189,7 @@ static void page_down_key(struct domain_policy *dp)
 	}
 }
 
-static int get_current(void)
+int editpolicy_get_current(void)
 {
 	if (list_item_count[current_screen] == 0)
 		return EOF;
@@ -1626,44 +1204,12 @@ static int get_current(void)
 	return current_item_index[current_screen] + current_y[current_screen];
 }
 
-/* add color start */
-#ifdef COLOR_ON
-static int before_current[MAXSCREEN] = { -1, -1, -1, -1, -1, -1, -1, -1 };
-static int before_y[MAXSCREEN]       = { -1, -1, -1, -1, -1, -1, -1, -1 };
-
-static void editpolicy_line_draw(void)
-{
-	int current = get_current();
-	int y, x;
-
-	if (current == EOF)
-		return;
-
-	getyx(stdscr, y, x);
-	if (-1 < before_current[current_screen] &&
-	    current != before_current[current_screen]){
-		move(header_lines + before_y[current_screen], 0);
-		chgat(-1, A_NORMAL, NORMAL, NULL);
-	}
-
-	move(y, x);
-	chgat(-1, A_NORMAL, editpolicy_color_cursor(current_screen), NULL);
-	touchwin(stdscr);
-
-	before_current[current_screen] = current;
-	before_y[current_screen] = current_y[current_screen];
-}
-#else
-#define editpolicy_line_draw()
-#endif
-/* add color end */
-
 static void show_current(struct domain_policy *dp)
 {
 	if (current_screen == SCREEN_DOMAIN_LIST) {
 		get();
 		eat_col = max_eat_col[current_screen];
-		shprintf("%s", eat(domain_name(dp, get_current())));
+		shprintf("%s", eat(domain_name(dp, editpolicy_get_current())));
 		if (window_width < sizeof(shared_buffer))
 			shared_buffer[window_width] = '\0';
 		move(2, 0);
@@ -1674,7 +1220,7 @@ static void show_current(struct domain_policy *dp)
 		put();
 	}
 	move(header_lines + current_y[current_screen], 0);
-	editpolicy_line_draw();     /* add color */
+	editpolicy_line_draw(current_screen);     /* add color */
 	refresh();
 }
 
@@ -1755,69 +1301,6 @@ static int select_item(struct domain_policy *dp, const int current)
 	return 0;
 }
 
-static u8 split_acl(const u8 index, char *data, struct path_info *arg1,
-		    struct path_info *arg2, struct path_info *arg3)
-{
-	/* data = w[0] w[1] ... w[n-1] w[n] if c[0] c[1] ... c[m] ; set ... */
-	/*                                                                  */
-	/* arg1 = w[0]                                                      */
-	/* arg2 = w[1] ... w[n-1] w[n]                                      */
-	/* arg3 = if c[0] c[1] ... c[m] ; set ...                           */
-	u8 subtype = 0;
-	char *cp;
-	arg1->name = data;
-	cp = strstr(data, " if ");
-	if (cp) {
-		while (true) {
-			char *cp2 = strstr(cp + 3, " if ");
-			if (!cp2)
-				break;
-			cp = cp2;
-		}
-		*cp++ = '\0';
-		goto ok;
-	}
-	cp = strstr(data, " ; set ");
-	if (cp)
-		*cp++ = '\0';
-	else
-		cp = "";
-ok:
-	arg3->name = cp;
-	if (index == DIRECTIVE_ALLOW_NETWORK) {
-		/*
-		 * Prune protocol component and operation component so that
-		 * arg1 will point to IP address component.
-		 */
-		if (str_starts(data, "UDP bind "))
-			subtype = 1;
-		else if (str_starts(data, "UDP connect "))
-			subtype = 2;
-		else if (str_starts(data, "TCP bind "))
-			subtype = 3;
-		else if (str_starts(data, "TCP listen "))
-			subtype = 4;
-		else if (str_starts(data, "TCP connect "))
-			subtype = 5;
-		else if (str_starts(data, "TCP accept "))
-			subtype = 6;
-		else if (str_starts(data, "RAW bind "))
-			subtype = 7;
-		else if (str_starts(data, "RAW connect "))
-			subtype = 8;
-	}
-	cp = strchr(data, ' ');
-	if (cp)
-		*cp++ = '\0';
-	else
-		cp = "";
-	arg2->name = cp;
-	fill_path_info(arg1);
-	fill_path_info(arg2);
-	fill_path_info(arg3);
-	return subtype;
-}
-
 static int acl_sort_type = 1;
 
 static int generic_acl_compare(const void *a, const void *b)
@@ -1839,280 +1322,6 @@ static int generic_acl_compare(const void *a, const void *b)
 			return ret;
 		return strcmp(a1, b1);
 	}
-}
-
-static _Bool compare_path(struct path_info *sarg, struct path_info *darg,
-			 u8 directive)
-{
-	int i;
-	struct path_group_entry *group;
-	_Bool may_use_pattern = !darg->is_patterned
-		&& (directive != DIRECTIVE_1)
-		&& (directive != DIRECTIVE_3)
-		&& (directive != DIRECTIVE_5)
-		&& (directive != DIRECTIVE_7)
-		&& (directive != DIRECTIVE_ALLOW_EXECUTE);
-	if (!pathcmp(sarg, darg))
-		return true;
-	if (darg->name[0] == '@')
-		return false;
-	if (sarg->name[0] != '@') {
-		/* Pathname component. */
-		return may_use_pattern && path_matches_pattern(darg, sarg);
-	}
-	/* path_group component. */
-	group = find_path_group(sarg->name + 1);
-	if (!group)
-		return false;
-	for (i = 0; i < group->member_name_len; i++) {
-		const struct path_info *member_name;
-		member_name = group->member_name[i];
-		if (!pathcmp(member_name, darg))
-			return true;
-		if (may_use_pattern && path_matches_pattern(darg, member_name))
-			return true;
-	}
-	return false;
-}
-
-static _Bool compare_address(struct path_info *sarg, struct path_info *darg)
-{
-	int i;
-	struct ip_address_entry sentry;
-	struct ip_address_entry dentry;
-	struct address_group_entry *group;
-	if (parse_ip(darg->name, &dentry))
-		return false;
-	if (sarg->name[0] != '@') {
-		/* IP address component. */
-		if (parse_ip(sarg->name, &sentry))
-			return false;
-		if (sentry.is_ipv6 != dentry.is_ipv6 ||
-		    memcmp(dentry.min, sentry.min, 16) < 0 ||
-		    memcmp(sentry.max, dentry.max, 16) < 0)
-			return false;
-		return true;
-	}
-	/* IP address group component. */
-	group = find_address_group(sarg->name + 1);
-	if (!group)
-		return false;
-	for (i = 0; i < group->member_name_len; i++) {
-		struct ip_address_entry *sentry = &group->member_name[i];
-		if (sentry->is_ipv6 == dentry.is_ipv6
-		    && memcmp(sentry->min, dentry.min, 16) <= 0
-		    && memcmp(dentry.max, sentry->max, 16) <= 0)
-			return true;
-	}
-	return false;
-}
-
-static void try_optimize(struct domain_policy *dp, const int current)
-{
-	char *cp;
-	u8 s_index;
-	int index;
-	struct path_info sarg1;
-	struct path_info sarg2;
-	struct path_info sarg3;
-	struct path_info darg1;
-	struct path_info darg2;
-	struct path_info darg3;
-	u8 subtype1;
-	u8 subtype2;
-	if (current < 0)
-		return;
-	s_index = generic_acl_list[current].directive;
-	if (s_index == DIRECTIVE_NONE)
-		return;
-	cp = strdup(generic_acl_list[current].operand);
-	if (!cp)
-		return;
-
-	subtype1 = split_acl(s_index, cp, &sarg1, &sarg2, &sarg3);
-
-	get();
-	for (index = 0; index < list_item_count[current_screen]; index++) {
-		const u8 d_index = generic_acl_list[index].directive;
-		if (index == current)
-			continue;
-		if (generic_acl_list[index].selected)
-			continue;
-		if (s_index == DIRECTIVE_6 ||
-		    s_index == DIRECTIVE_ALLOW_READ_WRITE) {
-			/* Source starts with "6 " or "allow_read/write " */
-			if (d_index == DIRECTIVE_6) {
-				/* Dest starts with "6 " */
-			} else if (d_index == DIRECTIVE_ALLOW_READ_WRITE) {
-				/* Dest starts with "allow_read/write " */
-			} else if (d_index == DIRECTIVE_2) {
-				/* Dest starts with "2 " */
-			} else if (d_index == DIRECTIVE_4) {
-				/* Dest starts with "4 " */
-			} else if (d_index == DIRECTIVE_ALLOW_READ) {
-				/* Dest starts with "allow_read " */
-			} else if (d_index == DIRECTIVE_ALLOW_WRITE) {
-				/* Dest starts with "allow_write " */
-			} else {
-				/* Source and dest start with same directive. */
-				continue;
-			}
-		} else if (s_index == DIRECTIVE_2 &&
-			   d_index == DIRECTIVE_ALLOW_WRITE) {
-			/* Source starts with "2 " and dest starts with
-			   "allow_write " */
-		} else if (s_index == DIRECTIVE_4 &&
-			   d_index == DIRECTIVE_ALLOW_READ) {
-			/* Source starts with "4 " and dest starts with
-			   "allow_read " */
-		} else if (s_index == DIRECTIVE_ALLOW_WRITE &&
-			   d_index == DIRECTIVE_2) {
-			/* Source starts with "allow_write " and dest starts
-			   with "2 " */
-		} else if (s_index == DIRECTIVE_ALLOW_READ &&
-			   d_index == DIRECTIVE_4) {
-			/* Source starts with "allow_read " and dest starts
-			   with "4 " */
-		} else if (s_index == d_index) {
-			/* Source and dest start with same directive. */
-		} else {
-			/* Source and dest start with different directive. */
-			continue;
-		}
-		shprintf("%s", generic_acl_list[index].operand);
-		if (!memchr(shared_buffer, '\0', sizeof(shared_buffer)))
-			continue; /* Line too long. */
-
-		subtype2 = split_acl(d_index, shared_buffer, &darg1, &darg2,
-				     &darg3);
-
-		if (subtype1 != subtype2)
-			continue;
-
-		/* Compare condition part. */
-		if (pathcmp(&sarg3, &darg3))
-			continue;
-
-		/* Compare first word. */
-		switch (d_index) {
-		case DIRECTIVE_1:
-		case DIRECTIVE_2:
-		case DIRECTIVE_3:
-		case DIRECTIVE_4:
-		case DIRECTIVE_5:
-		case DIRECTIVE_6:
-		case DIRECTIVE_7:
-		case DIRECTIVE_ALLOW_EXECUTE:
-		case DIRECTIVE_ALLOW_READ:
-		case DIRECTIVE_ALLOW_WRITE:
-		case DIRECTIVE_ALLOW_READ_WRITE:
-		case DIRECTIVE_ALLOW_CREATE:
-		case DIRECTIVE_ALLOW_UNLINK:
-		case DIRECTIVE_ALLOW_MKDIR:
-		case DIRECTIVE_ALLOW_RMDIR:
-		case DIRECTIVE_ALLOW_MKFIFO:
-		case DIRECTIVE_ALLOW_MKSOCK:
-		case DIRECTIVE_ALLOW_MKBLOCK:
-		case DIRECTIVE_ALLOW_MKCHAR:
-		case DIRECTIVE_ALLOW_TRUNCATE:
-		case DIRECTIVE_ALLOW_SYMLINK:
-		case DIRECTIVE_ALLOW_LINK:
-		case DIRECTIVE_ALLOW_RENAME:
-		case DIRECTIVE_ALLOW_REWRITE:
-			if (!compare_path(&sarg1, &darg1, d_index))
-				continue;
-			break;
-		case DIRECTIVE_ALLOW_ARGV0:
-			/* Pathname component. */
-			if (!pathcmp(&sarg1, &darg1))
-				break;
-			/* allow_argv0 doesn't support path_group. */
-			if (darg1.name[0] == '@' || darg1.is_patterned ||
-			    !path_matches_pattern(&darg1, &sarg1))
-				continue;
-			break;
-		case DIRECTIVE_ALLOW_SIGNAL:
-			/* Signal number component. */
-			if (strcmp(sarg1.name, darg1.name))
-				continue;
-			break;
-		case DIRECTIVE_ALLOW_NETWORK:
-			if (!compare_address(&sarg1, &darg1))
-				continue;
-			break;
-		case DIRECTIVE_ALLOW_ENV:
-			/* An environemnt variable name component. */
-			if (!pathcmp(&sarg1, &darg1))
-				break;
-			/* allow_env doesn't interpret leading @ as
-			   path_group. */
-			if (darg1.is_patterned ||
-			    !path_matches_pattern(&darg1, &sarg1))
-				continue;
-			break;
-		default:
-			continue;
-		}
-
-		/* Compare rest words. */
-		switch (d_index) {
-			char c;
-			unsigned int smin;
-			unsigned int smax;
-			unsigned int dmin;
-			unsigned int dmax;
-		case DIRECTIVE_ALLOW_LINK:
-		case DIRECTIVE_ALLOW_RENAME:
-			if (!compare_path(&sarg2, &darg2, d_index))
-				continue;
-			break;
-		case DIRECTIVE_ALLOW_ARGV0:
-			/* Basename component. */
-			if (!pathcmp(&sarg2, &darg2))
-				break;
-			if (darg2.is_patterned ||
-			    !path_matches_pattern(&darg2, &sarg2))
-				continue;
-			break;
-		case DIRECTIVE_ALLOW_SIGNAL:
-			/* Domainname component. */
-			if (strncmp(sarg2.name, darg2.name, sarg2.total_len))
-				continue;
-			c = darg2.name[sarg2.total_len];
-			if (c && c != ' ')
-				continue;
-			break;
-		case DIRECTIVE_ALLOW_NETWORK:
-			/* Port number component. */
-			switch (sscanf(sarg2.name, "%u-%u", &smin, &smax)) {
-			case 1:
-				smax = smin;
-			case 2:
-				break;
-			default:
-				continue;
-			}
-			switch (sscanf(darg2.name, "%u-%u", &dmin, &dmax)) {
-			case 1:
-				dmax = dmin;
-			case 2:
-				break;
-			default:
-				continue;
-			}
-			if (smin > dmin || smax < dmax)
-				continue;
-			break;
-		default:
-			/* This must be empty. */
-			if (sarg2.total_len || darg2.total_len)
-				continue;
-		}
-		generic_acl_list[index].selected = 1;
-	}
-	put();
-	free(cp);
-	show_list(dp);
 }
 
 static void delete_entry(struct domain_policy *dp, int current)
@@ -2592,7 +1801,7 @@ start2:
 		rl.last_error = NULL;
 	}
 	while (true) {
-		const int current = get_current();
+		const int current = editpolicy_get_current();
 		const int c = getch2();
 		saved_current_item_index[current_screen]
 			= current_item_index[current_screen];
@@ -2816,8 +2025,11 @@ start2:
 			break;
 		case 'o':
 		case 'O':
-			if (current_screen == SCREEN_ACL_LIST)
-				try_optimize(dp, current);
+			if (current_screen == SCREEN_ACL_LIST) {
+				editpolicy_try_optimize(dp, current,
+							current_screen);
+				show_list(dp);
+			}
 			break;
 		case '@':
 			if (current_screen == SCREEN_ACL_LIST) {
@@ -2837,136 +2049,6 @@ start2:
 		}
 	}
 }
-
-struct misc_policy {
-	const struct path_info **list;
-	int list_len;
-};
-
-static void handle_misc_policy(struct misc_policy *mp, FILE *fp, _Bool is_write)
-{
-	int i;
-	if (!is_write)
-		goto read_policy;
-	while (freadline(fp)) {
-		const struct path_info *cp;
-		_Bool is_delete;
-		if (!shared_buffer[0])
-			continue;
-		is_delete = str_starts(shared_buffer, "delete ");
-		cp = savename(shared_buffer);
-		if (!cp)
-			out_of_memory();
-		if (!is_delete)
-			goto append_policy;
-		for (i = 0; i < mp->list_len; i++)
-			/* Faster comparison, for they are savename'd. */
-			if (mp->list[i] == cp)
-				break;
-		if (i < mp->list_len)
-			for (mp->list_len--; i < mp->list_len; i++)
-				mp->list[i] = mp->list[i + 1];
-		continue;
-append_policy:
-		for (i = 0; i < mp->list_len; i++)
-			/* Faster comparison, for they are savename'd. */
-			if (mp->list[i] == cp)
-				break;
-		if (i < mp->list_len)
-			continue;
-		mp->list = realloc(mp->list, (mp->list_len + 1)
-				   * sizeof(const struct path_info *));
-		if (!mp->list)
-			out_of_memory();
-		mp->list[mp->list_len++] = cp;
-	}
-	return;
-read_policy:
-	for (i = 0; i < mp->list_len; i++)
-		fprintf(fp, "%s\n", mp->list[i]->name);
-}
-
-static void policy_daemon(void)
-{
-	struct misc_policy mp[4];
-	struct domain_policy dp;
-	memset(&dp, 0, sizeof(dp));
-	memset(&mp, 0, sizeof(mp));
-	get();
-	find_or_assign_new_domain(&dp, ROOT_NAME, false, false);
-	while (true) {
-		FILE *fp;
-		struct msghdr msg;
-		struct iovec iov = { shared_buffer, sizeof(shared_buffer) - 1 };
-		char cmsg_buf[CMSG_SPACE(sizeof(int))];
-		struct cmsghdr *cmsg = (struct cmsghdr *) cmsg_buf;
-		memset(&msg, 0, sizeof(msg));
-		msg.msg_iov = &iov;
-		msg.msg_iovlen = 1;
-		msg.msg_control = cmsg_buf;
-		msg.msg_controllen = sizeof(cmsg_buf);
-		memset(shared_buffer, 0, sizeof(shared_buffer));
-		errno = 0;
-		if (recvmsg(persistent_fd, &msg, 0) <= 0)
-			break;
-		cmsg = CMSG_FIRSTHDR(&msg);
-		if (!cmsg)
-			break;
-		if (cmsg->cmsg_level == SOL_SOCKET &&
-		    cmsg->cmsg_type == SCM_RIGHTS &&
-		    cmsg->cmsg_len == CMSG_LEN(sizeof(int))) {
-			const int fd = *(int *) CMSG_DATA(cmsg);
-			fp = fdopen(fd, "w+");
-			if (!fp) {
-				close(fd);
-				continue;
-			}
-		} else {
-			break;
-		}
-		if (str_starts(shared_buffer, "POST ")) {
-			if (!strcmp(shared_buffer, proc_policy_domain_policy))
-				handle_domain_policy(&dp, fp, true);
-			else if (!strcmp(shared_buffer,
-					 proc_policy_exception_policy))
-				handle_misc_policy(&mp[0], fp, true);
-			else if (!strcmp(shared_buffer,
-					 proc_policy_system_policy))
-				handle_misc_policy(&mp[1], fp, true);
-			else if (!strcmp(shared_buffer, proc_policy_profile))
-				handle_misc_policy(&mp[2], fp, true);
-			else if (!strcmp(shared_buffer, proc_policy_manager))
-				handle_misc_policy(&mp[3], fp, true);
-		} else if (str_starts(shared_buffer, "GET ")) {
-			if (!strcmp(shared_buffer, proc_policy_domain_policy))
-				handle_domain_policy(&dp, fp, false);
-			else if (!strcmp(shared_buffer,
-					 proc_policy_exception_policy))
-				handle_misc_policy(&mp[0], fp, false);
-			else if (!strcmp(shared_buffer,
-					 proc_policy_system_policy))
-				handle_misc_policy(&mp[1], fp, false);
-			else if (!strcmp(shared_buffer, proc_policy_profile))
-				handle_misc_policy(&mp[2], fp, false);
-			else if (!strcmp(shared_buffer, proc_policy_manager))
-				handle_misc_policy(&mp[3], fp, false);
-		}
-		fclose(fp);
-	}
-	put();
-	clear_domain_policy(&dp);
-	{
-		int i;
-		for (i = 0; i < 3; i++) {
-			free(mp[i].list);
-			mp[i].list = NULL;
-			mp[i].list_len = 0;
-		}
-	}
-	_exit(0);
-}
-
-static void init_keyword_map(void);
 
 static void copy_fd_to_fp(int fd, FILE *fp)
 {
@@ -3014,7 +2096,7 @@ int editpolicy_main(int argc, char *argv[])
 			}
 		}
 	}
-	init_keyword_map();
+	editpolicy_init_keyword_map();
 	{
 		char *cp = strrchr(argv[0], '/');
 		if (!cp)
@@ -3039,7 +2121,7 @@ int editpolicy_main(int argc, char *argv[])
 		case 0:
 			close(fd[0]);
 			persistent_fd = fd[1];
-			policy_daemon();
+			editpolicy_offline_daemon();
 			_exit(0);
 		case -1:
 			fprintf(stderr, "fork()\n");
@@ -3246,82 +2328,6 @@ int editpolicy_main(int argc, char *argv[])
 	clear_domain_policy(&bp);
 	clear_domain_policy(&dp);
 	return 0;
-}
-
-/* keyword mapping */
-
-static u8 find_directive(const _Bool forward, char *line)
-{
-	u8 i;
-	for (i = 1; i < MAX_DIRECTIVE_INDEX; i++) {
-		if (forward) {
-			const int len = directives[i].original_len;
-			if (strncmp(line, directives[i].original, len) ||
-			    (line[len] != ' ' && line[len]))
-				continue;
-			if (line[len])
-				memmove(line, line + len + 1,
-					strlen(line + len + 1) + 1);
-			else
-				line[0] = '\0';
-			return i;
-		} else {
-			const int len = directives[i].alias_len;
-			if (strncmp(line, directives[i].alias, len) ||
-			    (line[len] != ' ' && line[len]))
-				continue;
-			if (line[len])
-				memmove(line, line + len + 1,
-					strlen(line + len + 1) + 1);
-			else
-				line[0] = '\0';
-			return i;
-		}
-	}
-	return DIRECTIVE_NONE;
-}
-
-static void init_keyword_map(void)
-{
-	FILE *fp = fopen(CCSTOOLS_CONFIG_FILE, "r");
-	int i;
-	if (!fp)
-		goto use_default;
-	get();
-	while (freadline(fp)) {
-		char *cp = shared_buffer + 25;
-		if (strncmp(shared_buffer, "editpolicy.keyword_alias ", 25))
-			continue;
-		memmove(shared_buffer, cp, strlen(cp) + 1);
-		cp = strchr(shared_buffer, '=');
-		if (!cp)
-			continue;
-		*cp++ = '\0';
-		normalize_line(shared_buffer);
-		normalize_line(cp);
-		if (!*shared_buffer || !*cp)
-			continue;
-		for (i = 1; i < MAX_DIRECTIVE_INDEX; i++) {
-			if (strcmp(shared_buffer, directives[i].original))
-				continue;
-			free((void *) directives[i].alias);
-			cp = strdup(cp);
-			if (!cp)
-				out_of_memory();
-			directives[i].alias = cp;
-			directives[i].alias_len = strlen(cp);
-			break;
-		}
-	}
-	put();
-	fclose(fp);
-use_default:
-	for (i = 1; i < MAX_DIRECTIVE_INDEX; i++) {
-		if (!directives[i].alias)
-			directives[i].alias = directives[i].original;
-		directives[i].original_len = strlen(directives[i].original);
-		directives[i].alias_len = strlen(directives[i].alias);
-	}
 }
 
 /***** editpolicy end *****/

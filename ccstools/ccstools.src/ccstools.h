@@ -43,33 +43,39 @@
 #define true     1
 #define false    0
 
-#define SCREEN_SYSTEM_LIST    0
-#define SCREEN_EXCEPTION_LIST 1
-#define SCREEN_DOMAIN_LIST    2
-#define SCREEN_ACL_LIST       3
-#define SCREEN_PROFILE_LIST   4
-#define SCREEN_MANAGER_LIST   5
-#define SCREEN_QUERY_LIST     6
-#define SCREEN_MEMINFO_LIST   7
-#define MAXSCREEN             8
+enum screen_type {
+	SCREEN_SYSTEM_LIST,
+	SCREEN_EXCEPTION_LIST,
+	SCREEN_DOMAIN_LIST,
+	SCREEN_ACL_LIST,
+	SCREEN_PROFILE_LIST,
+	SCREEN_MANAGER_LIST,
+	SCREEN_QUERY_LIST,
+	SCREEN_MEMINFO_LIST,
+	MAXSCREEN
+};
 
-#define POLICY_TYPE_UNKNOWN          0
-#define POLICY_TYPE_DOMAIN_POLICY    1
-#define POLICY_TYPE_EXCEPTION_POLICY 2
-#define POLICY_TYPE_SYSTEM_POLICY    3
+enum policy_type {
+	POLICY_TYPE_UNKNOWN,
+	POLICY_TYPE_DOMAIN_POLICY,
+	POLICY_TYPE_EXCEPTION_POLICY,
+	POLICY_TYPE_SYSTEM_POLICY
+};
 
 #define VALUE_TYPE_DECIMAL     1
 #define VALUE_TYPE_OCTAL       2
 #define VALUE_TYPE_HEXADECIMAL 3
 
-#define NETWORK_ACL_UDP_BIND    0
-#define NETWORK_ACL_UDP_CONNECT 1
-#define NETWORK_ACL_TCP_BIND    2
-#define NETWORK_ACL_TCP_LISTEN  3
-#define NETWORK_ACL_TCP_CONNECT 4
-#define NETWORK_ACL_TCP_ACCEPT  5
-#define NETWORK_ACL_RAW_BIND    6
-#define NETWORK_ACL_RAW_CONNECT 7
+enum socket_operation_type {
+	NETWORK_ACL_UDP_BIND,
+	NETWORK_ACL_UDP_CONNECT,
+	NETWORK_ACL_TCP_BIND,
+	NETWORK_ACL_TCP_LISTEN,
+	NETWORK_ACL_TCP_CONNECT,
+	NETWORK_ACL_TCP_ACCEPT,
+	NETWORK_ACL_RAW_BIND,
+	NETWORK_ACL_RAW_CONNECT
+};
 
 #define KEYWORD_AGGREGATOR               "aggregator "
 #define KEYWORD_ALIAS                    "alias "
@@ -110,6 +116,68 @@
 #define ROOT_NAME_LEN                    (sizeof(ROOT_NAME) - 1)
 
 #define CCSTOOLS_CONFIG_FILE "/usr/lib/ccs/ccstools.conf"
+
+enum editpolicy_directives {
+	DIRECTIVE_NONE,
+	DIRECTIVE_1,
+	DIRECTIVE_2,
+	DIRECTIVE_3,
+	DIRECTIVE_4,
+	DIRECTIVE_5,
+	DIRECTIVE_6,
+	DIRECTIVE_7,
+	DIRECTIVE_ALLOW_EXECUTE,
+	DIRECTIVE_ALLOW_READ,
+	DIRECTIVE_ALLOW_WRITE,
+	DIRECTIVE_ALLOW_READ_WRITE,
+	DIRECTIVE_ALLOW_CREATE,
+	DIRECTIVE_ALLOW_UNLINK,
+	DIRECTIVE_ALLOW_MKDIR,
+	DIRECTIVE_ALLOW_RMDIR,
+	DIRECTIVE_ALLOW_MKFIFO,
+	DIRECTIVE_ALLOW_MKSOCK,
+	DIRECTIVE_ALLOW_MKBLOCK,
+	DIRECTIVE_ALLOW_MKCHAR,
+	DIRECTIVE_ALLOW_TRUNCATE,
+	DIRECTIVE_ALLOW_SYMLINK,
+	DIRECTIVE_ALLOW_LINK,
+	DIRECTIVE_ALLOW_RENAME,
+	DIRECTIVE_ALLOW_REWRITE,
+	DIRECTIVE_ALLOW_ARGV0,
+	DIRECTIVE_ALLOW_SIGNAL,
+	DIRECTIVE_ALLOW_NETWORK,
+	DIRECTIVE_ALLOW_ENV,
+	DIRECTIVE_ADDRESS_GROUP,
+	DIRECTIVE_AGGREGATOR,
+	DIRECTIVE_ALIAS,
+	DIRECTIVE_ALLOW_CAPABILITY,
+	DIRECTIVE_ALLOW_CHROOT,
+	DIRECTIVE_ALLOW_MOUNT,
+	DIRECTIVE_ALLOW_PIVOT_ROOT,
+	DIRECTIVE_DENY_AUTOBIND,
+	DIRECTIVE_DENY_REWRITE,
+	DIRECTIVE_DENY_UNMOUNT,
+	DIRECTIVE_FILE_PATTERN,
+	DIRECTIVE_EXECUTE_HANDLER,
+	DIRECTIVE_DENIED_EXECUTE_HANDLER,
+	DIRECTIVE_IGNORE_GLOBAL_ALLOW_ENV,
+	DIRECTIVE_IGNORE_GLOBAL_ALLOW_READ,
+	DIRECTIVE_INITIALIZE_DOMAIN,
+	DIRECTIVE_KEEP_DOMAIN,
+	DIRECTIVE_NO_INITIALIZE_DOMAIN,
+	DIRECTIVE_NO_KEEP_DOMAIN,
+	DIRECTIVE_PATH_GROUP,
+	DIRECTIVE_QUOTA_EXCEEDED,
+	DIRECTIVE_USE_PROFILE,
+	MAX_DIRECTIVE_INDEX
+};
+
+enum color_pair {
+	NORMAL, DOMAIN_HEAD, DOMAIN_CURSOR, SYSTEM_HEAD, SYSTEM_CURSOR,
+	EXCEPTION_HEAD, EXCEPTION_CURSOR, ACL_HEAD, ACL_CURSOR, DISP_ERR
+};
+
+static const int header_lines = 3;
 
 /***** CONSTANTS DEFINITION END *****/
 
@@ -194,6 +262,19 @@ struct domain_policy {
 	unsigned char *list_selected;
 };
 
+struct generic_acl {
+	u8 directive;
+	u8 selected;
+	const char *operand;
+};
+
+struct editpolicy_directive {
+	const char *original;
+	const char *alias;
+	int original_len;
+	int alias_len;
+};
+
 struct task_entry {
 	pid_t pid;
 	pid_t ppid;
@@ -263,6 +344,22 @@ int find_or_assign_new_domain(struct domain_policy *dp, const char *domainname,
 			      const _Bool is_dis, const _Bool is_dd);
 const char *domain_name(const struct domain_policy *dp, const int index);
 void send_fd(char *data, int *fd);
+void editpolicy_offline_daemon(void);
+void editpolicy_init_keyword_map(void);
+void editpolicy_line_draw(const int screen);
+void editpolicy_try_optimize(struct domain_policy *dp, const int current,
+			     const int screen);
+struct path_group_entry *find_path_group(const char *group_name);
+int add_address_group_policy(char *data, const _Bool is_delete);
+u8 find_directive(const _Bool forward, char *line);
+void editpolicy_color_init(void);
+void editpolicy_color_change(const attr_t attr, const _Bool flg);
+void editpolicy_attr_change(const attr_t attr, const _Bool flg);
+void editpolicy_sttr_save(void);
+void editpolicy_sttr_restore(void);
+int editpolicy_color_head(const int screen);
+int editpolicy_color_cursor(const int screen);
+int editpolicy_get_current(void);
 
 extern char shared_buffer[8192];
 void get(void);
@@ -277,8 +374,18 @@ int simple_add_history(const char *buffer, const char **history,
 int getch2(void);
 
 extern _Bool offline_mode;
+extern int persistent_fd;
 extern int query_fd;
+extern int path_group_list_len;
+extern int address_group_list_len;
+extern struct generic_acl *generic_acl_list;
+extern int generic_acl_list_count;
 extern char *initial_readline_data;
+extern struct path_group_entry *path_group_list;
+extern int path_group_list_len;
+extern int current_y[MAXSCREEN];
+extern int list_item_count[MAXSCREEN];
+extern struct editpolicy_directive directives[MAX_DIRECTIVE_INDEX];
 
 extern const char *proc_policy_dir,
 	*disk_policy_dir,
