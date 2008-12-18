@@ -159,6 +159,15 @@ static inline int editpolicy_color_cursor(const int screen)
 #endif
 /* add color end */
 
+static _Bool readonly_mode = false;
+static unsigned int refresh_interval = 0;
+static _Bool need_reload = false;
+static void sigalrm_handler(int sig)
+{
+	need_reload = true;
+	alarm(refresh_interval);
+}
+
 static FILE *open_read(const char *filename);
 static FILE *open_write(const char *filename);
 static _Bool offline_mode = false;
@@ -1420,6 +1429,8 @@ out:
 		close(fd[0]);
 		exit(1);
 	} else {
+		if (readonly_mode)
+			return NULL;
 		return fdopen(open(filename, O_WRONLY), "w");
 	}
 }
@@ -3321,17 +3332,24 @@ static void show_command_key(void)
 	}
 	switch (current_screen) {
 	case SCREEN_DOMAIN_LIST:
-		printw("A/a        Add a new domain.\n");
+		if (!readonly_mode)
+			printw("A/a        Add a new domain.\n");
 		printw("Enter      Edit ACLs of a domain at the cursor "
 		       "position.\n");
-		printw("D/d        Delete selected domains.\n");
-		printw("S/s        Set profile number of selected domains.\n");
+		if (!readonly_mode) {
+			printw("D/d        Delete selected domains.\n");
+			printw("S/s        Set profile number of selected "
+			       "domains.\n");
+		}
 		break;
 	case SCREEN_MEMINFO_LIST:
-		printw("S/s        Set memory quota of selected items.\n");
+		if (!readonly_mode)
+			printw("S/s        Set memory quota of selected "
+			       "items.\n");
 		break;
 	case SCREEN_PROFILE_LIST:
-		printw("S/s        Set mode of selected items.\n");
+		if (!readonly_mode)
+			printw("S/s        Set mode of selected items.\n");
 		break;
 	}
 	switch (current_screen) {
@@ -3339,12 +3357,15 @@ static void show_command_key(void)
 	case SCREEN_EXCEPTION_LIST:
 	case SCREEN_ACL_LIST:
 	case SCREEN_MANAGER_LIST:
-		printw("A/a        Add a new entry.\n");
-		printw("D/d        Delete selected entries.\n");
+		if (!readonly_mode) {
+			printw("A/a        Add a new entry.\n");
+			printw("D/d        Delete selected entries.\n");
+		}
 	}
 	switch (current_screen) {
 	case SCREEN_PROFILE_LIST:
-		printw("A/a        Define a new profile.\n");
+		if (!readonly_mode)
+			printw("A/a        Define a new profile.\n");
 	}
 	switch (current_screen) {
 	case SCREEN_ACL_LIST:
@@ -3445,6 +3466,10 @@ start2:
 			else
 				return SCREEN_DOMAIN_LIST;
 		}
+		if (need_reload) {
+			need_reload = false;
+			goto start;
+		}
 		if (c == ERR)
 			continue; /* Ignore invalid key. */
 		switch (c) {
@@ -3523,6 +3548,8 @@ start2:
 			break;
 		case 'd':
 		case 'D':
+			if (readonly_mode)
+				break;
 			switch (current_screen) {
 			case SCREEN_SYSTEM_LIST:
 			case SCREEN_EXCEPTION_LIST:
@@ -3536,6 +3563,8 @@ start2:
 			break;
 		case 'a':
 		case 'A':
+			if (readonly_mode)
+				break;
 			switch (current_screen) {
 			case SCREEN_SYSTEM_LIST:
 			case SCREEN_EXCEPTION_LIST:
@@ -3581,6 +3610,8 @@ start2:
 			break;
 		case 's':
 		case 'S':
+			if (readonly_mode)
+				break;
 			switch (current_screen) {
 			case SCREEN_DOMAIN_LIST:
 				set_profile(dp, current);
@@ -3871,21 +3902,30 @@ int editpolicy_main(int argc, char *argv[])
 	memset(list_item_count, 0, sizeof(list_item_count));
 	memset(max_eat_col, 0, sizeof(max_eat_col));
 	if (argc > 1) {
-		if (!strcmp(argv[1], "s"))
-			current_screen = SCREEN_SYSTEM_LIST;
-		else if (!strcmp(argv[1], "e"))
-			current_screen = SCREEN_EXCEPTION_LIST;
-		else if (!strcmp(argv[1], "d"))
-			current_screen = SCREEN_DOMAIN_LIST;
-		else if (!strcmp(argv[1], "p"))
-			current_screen = SCREEN_PROFILE_LIST;
-		else if (!strcmp(argv[1], "m"))
-			current_screen = SCREEN_MANAGER_LIST;
-		else if (!strcmp(argv[1], "q"))
-			current_screen = SCREEN_MEMINFO_LIST;
-		else {
-			printf("Usage: %s [s|e|d|p|m|q]\n", argv[0]);
-			return 1;
+		int i;
+		for (i = 1; i < argc; i++) {
+			if (!strcmp(argv[i], "s"))
+				current_screen = SCREEN_SYSTEM_LIST;
+			else if (!strcmp(argv[i], "e"))
+				current_screen = SCREEN_EXCEPTION_LIST;
+			else if (!strcmp(argv[i], "d"))
+				current_screen = SCREEN_DOMAIN_LIST;
+			else if (!strcmp(argv[i], "p"))
+				current_screen = SCREEN_PROFILE_LIST;
+			else if (!strcmp(argv[i], "m"))
+				current_screen = SCREEN_MANAGER_LIST;
+			else if (!strcmp(argv[i], "q"))
+				current_screen = SCREEN_MEMINFO_LIST;
+			else if (!strcmp(argv[i], "readonly"))
+				readonly_mode = true;
+			else if (sscanf(argv[i], "refresh=%u",
+					&refresh_interval) == 1) {
+				/* */
+			} else {
+				printf("Usage: %s [s|e|d|p|m|q] [readonly] "
+				       "[refresh=interval]\n", argv[0]);
+				return 1;
+			}
 		}
 	}
 	init_keyword_map();
@@ -4005,7 +4045,7 @@ int editpolicy_main(int argc, char *argv[])
 				"You can't use this editor for this kernel.\n");
 			return 1;
 		}
-		{
+		if (!readonly_mode) {
 			const int fd1 = open(proc_policy_system_policy, O_RDWR);
 			const int fd2 = open(proc_policy_exception_policy,
 					     O_RDWR);
@@ -4032,6 +4072,11 @@ int editpolicy_main(int argc, char *argv[])
 	intrflush(stdscr, FALSE);
 	keypad(stdscr, TRUE);
 	getmaxyx(stdscr, window_height, window_width);
+	if (refresh_interval) {
+		signal(SIGALRM, sigalrm_handler);
+		alarm(refresh_interval);
+		timeout(1000);
+	}
 	while (current_screen < MAXSCREEN) {
 		if (!offline_mode) {
 			if (current_screen == SCREEN_DOMAIN_LIST &&
@@ -4050,11 +4095,12 @@ int editpolicy_main(int argc, char *argv[])
 		resize_window();
 		current_screen = generic_list_loop(&dp);
 	}
+	alarm(0);
 	clear();
 	move(0, 0);
 	refresh();
 	endwin();
-	if (offline_mode) {
+	if (offline_mode && !readonly_mode) {
 		time_t now = time(NULL);
 		char *filename = make_filename("system_policy", now);
 		if (move_proc_to_file(proc_policy_system_policy,
