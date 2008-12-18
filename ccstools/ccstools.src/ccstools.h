@@ -188,6 +188,12 @@ struct domain_info {
 	_Bool is_dd;  /* deleted domain */
 };
 
+struct domain_policy {
+	struct domain_info *list;
+	int list_len;
+	unsigned char *list_selected;
+};
+
 struct task_entry {
 	pid_t pid;
 	pid_t ppid;
@@ -234,6 +240,29 @@ int ccsauditd_main(int argc, char *argv[]);
 int patternize_main(int argc, char *argv[]);
 void shprintf(const char *fmt, ...)
 	__attribute__ ((format(printf, 1, 2)));
+_Bool move_proc_to_file(const char *src, const char *base, const char *dest);
+_Bool is_identical_file(const char *file1, const char *file2);
+FILE *open_read(const char *filename);
+void clear_domain_policy(struct domain_policy *dp);
+_Bool save_domain_policy_with_diff(struct domain_policy *dp,
+				   struct domain_policy *bp,
+				   const char *proc, const char *base,
+				   const char *diff);
+int find_domain_by_ptr(struct domain_policy *dp,
+		       const struct path_info *domainname);
+void read_domain_policy(struct domain_policy *dp, const char *filename);
+void delete_domain(struct domain_policy *dp, const int index);
+void handle_domain_policy(struct domain_policy *dp, FILE *fp, _Bool is_write);
+int del_string_entry(struct domain_policy *dp, const char *entry,
+		     const int index);
+int add_string_entry(struct domain_policy *dp, const char *entry,
+		     const int index);
+int find_domain(struct domain_policy *dp, const char *domainname0,
+		const _Bool is_dis, const _Bool is_dd);
+int find_or_assign_new_domain(struct domain_policy *dp, const char *domainname,
+			      const _Bool is_dis, const _Bool is_dd);
+const char *domain_name(const struct domain_policy *dp, const int index);
+void send_fd(char *data, int *fd);
 
 extern char shared_buffer[8192];
 void get(void);
@@ -247,10 +276,11 @@ int simple_add_history(const char *buffer, const char **history,
 		       const int history_count, const int max_history);
 int getch2(void);
 
-int query_fd;
-char *initial_readline_data;
+extern _Bool offline_mode;
+extern int query_fd;
+extern char *initial_readline_data;
 
-const char *proc_policy_dir,
+extern const char *proc_policy_dir,
 	*disk_policy_dir,
 	*proc_policy_domain_policy,
 	*disk_policy_domain_policy,

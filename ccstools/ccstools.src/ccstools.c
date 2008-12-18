@@ -652,6 +652,402 @@ out:
 	return ptr ? &ptr->entry : NULL;
 }
 
+
+FILE *open_read(const char *filename)
+{
+	if (offline_mode) {
+		char request[1024];
+		int fd[2];
+		FILE *fp;
+		if (socketpair(PF_UNIX, SOCK_STREAM, 0, fd)) {
+			fprintf(stderr, "socketpair()\n");
+			exit(1);
+		}
+		if (shutdown(fd[0], SHUT_WR))
+			goto out;
+		fp = fdopen(fd[0], "r");
+		if (!fp)
+			goto out;
+		memset(request, 0, sizeof(request));
+		snprintf(request, sizeof(request) - 1, "GET %s", filename);
+		send_fd(request, &fd[1]);
+		return fp;
+out:
+		close(fd[1]);
+		close(fd[0]);
+		exit(1);
+	} else {
+		return fopen(filename, "r");
+	}
+}
+
+_Bool move_proc_to_file(const char *src, const char *base, const char *dest)
+{
+	FILE *proc_fp;
+	FILE *base_fp;
+	FILE *file_fp = stdout;
+	char **proc_list = NULL;
+	char **base_list = NULL;
+	int proc_list_len = 0;
+	int base_list_len = 0;
+	int i;
+	proc_fp = open_read(src);
+	if (!proc_fp) {
+		fprintf(stderr, "Can't open %s\n", src);
+		return false;
+	}
+	if (dest) {
+		file_fp = fopen(dest, "w");
+		if (!file_fp) {
+			fprintf(stderr, "Can't open %s\n", dest);
+			fclose(proc_fp);
+			return false;
+		}
+	}
+	get();
+	base_fp = fopen(base, "r");
+	if (base_fp) {
+		while (freadline(base_fp)) {
+			char *cp;
+			if (!shared_buffer[0])
+				continue;
+			base_list = realloc(base_list, sizeof(char *) *
+					    (base_list_len + 1));
+			if (!base_list)
+				out_of_memory();
+			cp = strdup(shared_buffer);
+			if (!cp)
+				out_of_memory();
+			base_list[base_list_len++] = cp;
+		}
+		fclose(base_fp);
+	}
+	while (freadline(proc_fp)) {
+		char *cp;
+		if (!shared_buffer[0])
+			continue;
+		proc_list = realloc(proc_list, sizeof(char *) *
+				    (proc_list_len + 1));
+		if (!proc_list)
+			out_of_memory();
+		cp = strdup(shared_buffer);
+		if (!cp)
+			out_of_memory();
+		proc_list[proc_list_len++] = cp;
+	}
+	put();
+	fclose(proc_fp);
+
+	for (i = 0; i < proc_list_len; i++) {
+		int j;
+		for (j = 0; j < base_list_len; j++) {
+			if (!proc_list[i] || !base_list[j] ||
+			    strcmp(proc_list[i], base_list[j]))
+				continue;
+			free(proc_list[i]);
+			proc_list[i] = NULL;
+			free(base_list[j]);
+			base_list[j] = NULL;
+			break;
+		}
+	}
+	for (i = 0; i < base_list_len; i++) {
+		if (base_list[i])
+			fprintf(file_fp, "delete %s\n", base_list[i]);
+	}
+	for (i = 0; i < proc_list_len; i++) {
+		if (proc_list[i])
+			fprintf(file_fp, "%s\n", proc_list[i]);
+	}
+
+	if (file_fp != stdout)
+		fclose(file_fp);
+	while (proc_list_len)
+		free(proc_list[--proc_list_len]);
+	free(proc_list);
+	while (base_list_len)
+		free(base_list[--base_list_len]);
+	free(base_list);
+	return true;
+}
+
+_Bool is_identical_file(const char *file1, const char *file2)
+{
+	char buffer1[4096];
+	char buffer2[4096];
+	struct stat sb1;
+	struct stat sb2;
+	const int fd1 = open(file1, O_RDONLY);
+	const int fd2 = open(file2, O_RDONLY);
+	int len1;
+	int len2;
+	/* Don't compare if file1 is a symlink to file2. */
+	if (fstat(fd1, &sb1) || fstat(fd2, &sb2) || sb1.st_ino == sb2.st_ino)
+		goto out;
+	do {
+		len1 = read(fd1, buffer1, sizeof(buffer1));
+		len2 = read(fd2, buffer2, sizeof(buffer2));
+		if (len1 < 0 || len1 != len2)
+			goto out;
+		if (memcmp(buffer1, buffer2, len1))
+			goto out;
+	} while (len1);
+	close(fd1);
+	close(fd2);
+	return true;
+out:
+	close(fd1);
+	close(fd2);
+	return false;
+}
+
+void clear_domain_policy(struct domain_policy *dp)
+{
+	int index;
+	for (index = 0; index < dp->list_len; index++) {
+		free(dp->list[index].string_ptr);
+		dp->list[index].string_ptr = NULL;
+		dp->list[index].string_count = 0;
+	}
+	free(dp->list);
+	dp->list = NULL;
+	dp->list_len = 0;
+}
+
+int find_domain_by_ptr(struct domain_policy *dp,
+		       const struct path_info *domainname)
+{
+	int i;
+	for (i = 0; i < dp->list_len; i++) {
+		if (dp->list[i].domainname == domainname)
+			return i;
+	}
+	return EOF;
+}
+
+_Bool save_domain_policy_with_diff(struct domain_policy *dp,
+				   struct domain_policy *bp,
+				   const char *proc, const char *base,
+				   const char *diff)
+{
+	const struct path_info **proc_string_ptr;
+	const struct path_info **base_string_ptr;
+	int proc_string_count;
+	int base_string_count;
+	int proc_index;
+	int base_index;
+	const struct path_info *domainname;
+	int i;
+	int j;
+	FILE *diff_fp = stdout;
+	if (diff) {
+		diff_fp = fopen(diff, "w");
+		if (!diff_fp) {
+			fprintf(stderr, "Can't open %s\n", diff);
+			return false;
+		}
+	}
+	read_domain_policy(dp, proc);
+	if (!access(base, R_OK)) {
+		_Bool om = offline_mode;
+		offline_mode = false;
+		read_domain_policy(bp, base);
+		offline_mode = om;
+	}
+
+	for (base_index = 0; base_index < bp->list_len; base_index++) {
+		domainname = bp->list[base_index].domainname;
+		proc_index = find_domain_by_ptr(dp, domainname);
+		if (proc_index >= 0)
+			continue;
+		/* This domain was deleted by diff policy. */
+		fprintf(diff_fp, "delete %s\n\n", domainname->name);
+	}
+
+	for (proc_index = 0; proc_index < dp->list_len; proc_index++) {
+		domainname = dp->list[proc_index].domainname;
+		base_index = find_domain_by_ptr(bp, domainname);
+		if (base_index >= 0)
+			continue;
+		/* This domain was added by diff policy. */
+		fprintf(diff_fp, "%s\n\n", domainname->name);
+		fprintf(diff_fp, KEYWORD_USE_PROFILE "%u\n",
+			dp->list[proc_index].profile);
+		proc_string_ptr = dp->list[proc_index].string_ptr;
+		proc_string_count = dp->list[proc_index].string_count;
+		for (i = 0; i < proc_string_count; i++)
+			fprintf(diff_fp, "%s\n", proc_string_ptr[i]->name);
+		fprintf(diff_fp, "\n");
+	}
+
+	for (proc_index = 0; proc_index < dp->list_len; proc_index++) {
+		_Bool first = true;
+		domainname = dp->list[proc_index].domainname;
+		base_index = find_domain_by_ptr(bp, domainname);
+		if (base_index == EOF)
+			continue;
+		/* This domain exists in both base policy and proc policy. */
+		proc_string_ptr = dp->list[proc_index].string_ptr;
+		proc_string_count = dp->list[proc_index].string_count;
+		base_string_ptr = bp->list[base_index].string_ptr;
+		base_string_count = bp->list[base_index].string_count;
+		for (i = 0; i < proc_string_count; i++) {
+			for (j = 0; j < base_string_count; j++) {
+				if (proc_string_ptr[i] != base_string_ptr[j])
+					continue;
+				proc_string_ptr[i] = NULL;
+				base_string_ptr[j] = NULL;
+			}
+		}
+
+		for (i = 0; i < base_string_count; i++) {
+			if (!base_string_ptr[i])
+				continue;
+			if (first)
+				fprintf(diff_fp, "%s\n\n", domainname->name);
+			first = false;
+			fprintf(diff_fp, "delete %s\n",
+				base_string_ptr[i]->name);
+		}
+		for (i = 0; i < proc_string_count; i++) {
+			if (!proc_string_ptr[i])
+				continue;
+			if (first)
+				fprintf(diff_fp, "%s\n\n", domainname->name);
+			first = false;
+			fprintf(diff_fp, "%s\n", proc_string_ptr[i]->name);
+		}
+		if (dp->list[proc_index].profile !=
+		    bp->list[base_index].profile) {
+			if (first)
+				fprintf(diff_fp, "%s\n\n", domainname->name);
+			first = false;
+			fprintf(diff_fp, KEYWORD_USE_PROFILE "%u\n",
+				dp->list[proc_index].profile);
+		}
+		if (!first)
+			fprintf(diff_fp, "\n");
+	}
+
+	if (diff_fp != stdout)
+		fclose(diff_fp);
+	return true;
+}
+
+const char *domain_name(const struct domain_policy *dp, const int index)
+{
+	return dp->list[index].domainname->name;
+}
+
+static int domainname_compare(const void *a, const void *b)
+{
+	return strcmp(((struct domain_info *) a)->domainname->name,
+		      ((struct domain_info *) b)->domainname->name);
+}
+
+static int path_info_compare(const void *a, const void *b)
+{
+	const char *a0 = (*(struct path_info **) a)->name;
+	const char *b0 = (*(struct path_info **) b)->name;
+	return strcmp(a0, b0);
+}
+
+static void sort_domain_policy(struct domain_policy *dp)
+{
+	int i;
+	qsort(dp->list, dp->list_len, sizeof(struct domain_info),
+	      domainname_compare);
+	for (i = 0; i < dp->list_len; i++)
+		qsort(dp->list[i].string_ptr, dp->list[i].string_count,
+		      sizeof(struct path_info *), path_info_compare);
+}
+
+void read_domain_policy(struct domain_policy *dp, const char *filename)
+{
+	FILE *fp = stdin;
+	if (filename) {
+		fp = open_read(filename);
+		if (!fp) {
+			fprintf(stderr, "Can't open %s\n", filename);
+			return;
+		}
+	}
+	get();
+	handle_domain_policy(dp, fp, true);
+	put();
+	if (fp != stdin)
+		fclose(fp);
+	sort_domain_policy(dp);
+}
+
+void delete_domain(struct domain_policy *dp, const int index)
+{
+	if (index >= 0 && index < dp->list_len) {
+		int i;
+		free(dp->list[index].string_ptr);
+		for (i = index; i < dp->list_len - 1; i++)
+			dp->list[i] = dp->list[i + 1];
+		dp->list_len--;
+	}
+}
+
+void handle_domain_policy(struct domain_policy *dp, FILE *fp, _Bool is_write)
+{
+	int i;
+	int index = EOF;
+	if (!is_write)
+		goto read_policy;
+	while (freadline(fp)) {
+		_Bool is_delete = false;
+		_Bool is_select = false;
+		unsigned int profile;
+		if (str_starts(shared_buffer, "delete "))
+			is_delete = true;
+		else if (str_starts(shared_buffer, "select "))
+			is_select = true;
+		if (is_domain_def(shared_buffer)) {
+			if (is_delete) {
+				index = find_domain(dp, shared_buffer, false,
+						    false);
+				if (index >= 0)
+					delete_domain(dp, index);
+				index = EOF;
+				continue;
+			}
+			if (is_select) {
+				index = find_domain(dp, shared_buffer, false,
+						    false);
+				continue;
+			}
+			index = find_or_assign_new_domain(dp, shared_buffer,
+							  false, false);
+			continue;
+		}
+		if (index == EOF || !shared_buffer[0])
+			continue;
+		if (sscanf(shared_buffer, KEYWORD_USE_PROFILE "%u", &profile)
+		    == 1)
+			dp->list[index].profile = (u8) profile;
+		else if (is_delete)
+			del_string_entry(dp, shared_buffer, index);
+		else
+			add_string_entry(dp, shared_buffer, index);
+	}
+	return;
+read_policy:
+	for (i = 0; i < dp->list_len; i++) {
+		int j;
+		const struct path_info **string_ptr
+			= dp->list[i].string_ptr;
+		const int string_count = dp->list[i].string_count;
+		fprintf(fp, "%s\n" KEYWORD_USE_PROFILE "%u\n\n",
+			domain_name(dp, i), dp->list[i].profile);
+		for (j = 0; j < string_count; j++)
+			fprintf(fp, "%s\n", string_ptr[j]->name);
+		fprintf(fp, "\n");
+	}
+}
+
 char shared_buffer[sizeof(shared_buffer)];
 static _Bool buffer_locked = false;
 
