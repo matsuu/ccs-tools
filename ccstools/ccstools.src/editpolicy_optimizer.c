@@ -1,8 +1,34 @@
-
+/*
+ * editpolicy_optimizer.c
+ *
+ * TOMOYO Linux's utilities.
+ *
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
+ *
+ * Version: 1.6.6-pre   2008/12/22
+ *
+ */
 #include "ccstools.h"
 
-static struct address_group_entry *address_group_list = NULL;
-int address_group_list_len = 0;
+/* Prototypes */
+struct path_group_entry *find_path_group(const char *group_name);
+static int parse_ip(const char *address, struct ip_address_entry *entry);
+static int add_address_group_entry(const char *group_name,
+                                   const char *member_name,
+                                   const _Bool is_delete);
+int add_address_group_policy(char *data, const _Bool is_delete);
+
+static struct address_group_entry *find_address_group(const char *group_name);
+
+static _Bool compare_path(struct path_info *sarg, struct path_info *darg,
+			  u8 directive);
+static _Bool compare_address(struct path_info *sarg, struct path_info *darg);
+static u8 split_acl(const u8 index, char *data, struct path_info *arg1,
+                    struct path_info *arg2, struct path_info *arg3);
+void editpolicy_try_optimize(struct domain_policy *dp, const int current,
+                             const int screen);
+
+/* Utility functions */
 
 struct path_group_entry *find_path_group(const char *group_name)
 {
@@ -55,63 +81,6 @@ static int parse_ip(const char *address, struct ip_address_entry *entry)
 	return -EINVAL;
 }
 
-static int add_address_group_entry(const char *group_name,
-				   const char *member_name,
-				   const _Bool is_delete)
-{
-	const struct path_info *saved_group_name;
-	int i;
-	int j;
-	struct ip_address_entry entry;
-	struct address_group_entry *group = NULL;
-	if (parse_ip(member_name, &entry))
-		return -EINVAL;
-	if (!is_correct_path(group_name, 0, 0, 0))
-		return -EINVAL;
-	saved_group_name = savename(group_name);
-	if (!saved_group_name)
-		return -ENOMEM;
-	for (i = 0; i < address_group_list_len; i++) {
-		group = &address_group_list[i];
-		if (saved_group_name != group->group_name)
-			continue;
-		for (j = 0; j < group->member_name_len; j++) {
-			if (memcmp(&group->member_name[j], &entry,
-				   sizeof(entry)))
-				continue;
-			if (!is_delete)
-				return 0;
-			while (j < group->member_name_len - 1)
-				group->member_name[j]
-					= group->member_name[j + 1];
-			group->member_name_len--;
-			return 0;
-		}
-		break;
-	}
-	if (is_delete)
-		return -ENOENT;
-	if (i == address_group_list_len) {
-		void *vp;
-		vp = realloc(address_group_list,
-			     (address_group_list_len + 1) *
-			     sizeof(struct address_group_entry));
-		if (!vp)
-			out_of_memory();
-		address_group_list = vp;
-		group = &address_group_list[address_group_list_len++];
-		memset(group, 0, sizeof(struct address_group_entry));
-		group->group_name = saved_group_name;
-	}
-	group->member_name = realloc(group->member_name,
-				     (group->member_name_len + 1) *
-				     sizeof(const struct ip_address_entry));
-	if (!group->member_name)
-		out_of_memory();
-	group->member_name[group->member_name_len++] = entry;
-	return 0;
-}
-
 int add_address_group_policy(char *data, const _Bool is_delete)
 {
 	char *cp = strchr(data, ' ');
@@ -119,16 +88,6 @@ int add_address_group_policy(char *data, const _Bool is_delete)
 		return -EINVAL;
 	*cp++ = '\0';
 	return add_address_group_entry(data, cp, is_delete);
-}
-
-static struct address_group_entry *find_address_group(const char *group_name)
-{
-	int i;
-	for (i = 0; i < address_group_list_len; i++) {
-		if (!strcmp(group_name, address_group_list[i].group_name->name))
-			return &address_group_list[i];
-	}
-	return NULL;
 }
 
 static _Bool compare_path(struct path_info *sarg, struct path_info *darg,
@@ -259,6 +218,7 @@ ok:
 	fill_path_info(arg3);
 	return subtype;
 }
+
 
 void editpolicy_try_optimize(struct domain_policy *dp, const int current,
 			     const int screen)
@@ -468,3 +428,76 @@ void editpolicy_try_optimize(struct domain_policy *dp, const int current,
 	free(cp);
 }
 
+/* Variables */
+
+static struct address_group_entry *address_group_list = NULL;
+int address_group_list_len = 0;
+
+/* Main functions */
+
+static int add_address_group_entry(const char *group_name,
+				   const char *member_name,
+				   const _Bool is_delete)
+{
+	const struct path_info *saved_group_name;
+	int i;
+	int j;
+	struct ip_address_entry entry;
+	struct address_group_entry *group = NULL;
+	if (parse_ip(member_name, &entry))
+		return -EINVAL;
+	if (!is_correct_path(group_name, 0, 0, 0))
+		return -EINVAL;
+	saved_group_name = savename(group_name);
+	if (!saved_group_name)
+		return -ENOMEM;
+	for (i = 0; i < address_group_list_len; i++) {
+		group = &address_group_list[i];
+		if (saved_group_name != group->group_name)
+			continue;
+		for (j = 0; j < group->member_name_len; j++) {
+			if (memcmp(&group->member_name[j], &entry,
+				   sizeof(entry)))
+				continue;
+			if (!is_delete)
+				return 0;
+			while (j < group->member_name_len - 1)
+				group->member_name[j]
+					= group->member_name[j + 1];
+			group->member_name_len--;
+			return 0;
+		}
+		break;
+	}
+	if (is_delete)
+		return -ENOENT;
+	if (i == address_group_list_len) {
+		void *vp;
+		vp = realloc(address_group_list,
+			     (address_group_list_len + 1) *
+			     sizeof(struct address_group_entry));
+		if (!vp)
+			out_of_memory();
+		address_group_list = vp;
+		group = &address_group_list[address_group_list_len++];
+		memset(group, 0, sizeof(struct address_group_entry));
+		group->group_name = saved_group_name;
+	}
+	group->member_name = realloc(group->member_name,
+				     (group->member_name_len + 1) *
+				     sizeof(const struct ip_address_entry));
+	if (!group->member_name)
+		out_of_memory();
+	group->member_name[group->member_name_len++] = entry;
+	return 0;
+}
+
+static struct address_group_entry *find_address_group(const char *group_name)
+{
+	int i;
+	for (i = 0; i < address_group_list_len; i++) {
+		if (!strcmp(group_name, address_group_list[i].group_name->name))
+			return &address_group_list[i];
+	}
+	return NULL;
+}

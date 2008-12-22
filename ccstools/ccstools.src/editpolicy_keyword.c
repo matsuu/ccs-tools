@@ -1,7 +1,21 @@
-
+/*
+ * editpolicy_keyword.c
+ *
+ * TOMOYO Linux's utilities.
+ *
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
+ *
+ * Version: 1.6.6-pre   2008/12/22
+ *
+ */
 #include "ccstools.h"
 
-/* keyword mapping */
+/* Prototypes */
+
+u8 find_directive(const _Bool forward, char *line);
+void editpolicy_init_keyword_map(void);
+
+/* Variables */
 
 struct editpolicy_directive directives[MAX_DIRECTIVE_INDEX] = {
 	[DIRECTIVE_NONE] = { "", NULL, 0, 0 },
@@ -60,6 +74,8 @@ struct editpolicy_directive directives[MAX_DIRECTIVE_INDEX] = {
 	[DIRECTIVE_QUOTA_EXCEEDED]   = { "quota_exceeded", NULL, 0, 0 },
 	[DIRECTIVE_USE_PROFILE]      = { "use_profile", NULL, 0, 0 },
 };
+
+/* Main functions */
 
 u8 find_directive(const _Bool forward, char *line)
 {

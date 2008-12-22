@@ -10,20 +10,103 @@
  */
 #include "ccstools.h"
 
-static _Bool readonly_mode = false;
-static unsigned int refresh_interval = 0;
-static _Bool need_reload = false;
-static void sigalrm_handler(int sig)
-{
-	need_reload = true;
-	alarm(refresh_interval);
-}
+struct readline_data {
+	const char **history;
+	int count;
+	int max;
+	char *last_error;
+	char *search_buffer[MAXSCREEN];
+};
 
+/* Prototypes */
+
+static void sigalrm_handler(int sig);
+static const char *get_last_name(const struct domain_policy *dp,
+                                 const int index);
+int add_string_entry(struct domain_policy *dp, const char *entry,
+                     const int index);
+int del_string_entry(struct domain_policy *dp, const char *entry,
+                     const int index);
+int find_domain(struct domain_policy *dp, const char *domainname0,
+                const _Bool is_dis, const _Bool is_dd);
+int find_or_assign_new_domain(struct domain_policy *dp, const char *domainname,
+                              const _Bool is_dis, const _Bool is_dd);
+static _Bool is_keeper_domain(struct domain_policy *dp, const int index);
+static _Bool is_initializer_source(struct domain_policy *dp, const int index);
+static _Bool is_initializer_target(struct domain_policy *dp, const int index);
+static _Bool is_domain_unreachable(struct domain_policy *dp, const int index);
+static _Bool is_deleted_domain(struct domain_policy *dp, const int index);
+static const struct domain_keeper_entry *
+is_domain_keeper(const struct path_info *domainname, const char *program);
+static const struct domain_initializer_entry *
+is_domain_initializer(const struct path_info *domainname, const char *program);
 static FILE *open_write(const char *filename);
-_Bool offline_mode = false;
+static int generic_acl_compare(const void *a, const void *b);
+static int generic_acl_compare0(const void *a, const void *b);
+static int string_acl_compare(const void *a, const void *b);
+static int profile_entry_compare(const void *a, const void *b);
+static void read_generic_policy(void);
+static int add_domain_initializer_entry(const char *domainname,
+                                        const char *program,
+					const _Bool is_not);
+static int add_domain_initializer_policy(char *data, const _Bool is_not);
+static int add_domain_keeper_entry(const char *domainname, const char *program,
+                                   const _Bool is_not);
+static int add_domain_keeper_policy(char *data, const _Bool is_not);
+static int add_path_group_entry(const char *group_name, const char *member_name,
+                                const _Bool is_delete);
+static int add_path_group_policy(char *data, const _Bool is_delete);
+static void assign_domain_initializer_source(struct domain_policy *dp,
+                                             const struct path_info *domainname,
+                                             const char *program);
+static int domainname_attribute_compare(const void *a, const void *b);
+static void read_domain_and_exception_policy(struct domain_policy *dp);
+static void show_current(struct domain_policy *dp);
+static const char *eat(const char *str);
+static int show_domain_line(struct domain_policy *dp, int index);
+static int show_acl_line(int index, int list_indent);
+static int show_profile_line(int index);
+static int show_literal_line(int index);
+static int show_meminfo_line(int index);
+static void show_list(struct domain_policy *dp);
+static void resize_window(void);
+static void up_arrow_key(struct domain_policy *dp);
+static void down_arrow_key(struct domain_policy *dp);
+static void page_up_key(struct domain_policy *dp);
+static void page_down_key(struct domain_policy *dp);
+int editpolicy_get_current(void);
+static void show_current(struct domain_policy *dp);
+static void adjust_cursor_pos(const int item_count);
+static void set_cursor_pos(const int index);
+static int count(const unsigned char *array, const int len);
+static int count2(const struct generic_acl *array, int len);
+static int select_item(struct domain_policy *dp, const int current);
+static int generic_acl_compare(const void *a, const void *b);
+static void delete_entry(struct domain_policy *dp, int current);
+static void add_entry(struct readline_data *rl);
+static void find_entry(struct domain_policy *dp, _Bool input, _Bool forward,
+                       int current, struct readline_data *rl);
+static void set_profile(struct domain_policy *dp, int current);
+static void set_level(struct domain_policy *dp, int current);
+static void set_quota(struct domain_policy *dp, int current);
+static int select_window(struct domain_policy *dp, const int current);
+static void show_command_key(const int screen, const _Bool readonly);
+static int generic_list_loop(struct domain_policy *dp);
+static void copy_fd_to_fp(int fd, FILE *fp);
+int editpolicy_main(int argc, char *argv[]);
 
-struct path_group_entry *path_group_list = NULL;
-int path_group_list_len = 0;
+/* Utility Functions */
+
+static void copy_fd_to_fp(int fd, FILE *fp)
+{
+	char buffer[1024];
+	while (true) {
+		const int len = read(fd, buffer, sizeof(buffer));
+		if (len <= 0)
+			break;
+		fwrite(buffer, len, 1, fp);
+	}
+}
 
 static const char *get_last_name(const struct domain_policy *dp,
 				 const int index)
@@ -33,6 +116,51 @@ static const char *get_last_name(const struct domain_policy *dp,
 	if (cp1)
 		return cp1 + 1;
 	return cp0;
+}
+
+static int count(const unsigned char *array, const int len)
+{
+	int i;
+	int c = 0;
+	for (i = 0; i < len; i++)
+		if (array[i])
+			c++;
+	return c;
+}
+
+static int count2(const struct generic_acl *array, int len)
+{
+	int i;
+	int c = 0;
+	for (i = 0; i < len; i++)
+		if (array[i].selected)
+			c++;
+	return c;
+}
+
+static _Bool is_keeper_domain(struct domain_policy *dp, const int index)
+{
+	return dp->list[index].is_dk;
+}
+
+static _Bool is_initializer_source(struct domain_policy *dp, const int index)
+{
+	return dp->list[index].is_dis;
+}
+
+static _Bool is_initializer_target(struct domain_policy *dp, const int index)
+{
+	return dp->list[index].is_dit;
+}
+
+static _Bool is_domain_unreachable(struct domain_policy *dp, const int index)
+{
+	return dp->list[index].is_du;
+}
+
+static _Bool is_deleted_domain(struct domain_policy *dp, const int index)
+{
+	return dp->list[index].is_dd;
 }
 
 int add_string_entry(struct domain_policy *dp, const char *entry,
@@ -151,32 +279,331 @@ found:
 	return index;
 }
 
-static _Bool is_keeper_domain(struct domain_policy *dp, const int index)
+static int generic_acl_compare0(const void *a, const void *b)
 {
-	return dp->list[index].is_dk;
+	const struct generic_acl *a0 = (struct generic_acl *) a;
+	const struct generic_acl *b0 = (struct generic_acl *) b;
+	const char *a1 = directives[a0->directive].alias;
+	const char *b1 = directives[b0->directive].alias;
+	const char *a2 = a0->operand;
+	const char *b2 = b0->operand;
+	const int ret = strcmp(a1, b1);
+	if (ret)
+		return ret;
+	return strcmp(a2, b2);
 }
 
-static _Bool is_initializer_source(struct domain_policy *dp, const int index)
+static int string_acl_compare(const void *a, const void *b)
 {
-	return dp->list[index].is_dis;
+	const struct generic_acl *a0 = (struct generic_acl *) a;
+	const struct generic_acl *b0 = (struct generic_acl *) b;
+	const char *a1 = a0->operand;
+	const char *b1 = b0->operand;
+	return strcmp(a1, b1);
 }
 
-static _Bool is_initializer_target(struct domain_policy *dp, const int index)
+static int add_domain_initializer_policy(char *data, const _Bool is_not)
 {
-	return dp->list[index].is_dit;
+	char *cp = strstr(data, " from ");
+	if (cp) {
+		*cp = '\0';
+		return add_domain_initializer_entry(cp + 6, data, is_not);
+	} else {
+		return add_domain_initializer_entry(NULL, data, is_not);
+	}
 }
 
-static _Bool is_domain_unreachable(struct domain_policy *dp, const int index)
+static int add_domain_keeper_policy(char *data, const _Bool is_not)
 {
-	return dp->list[index].is_du;
+	char *cp = strstr(data, " from ");
+	if (cp) {
+		*cp = '\0';
+		return add_domain_keeper_entry(cp + 6, data, is_not);
+	} else {
+		return add_domain_keeper_entry(data, NULL, is_not);
+	}
 }
 
-static _Bool is_deleted_domain(struct domain_policy *dp, const int index)
+static int add_path_group_policy(char *data, const _Bool is_delete)
 {
-	return dp->list[index].is_dd;
+	char *cp = strchr(data, ' ');
+	if (!cp)
+		return -EINVAL;
+	*cp++ = '\0';
+	return add_path_group_entry(data, cp, is_delete);
 }
 
-/***** editpolicy start *****/
+static void assign_domain_initializer_source(struct domain_policy *dp,
+					     const struct path_info *domainname,
+					     const char *program)
+{
+	if (is_domain_initializer(domainname, program)) {
+		get();
+		shprintf("%s %s", domainname->name, program);
+		normalize_line(shared_buffer);
+		if (find_or_assign_new_domain(dp, shared_buffer, true, false)
+		    == EOF)
+			out_of_memory();
+		put();
+	}
+}
+
+static int domainname_attribute_compare(const void *a, const void *b)
+{
+	const struct domain_info *a0 = a;
+	const struct domain_info *b0 = b;
+	const int k = strcmp(a0->domainname->name, b0->domainname->name);
+	if ((k > 0) || (!k && !a0->is_dis && b0->is_dis))
+		return 1;
+	return k;
+}
+
+
+static int show_domain_line(struct domain_policy *dp, int index)
+{
+	int tmp_col = 0;
+	const struct domain_initializer_entry *domain_initializer;
+	const struct domain_keeper_entry *domain_keeper;
+	const char *sp;
+	const int number = dp->list[index].number;
+	int redirect_index;
+	if (number >= 0)
+		printw("%c%4d:%3u %c%c%c ",
+			 dp->list_selected[index] ? '&' : ' ',
+			 number, dp->list[index].profile,
+			 is_keeper_domain(dp, index) ? '#' : ' ',
+			 is_initializer_target(dp, index) ? '*' : ' ',
+			 is_domain_unreachable(dp, index) ? '!' : ' ');
+	else
+		printw("              ");
+	tmp_col += 14;
+	sp = domain_name(dp, index);
+	while (true) {
+		const char *cp = strchr(sp, ' ');
+		if (!cp)
+			break;
+		printw("%s", eat("    "));
+		tmp_col += 4;
+		sp = cp + 1;
+	}
+	if (is_deleted_domain(dp, index)) {
+		printw("%s", eat("( "));
+		tmp_col += 2;
+	}
+	printw("%s", eat(sp));
+	tmp_col += strlen(sp);
+	if (is_deleted_domain(dp, index)) {
+		printw("%s", eat(" )"));
+		tmp_col += 2;
+	}
+	domain_initializer = dp->list[index].d_i;
+	if (!domain_initializer)
+		goto not_domain_initializer;
+	get();
+	if (domain_initializer->domainname)
+		shprintf(" ( " KEYWORD_INITIALIZE_DOMAIN "%s from %s )",
+			 domain_initializer->program->name,
+			 domain_initializer->domainname->name);
+	else
+		shprintf(" ( " KEYWORD_INITIALIZE_DOMAIN "%s )",
+			 domain_initializer->program->name);
+	printw("%s", eat(shared_buffer));
+	tmp_col += strlen(shared_buffer);
+	put();
+	goto done;
+not_domain_initializer:
+	domain_keeper = dp->list[index].d_k;
+	if (!domain_keeper)
+		goto not_domain_keeper;
+	get();
+	if (domain_keeper->program)
+		shprintf(" ( " KEYWORD_KEEP_DOMAIN "%s from %s )",
+			 domain_keeper->program->name,
+			 domain_keeper->domainname->name);
+	else
+		shprintf(" ( " KEYWORD_KEEP_DOMAIN "%s )",
+			 domain_keeper->domainname->name);
+	printw("%s", eat(shared_buffer));
+	tmp_col += strlen(shared_buffer);
+	put();
+	goto done;
+not_domain_keeper:
+	if (!is_initializer_source(dp, index))
+		goto done;
+	get();
+	shprintf(ROOT_NAME "%s", strrchr(domain_name(dp, index), ' '));
+	redirect_index = find_domain(dp, shared_buffer, false, false);
+	if (redirect_index >= 0)
+		shprintf(" ( -> %d )", dp->list[redirect_index].number);
+	else
+		shprintf(" ( -> Not Found )");
+	printw("%s", eat(shared_buffer));
+	tmp_col += strlen(shared_buffer);
+	put();
+done:
+	return tmp_col;
+}
+
+static int show_acl_line(int index, int list_indent)
+{
+	u8 directive = generic_acl_list[index].directive;
+	const char *cp1 = directives[directive].alias;
+	const char *cp2 = generic_acl_list[index].operand;
+	int len = list_indent - directives[directive].alias_len;
+	printw("%c%4d: %s ",
+	       generic_acl_list[index].selected ? '&' : ' ',
+	       index, eat(cp1));
+	while (len-- > 0)
+		printw("%s", eat(" "));
+	printw("%s", eat(cp2));
+	return strlen(cp1) + strlen(cp2) + 8 + list_indent;
+}
+
+static int show_profile_line(int index)
+{
+	const char *cp = generic_acl_list[index].operand;
+	const u8 profile = generic_acl_list[index].directive;
+	char number[8];
+	snprintf(number, sizeof(number) - 1, "%3u-", profile);
+	printw("%c%4d: %s", generic_acl_list[index].selected ? '&' : ' ',
+	       index, eat(number));
+	printw("%s ", eat(cp));
+	return strlen(number) + strlen(cp) + 8;
+}
+
+static int show_literal_line(int index)
+{
+	const char *cp = generic_acl_list[index].operand;
+	printw("%c%4d: %s ",
+	       generic_acl_list[index].selected ? '&' : ' ',
+	       index, eat(cp));
+	return strlen(cp) + 8;
+}
+
+static int show_meminfo_line(int index)
+{
+	unsigned int now = 0;
+	unsigned int quota = 0;
+	const char *data = generic_acl_list[index].operand;
+	get();
+	if (sscanf(data, "Shared: %u (Quota: %u)", &now, &quota) >= 1)
+		shprintf("Memory for string data    = %10u bytes    "
+			 "Quota = %10u bytes",
+			 now, quota ? quota : -1);
+	else if (sscanf(data, "Private: %u (Quota: %u)", &now, &quota) >= 1)
+		shprintf("Memory for numeric data   = %10u bytes    "
+			 "Quota = %10u bytes",
+			 now, quota ? quota : -1);
+	else if (sscanf(data, "Dynamic: %u (Quota: %u)", &now, &quota) >= 1)
+		shprintf("Memory for temporary data = %10u bytes    "
+			 "Quota = %10u bytes",
+			 now, quota ? quota : -1);
+	else if (sscanf(data, "Total: %u", &now) == 1)
+		shprintf("Total memory in use       = %10u bytes", now);
+	else
+		shprintf("%s", data);
+	if (shared_buffer[0])
+		printw("%s", eat(shared_buffer));
+	now = strlen(shared_buffer);
+	put();
+	return now;
+}
+
+static void show_command_key(const int screen, const _Bool readonly)
+{
+	int c;
+	clear();
+	printw("Commands available for this screen are:\n\n");
+	printw("Q/q        Quit this editor.\n");
+	printw("R/r        Refresh to the latest information.\n");
+	switch (screen) {
+	case SCREEN_MEMINFO_LIST:
+		break;
+	default:
+		printw("F/f        Find first.\n");
+		printw("N/n        Find next.\n");
+		printw("P/p        Find previous.\n");
+	}
+	printw("W/w        Switch to selected screen.\n");
+	/* printw("Tab        Switch to next screen.\n"); */
+	switch (screen) {
+	case SCREEN_MEMINFO_LIST:
+		break;
+	default:
+		printw("Insert     Copy an entry at the cursor position to "
+		       "history buffer.\n");
+		printw("Space      Invert selection state of an entry at "
+		       "the cursor position.\n");
+		printw("C/c        Copy selection state of an entry at "
+		       "the cursor position to all entries below the cursor "
+		       "position.\n");
+	}
+	switch (screen) {
+	case SCREEN_DOMAIN_LIST:
+		if (!readonly)
+			printw("A/a        Add a new domain.\n");
+		printw("Enter      Edit ACLs of a domain at the cursor "
+		       "position.\n");
+		if (!readonly) {
+			printw("D/d        Delete selected domains.\n");
+			printw("S/s        Set profile number of selected "
+			       "domains.\n");
+		}
+		break;
+	case SCREEN_MEMINFO_LIST:
+		if (!readonly)
+			printw("S/s        Set memory quota of selected "
+			       "items.\n");
+		break;
+	case SCREEN_PROFILE_LIST:
+		if (!readonly)
+			printw("S/s        Set mode of selected items.\n");
+		break;
+	}
+	switch (screen) {
+	case SCREEN_SYSTEM_LIST:
+	case SCREEN_EXCEPTION_LIST:
+	case SCREEN_ACL_LIST:
+	case SCREEN_MANAGER_LIST:
+		if (!readonly) {
+			printw("A/a        Add a new entry.\n");
+			printw("D/d        Delete selected entries.\n");
+		}
+	}
+	switch (screen) {
+	case SCREEN_PROFILE_LIST:
+		if (!readonly)
+			printw("A/a        Define a new profile.\n");
+	}
+	switch (screen) {
+	case SCREEN_ACL_LIST:
+		printw("O/o        Set selection state to other entries "
+		       "included in an entry at the cursor position.\n");
+		/* Fall through. */
+	case SCREEN_PROFILE_LIST:
+		printw("@          Switch sort type.\n");
+	}
+	printw("Arrow-keys and PageUp/PageDown/Home/End keys "
+	       "for scroll.\n\n");
+	printw("Press '?' to escape from this help.\n");
+	refresh();
+	while (true) {
+		c = getch2();
+		if (c == '?' || c == EOF)
+			break;
+	}
+}
+
+/* Variables */
+
+static _Bool readonly_mode = false;
+static unsigned int refresh_interval = 0;
+static _Bool need_reload = false;
+
+_Bool offline_mode = false;
+
+struct path_group_entry *path_group_list = NULL;
+int path_group_list_len = 0;
 
 static const char *policy_file = NULL;
 static const char *list_caption = NULL;
@@ -184,7 +611,6 @@ static char *current_domain = NULL;
 
 static int current_screen = SCREEN_DOMAIN_LIST;
 
-/* List for generic policy. */
 struct generic_acl *generic_acl_list = NULL;
 int generic_acl_list_count = 0;
 
@@ -193,7 +619,40 @@ static int domain_keeper_list_len = 0;
 static struct domain_initializer_entry *domain_initializer_list = NULL;
 static int domain_initializer_list_len = 0;
 
-/* ACL HANDLER  */
+static int profile_sort_type = 0;
+static int unnumbered_domain_count = 0;
+
+static int window_width = 0;
+static int window_height = 0;
+static int current_item_index[MAXSCREEN];
+int current_y[MAXSCREEN];
+int list_item_count[MAXSCREEN];
+
+static int body_lines = 0;
+
+static int max_eat_col[MAXSCREEN];
+static int eat_col = 0;
+static int max_col = 0;
+static int list_indent = 0;
+
+static int acl_sort_type = 1;
+
+/* Main Functions */
+
+static void sigalrm_handler(int sig)
+{
+	need_reload = true;
+	alarm(refresh_interval);
+}
+
+static const char *eat(const char *str)
+{
+	while (*str && eat_col) {
+		str++;
+		eat_col--;
+	}
+	return str;
+}
 
 static const struct domain_keeper_entry *
 is_domain_keeper(const struct path_info *domainname, const char *program)
@@ -258,8 +717,6 @@ is_domain_initializer(const struct path_info *domainname, const char *program)
 	return flag;
 }
 
-/* UTILITY FUNCTIONS */
-
 static FILE *open_write(const char *filename)
 {
 	if (offline_mode) {
@@ -286,32 +743,6 @@ out:
 	}
 }
 
-static int generic_acl_compare(const void *a, const void *b);
-
-static int generic_acl_compare0(const void *a, const void *b)
-{
-	const struct generic_acl *a0 = (struct generic_acl *) a;
-	const struct generic_acl *b0 = (struct generic_acl *) b;
-	const char *a1 = directives[a0->directive].alias;
-	const char *b1 = directives[b0->directive].alias;
-	const char *a2 = a0->operand;
-	const char *b2 = b0->operand;
-	const int ret = strcmp(a1, b1);
-	if (ret)
-		return ret;
-	return strcmp(a2, b2);
-}
-
-static int string_acl_compare(const void *a, const void *b)
-{
-	const struct generic_acl *a0 = (struct generic_acl *) a;
-	const struct generic_acl *b0 = (struct generic_acl *) b;
-	const char *a1 = a0->operand;
-	const char *b1 = b0->operand;
-	return strcmp(a1, b1);
-}
-
-static int profile_sort_type = 0;
 
 static int profile_entry_compare(const void *a, const void *b)
 {
@@ -463,17 +894,6 @@ static int add_domain_initializer_entry(const char *domainname,
 	return 0;
 }
 
-static int add_domain_initializer_policy(char *data, const _Bool is_not)
-{
-	char *cp = strstr(data, " from ");
-	if (cp) {
-		*cp = '\0';
-		return add_domain_initializer_entry(cp + 6, data, is_not);
-	} else {
-		return add_domain_initializer_entry(NULL, data, is_not);
-	}
-}
-
 static int add_domain_keeper_entry(const char *domainname, const char *program,
 				   const _Bool is_not)
 {
@@ -503,17 +923,6 @@ static int add_domain_keeper_entry(const char *domainname, const char *program,
 	ptr->is_not = is_not;
 	ptr->is_last_name = is_last_name;
 	return 0;
-}
-
-static int add_domain_keeper_policy(char *data, const _Bool is_not)
-{
-	char *cp = strstr(data, " from ");
-	if (cp) {
-		*cp = '\0';
-		return add_domain_keeper_entry(cp + 6, data, is_not);
-	} else {
-		return add_domain_keeper_entry(data, NULL, is_not);
-	}
 }
 
 static int add_path_group_entry(const char *group_name, const char *member_name,
@@ -568,42 +977,6 @@ static int add_path_group_entry(const char *group_name, const char *member_name,
 	group->member_name[group->member_name_len++] = saved_member_name;
 	return 0;
 }
-
-static int add_path_group_policy(char *data, const _Bool is_delete)
-{
-	char *cp = strchr(data, ' ');
-	if (!cp)
-		return -EINVAL;
-	*cp++ = '\0';
-	return add_path_group_entry(data, cp, is_delete);
-}
-
-static void assign_domain_initializer_source(struct domain_policy *dp,
-					     const struct path_info *domainname,
-					     const char *program)
-{
-	if (is_domain_initializer(domainname, program)) {
-		get();
-		shprintf("%s %s", domainname->name, program);
-		normalize_line(shared_buffer);
-		if (find_or_assign_new_domain(dp, shared_buffer, true, false)
-		    == EOF)
-			out_of_memory();
-		put();
-	}
-}
-
-static int domainname_attribute_compare(const void *a, const void *b)
-{
-	const struct domain_info *a0 = a;
-	const struct domain_info *b0 = b;
-	const int k = strcmp(a0->domainname->name, b0->domainname->name);
-	if ((k > 0) || (!k && !a0->is_dis && b0->is_dis))
-		return 1;
-	return k;
-}
-
-static int unnumbered_domain_count = 0;
 
 static void read_domain_and_exception_policy(struct domain_policy *dp)
 {
@@ -849,179 +1222,6 @@ no_domain:
 	memset(dp->list_selected, 0, dp->list_len);
 }
 
-static void show_current(struct domain_policy *dp);
-
-static int window_width = 0;
-static int window_height = 0;
-static int current_item_index[MAXSCREEN];
-int current_y[MAXSCREEN];
-int list_item_count[MAXSCREEN];
-
-static int body_lines = 0;
-
-static int max_eat_col[MAXSCREEN];
-static int eat_col = 0;
-static int max_col = 0;
-static int list_indent = 0;
-
-static const char *eat(const char *str)
-{
-	while (*str && eat_col) {
-		str++;
-		eat_col--;
-	}
-	return str;
-}
-
-static int show_domain_line(struct domain_policy *dp, int index)
-{
-	int tmp_col = 0;
-	const struct domain_initializer_entry *domain_initializer;
-	const struct domain_keeper_entry *domain_keeper;
-	const char *sp;
-	const int number = dp->list[index].number;
-	int redirect_index;
-	if (number >= 0)
-		printw("%c%4d:%3u %c%c%c ",
-			 dp->list_selected[index] ? '&' : ' ',
-			 number, dp->list[index].profile,
-			 is_keeper_domain(dp, index) ? '#' : ' ',
-			 is_initializer_target(dp, index) ? '*' : ' ',
-			 is_domain_unreachable(dp, index) ? '!' : ' ');
-	else
-		printw("              ");
-	tmp_col += 14;
-	sp = domain_name(dp, index);
-	while (true) {
-		const char *cp = strchr(sp, ' ');
-		if (!cp)
-			break;
-		printw("%s", eat("    "));
-		tmp_col += 4;
-		sp = cp + 1;
-	}
-	if (is_deleted_domain(dp, index)) {
-		printw("%s", eat("( "));
-		tmp_col += 2;
-	}
-	printw("%s", eat(sp));
-	tmp_col += strlen(sp);
-	if (is_deleted_domain(dp, index)) {
-		printw("%s", eat(" )"));
-		tmp_col += 2;
-	}
-	domain_initializer = dp->list[index].d_i;
-	if (!domain_initializer)
-		goto not_domain_initializer;
-	get();
-	if (domain_initializer->domainname)
-		shprintf(" ( " KEYWORD_INITIALIZE_DOMAIN "%s from %s )",
-			 domain_initializer->program->name,
-			 domain_initializer->domainname->name);
-	else
-		shprintf(" ( " KEYWORD_INITIALIZE_DOMAIN "%s )",
-			 domain_initializer->program->name);
-	printw("%s", eat(shared_buffer));
-	tmp_col += strlen(shared_buffer);
-	put();
-	goto done;
-not_domain_initializer:
-	domain_keeper = dp->list[index].d_k;
-	if (!domain_keeper)
-		goto not_domain_keeper;
-	get();
-	if (domain_keeper->program)
-		shprintf(" ( " KEYWORD_KEEP_DOMAIN "%s from %s )",
-			 domain_keeper->program->name,
-			 domain_keeper->domainname->name);
-	else
-		shprintf(" ( " KEYWORD_KEEP_DOMAIN "%s )",
-			 domain_keeper->domainname->name);
-	printw("%s", eat(shared_buffer));
-	tmp_col += strlen(shared_buffer);
-	put();
-	goto done;
-not_domain_keeper:
-	if (!is_initializer_source(dp, index))
-		goto done;
-	get();
-	shprintf(ROOT_NAME "%s", strrchr(domain_name(dp, index), ' '));
-	redirect_index = find_domain(dp, shared_buffer, false, false);
-	if (redirect_index >= 0)
-		shprintf(" ( -> %d )", dp->list[redirect_index].number);
-	else
-		shprintf(" ( -> Not Found )");
-	printw("%s", eat(shared_buffer));
-	tmp_col += strlen(shared_buffer);
-	put();
-done:
-	return tmp_col;
-}
-
-static int show_acl_line(int index, int list_indent)
-{
-	u8 directive = generic_acl_list[index].directive;
-	const char *cp1 = directives[directive].alias;
-	const char *cp2 = generic_acl_list[index].operand;
-	int len = list_indent - directives[directive].alias_len;
-	printw("%c%4d: %s ",
-	       generic_acl_list[index].selected ? '&' : ' ',
-	       index, eat(cp1));
-	while (len-- > 0)
-		printw("%s", eat(" "));
-	printw("%s", eat(cp2));
-	return strlen(cp1) + strlen(cp2) + 8 + list_indent;
-}
-
-static int show_profile_line(int index)
-{
-	const char *cp = generic_acl_list[index].operand;
-	const u8 profile = generic_acl_list[index].directive;
-	char number[8];
-	snprintf(number, sizeof(number) - 1, "%3u-", profile);
-	printw("%c%4d: %s", generic_acl_list[index].selected ? '&' : ' ',
-	       index, eat(number));
-	printw("%s ", eat(cp));
-	return strlen(number) + strlen(cp) + 8;
-}
-
-static int show_literal_line(int index)
-{
-	const char *cp = generic_acl_list[index].operand;
-	printw("%c%4d: %s ",
-	       generic_acl_list[index].selected ? '&' : ' ',
-	       index, eat(cp));
-	return strlen(cp) + 8;
-}
-
-static int show_meminfo_line(int index)
-{
-	unsigned int now = 0;
-	unsigned int quota = 0;
-	const char *data = generic_acl_list[index].operand;
-	get();
-	if (sscanf(data, "Shared: %u (Quota: %u)", &now, &quota) >= 1)
-		shprintf("Memory for string data    = %10u bytes    "
-			 "Quota = %10u bytes",
-			 now, quota ? quota : -1);
-	else if (sscanf(data, "Private: %u (Quota: %u)", &now, &quota) >= 1)
-		shprintf("Memory for numeric data   = %10u bytes    "
-			 "Quota = %10u bytes",
-			 now, quota ? quota : -1);
-	else if (sscanf(data, "Dynamic: %u (Quota: %u)", &now, &quota) >= 1)
-		shprintf("Memory for temporary data = %10u bytes    "
-			 "Quota = %10u bytes",
-			 now, quota ? quota : -1);
-	else if (sscanf(data, "Total: %u", &now) == 1)
-		shprintf("Total memory in use       = %10u bytes", now);
-	else
-		shprintf("%s", data);
-	if (shared_buffer[0])
-		printw("%s", eat(shared_buffer));
-	now = strlen(shared_buffer);
-	put();
-	return now;
-}
 
 static void show_list(struct domain_policy *dp)
 {
@@ -1258,26 +1458,6 @@ static void set_cursor_pos(const int index)
 	}
 }
 
-static int count(const unsigned char *array, const int len)
-{
-	int i;
-	int c = 0;
-	for (i = 0; i < len; i++)
-		if (array[i])
-			c++;
-	return c;
-}
-
-static int count2(const struct generic_acl *array, int len)
-{
-	int i;
-	int c = 0;
-	for (i = 0; i < len; i++)
-		if (array[i].selected)
-			c++;
-	return c;
-}
-
 static int select_item(struct domain_policy *dp, const int current)
 {
 	if (current >= 0) {
@@ -1300,8 +1480,6 @@ static int select_item(struct domain_policy *dp, const int current)
 	}
 	return 0;
 }
-
-static int acl_sort_type = 1;
 
 static int generic_acl_compare(const void *a, const void *b)
 {
@@ -1391,14 +1569,6 @@ static void delete_entry(struct domain_policy *dp, int current)
 		fclose(fp);
 	}
 }
-
-struct readline_data {
-	const char **history;
-	int count;
-	int max;
-	char *last_error;
-	char *search_buffer[MAXSCREEN];
-};
 
 static void add_entry(struct readline_data *rl)
 {
@@ -1651,91 +1821,6 @@ static int select_window(struct domain_policy *dp, const int current)
 		}
 		if (c == EOF)
 			return MAXSCREEN;
-	}
-}
-
-static void show_command_key(void)
-{
-	int c;
-	clear();
-	printw("Commands available for this screen are:\n\n");
-	printw("Q/q        Quit this editor.\n");
-	printw("R/r        Refresh to the latest information.\n");
-	switch (current_screen) {
-	case SCREEN_MEMINFO_LIST:
-		break;
-	default:
-		printw("F/f        Find first.\n");
-		printw("N/n        Find next.\n");
-		printw("P/p        Find previous.\n");
-	}
-	printw("W/w        Switch to selected screen.\n");
-	/* printw("Tab        Switch to next screen.\n"); */
-	switch (current_screen) {
-	case SCREEN_MEMINFO_LIST:
-		break;
-	default:
-		printw("Insert     Copy an entry at the cursor position to "
-		       "history buffer.\n");
-		printw("Space      Invert selection state of an entry at "
-		       "the cursor position.\n");
-		printw("C/c        Copy selection state of an entry at "
-		       "the cursor position to all entries below the cursor "
-		       "position.\n");
-	}
-	switch (current_screen) {
-	case SCREEN_DOMAIN_LIST:
-		if (!readonly_mode)
-			printw("A/a        Add a new domain.\n");
-		printw("Enter      Edit ACLs of a domain at the cursor "
-		       "position.\n");
-		if (!readonly_mode) {
-			printw("D/d        Delete selected domains.\n");
-			printw("S/s        Set profile number of selected "
-			       "domains.\n");
-		}
-		break;
-	case SCREEN_MEMINFO_LIST:
-		if (!readonly_mode)
-			printw("S/s        Set memory quota of selected "
-			       "items.\n");
-		break;
-	case SCREEN_PROFILE_LIST:
-		if (!readonly_mode)
-			printw("S/s        Set mode of selected items.\n");
-		break;
-	}
-	switch (current_screen) {
-	case SCREEN_SYSTEM_LIST:
-	case SCREEN_EXCEPTION_LIST:
-	case SCREEN_ACL_LIST:
-	case SCREEN_MANAGER_LIST:
-		if (!readonly_mode) {
-			printw("A/a        Add a new entry.\n");
-			printw("D/d        Delete selected entries.\n");
-		}
-	}
-	switch (current_screen) {
-	case SCREEN_PROFILE_LIST:
-		if (!readonly_mode)
-			printw("A/a        Define a new profile.\n");
-	}
-	switch (current_screen) {
-	case SCREEN_ACL_LIST:
-		printw("O/o        Set selection state to other entries "
-		       "included in an entry at the cursor position.\n");
-		/* Fall through. */
-	case SCREEN_PROFILE_LIST:
-		printw("@          Switch sort type.\n");
-	}
-	printw("Arrow-keys and PageUp/PageDown/Home/End keys "
-	       "for scroll.\n\n");
-	printw("Press '?' to escape from this help.\n");
-	refresh();
-	while (true) {
-		c = getch2();
-		if (c == '?' || c == EOF)
-			break;
 	}
 }
 
@@ -2044,20 +2129,9 @@ start2:
 		case 'W':
 			return select_window(dp, current);
 		case '?':
-			show_command_key();
+			show_command_key(current_screen, readonly_mode);
 			goto start;
 		}
-	}
-}
-
-static void copy_fd_to_fp(int fd, FILE *fp)
-{
-	char buffer[1024];
-	while (true) {
-		const int len = read(fd, buffer, sizeof(buffer));
-		if (len <= 0)
-			break;
-		fwrite(buffer, len, 1, fp);
 	}
 }
 
@@ -2329,5 +2403,3 @@ int editpolicy_main(int argc, char *argv[])
 	clear_domain_policy(&dp);
 	return 0;
 }
-
-/***** editpolicy end *****/

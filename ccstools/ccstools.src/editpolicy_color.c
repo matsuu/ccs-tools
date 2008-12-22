@@ -1,7 +1,29 @@
-
+/*
+ * editpolicy_color.c
+ *
+ * TOMOYO Linux's utilities.
+ *
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
+ *
+ * Version: 1.6.6-pre   2008/12/22
+ *
+ */
 #include "ccstools.h"
 
-/* add color start */
+/* Prototypes */
+
+void editpolicy_color_init(void);
+static void editpolicy_color_save(const _Bool flg);
+void editpolicy_color_change(const attr_t attr, const _Bool flg);
+void editpolicy_attr_change(const attr_t attr, const _Bool flg);
+void editpolicy_sttr_save(void);
+void editpolicy_sttr_restore(void);
+int editpolicy_color_head(const int screen);
+int editpolicy_color_cursor(const int screen);
+void editpolicy_line_draw(const int screen);
+
+/* Main functions */
+
 #ifdef COLOR_ON
 
 void editpolicy_color_init(void)
@@ -134,8 +156,10 @@ int editpolicy_color_cursor(const int screen)
 
 void editpolicy_line_draw(const int screen)
 {
-	static int before_current[MAXSCREEN] = { -1, -1, -1, -1, -1, -1, -1, -1 };
-	static int before_y[MAXSCREEN]       = { -1, -1, -1, -1, -1, -1, -1, -1 };
+	static int before_current[MAXSCREEN] = { -1, -1, -1, -1,
+						 -1, -1, -1, -1 };
+	static int before_y[MAXSCREEN]       = { -1, -1, -1, -1,
+						 -1, -1, -1, -1 };
 	int current = editpolicy_get_current();
 	int y;
 	int x;
@@ -158,7 +182,7 @@ void editpolicy_line_draw(const int screen)
 	before_y[screen] = current_y[screen];
 }
 
-#else /* no color */
+#else
 
 void editpolicy_color_init(void)
 {
@@ -186,4 +210,3 @@ void editpolicy_line_draw(const int screen)
 }
 
 #endif
-/* add color end */

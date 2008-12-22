@@ -1,31 +1,28 @@
+/*
+ * editpolicy_offline.c
+ *
+ * TOMOYO Linux's utilities.
+ *
+ * Copyright (C) 2005-2008  NTT DATA CORPORATION
+ *
+ * Version: 1.6.6-pre   2008/12/22
+ *
+ */
 #include "ccstools.h"
-
-int persistent_fd = EOF;
-
-void send_fd(char *data, int *fd)
-{
-	struct msghdr msg;
-	struct iovec iov = { data, strlen(data) };
-	char cmsg_buf[CMSG_SPACE(sizeof(int))];
-	struct cmsghdr *cmsg = (struct cmsghdr *) cmsg_buf;
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_iov = &iov;
-	msg.msg_iovlen = 1;
-	msg.msg_control = cmsg_buf;
-	msg.msg_controllen = sizeof(cmsg_buf);
-	cmsg->cmsg_level = SOL_SOCKET;
-	cmsg->cmsg_type = SCM_RIGHTS;
-	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-	msg.msg_controllen = cmsg->cmsg_len;
-	memmove(CMSG_DATA(cmsg), fd, sizeof(int));
-	sendmsg(persistent_fd, &msg, 0);
-	close(*fd);
-}
 
 struct misc_policy {
 	const struct path_info **list;
 	int list_len;
 };
+
+/* Prototypes */
+
+void send_fd(char *data, int *fd);
+static void handle_misc_policy(struct misc_policy *mp, FILE *fp,
+			       _Bool is_write);
+void editpolicy_offline_daemon(void);
+
+/* Utility functions */
 
 static void handle_misc_policy(struct misc_policy *mp, FILE *fp, _Bool is_write)
 {
@@ -68,6 +65,32 @@ append_policy:
 read_policy:
 	for (i = 0; i < mp->list_len; i++)
 		fprintf(fp, "%s\n", mp->list[i]->name);
+}
+
+/* Variables */
+
+int persistent_fd = EOF;
+
+/* Main functions */
+
+void send_fd(char *data, int *fd)
+{
+	struct msghdr msg;
+	struct iovec iov = { data, strlen(data) };
+	char cmsg_buf[CMSG_SPACE(sizeof(int))];
+	struct cmsghdr *cmsg = (struct cmsghdr *) cmsg_buf;
+	memset(&msg, 0, sizeof(msg));
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_control = cmsg_buf;
+	msg.msg_controllen = sizeof(cmsg_buf);
+	cmsg->cmsg_level = SOL_SOCKET;
+	cmsg->cmsg_type = SCM_RIGHTS;
+	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+	msg.msg_controllen = cmsg->cmsg_len;
+	memmove(CMSG_DATA(cmsg), fd, sizeof(int));
+	sendmsg(persistent_fd, &msg, 0);
+	close(*fd);
 }
 
 void editpolicy_offline_daemon(void)
