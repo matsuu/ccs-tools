@@ -5,13 +5,31 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.6-pre   2008/12/16
+ * Version: 1.6.6-pre   2008/12/22
  *
  */
 #include "ccstools.h"
 
+#define GLOBALLY_READABLE_FILES_UPDATE_NONE 0
+#define GLOBALLY_READABLE_FILES_UPDATE_ASK  1
+#define GLOBALLY_READABLE_FILES_UPDATE_AUTO 2
+
+/* Prototypes */
+
 static void _printw(const char *fmt, ...)
-	__attribute__ ((format(printf, 1, 2)));
+     __attribute__ ((format(printf, 1, 2)));
+static int send_encoded(const int fd, const char *fmt, ...)
+     __attribute__ ((format(printf, 2, 3)));
+static void do_check_update(const int fd);
+static void handle_update(const int check_update, const int fd);
+static _Bool convert_path_info(FILE *fp, const struct path_info *pattern,
+			       const char *new);
+static _Bool check_path_info(const char *buffer);
+static _Bool handle_query_new_format(unsigned int serial);
+static _Bool handle_query_old_format(unsigned int serial);
+int ccsqueryd_main(int argc, char *argv[]);
+
+/* Utility functions */
 
 static void _printw(const char *fmt, ...)
 {
@@ -34,9 +52,6 @@ static void _printw(const char *fmt, ...)
 	}
 	free(buffer);
 }
-
-static int send_encoded(const int fd, const char *fmt, ...)
-	__attribute__ ((format(printf, 2, 3)));
 
 static int send_encoded(const int fd, const char *fmt, ...)
 {
@@ -79,8 +94,46 @@ static int send_encoded(const int fd, const char *fmt, ...)
 	return len;
 }
 
-static _Bool has_retry_counter = false;
-static unsigned short int retries = 0;
+static _Bool check_path_info(const char *buffer)
+{
+	_Bool modified = false;
+	static struct path_info *update_list = NULL;
+	static int update_list_len = 0;
+	char *sp = strdup(buffer);
+	char *str = sp;
+	const char *path_list[3] = {
+		proc_policy_system_policy,
+		proc_policy_exception_policy,
+		proc_policy_domain_policy
+	};
+	if (!str)
+		return false;
+	while (true) {
+		int i;
+		char *cp = strsep(&sp, " ");
+		if (!cp)
+			break;
+		for (i = 0; i < update_list_len; i++) {
+			int j;
+			struct path_info old;
+			/* TODO: split cp at upadte_list's depth. */
+			old.name = cp;
+			fill_path_info(&old);
+			if (!path_matches_pattern(&old, &update_list[i]))
+				continue;
+			for (j = 0; j < 3; j++) {
+				FILE *fp = fopen(path_list[j], "r+");
+				if (!fp)
+					continue;
+				if (convert_path_info(fp, &update_list[i], cp))
+					modified = true;
+				fclose(fp);
+			}
+		}
+	}
+	free(str);
+	return modified;
+}
 
 static void do_check_update(const int fd)
 {
@@ -172,53 +225,8 @@ static void do_check_update(const int fd)
 	}
 }
 
-#define GLOBALLY_READABLE_FILES_UPDATE_NONE 0
-#define GLOBALLY_READABLE_FILES_UPDATE_ASK  1
-#define GLOBALLY_READABLE_FILES_UPDATE_AUTO 2
-
-static int check_update = GLOBALLY_READABLE_FILES_UPDATE_AUTO;
-
-static void handle_update(const int fd)
-{
-	static FILE *fp = NULL;
-	char pathname[8192];
-	int c;
-	if (!fp)
-		fp = fopen(proc_policy_exception_policy, "w");
-	memset(pathname, 0, sizeof(pathname));
-	if (recv(fd, pathname, sizeof(pathname) - 1, 0) == EOF)
-		return;
-	if (check_update == GLOBALLY_READABLE_FILES_UPDATE_AUTO) {
-		if (pathname[0] == '-')
-			fprintf(fp, KEYWORD_DELETE);
-		fprintf(fp, KEYWORD_ALLOW_READ "%s\n", pathname + 1);
-		fflush(fp);
-		_printw("The pathname %s was %s globally readable file.\n\n",
-		       pathname + 1, (pathname[0] == '-') ?
-		       "deleted. Deleted from" : "created. Appended to");
-		return;
-	}
-	_printw("The pathname %s was %s globally readable file? ('Y'es/'N'o):",
-	       pathname + 1, (pathname[0] == '-') ?
-	       "deleted. Delete from" : "created. Append to");
-	while (true) {
-		c = getch2();
-		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
-			break;
-		write(query_fd, "\n", 1);
-	}
-	_printw("%c\n", c);
-	if (c == 'Y' || c == 'y') {
-		if (pathname[0] == '-')
-			fprintf(fp, KEYWORD_DELETE);
-		fprintf(fp, KEYWORD_ALLOW_READ "%s\n", pathname + 1);
-		fflush(fp);
-	}
-	_printw("\n");
-}
-
 static _Bool convert_path_info(FILE *fp, const struct path_info *pattern,
-			      const char *new)
+			       const char *new)
 {
 	_Bool modified = false;
 	const char *cp = pattern->name;
@@ -261,46 +269,51 @@ out:
 	return modified;
 }
 
-static _Bool check_path_info(const char *buffer)
+static void handle_update(const int check_update, const int fd)
 {
-	_Bool modified = false;
-	static struct path_info *update_list = NULL;
-	static int update_list_len = 0;
-	char *sp = strdup(buffer);
-	char *str = sp;
-	const char *path_list[3] = {
-		proc_policy_system_policy,
-		proc_policy_exception_policy,
-		proc_policy_domain_policy
-	};
-	if (!str)
-		return false;
-	while (true) {
-		int i;
-		char *cp = strsep(&sp, " ");
-		if (!cp)
-			break;
-		for (i = 0; i < update_list_len; i++) {
-			int j;
-			struct path_info old;
-			/* TODO: split cp at upadte_list's depth. */
-			old.name = cp;
-			fill_path_info(&old);
-			if (!path_matches_pattern(&old, &update_list[i]))
-				continue;
-			for (j = 0; j < 3; j++) {
-				FILE *fp = fopen(path_list[j], "r+");
-				if (!fp)
-					continue;
-				if (convert_path_info(fp, &update_list[i], cp))
-					modified = true;
-				fclose(fp);
-			}
-		}
+	static FILE *fp = NULL;
+	char pathname[8192];
+	int c;
+	if (!fp)
+		fp = fopen(proc_policy_exception_policy, "w");
+	memset(pathname, 0, sizeof(pathname));
+	if (recv(fd, pathname, sizeof(pathname) - 1, 0) == EOF)
+		return;
+	if (check_update == GLOBALLY_READABLE_FILES_UPDATE_AUTO) {
+		if (pathname[0] == '-')
+			fprintf(fp, KEYWORD_DELETE);
+		fprintf(fp, KEYWORD_ALLOW_READ "%s\n", pathname + 1);
+		fflush(fp);
+		_printw("The pathname %s was %s globally readable file.\n\n",
+		       pathname + 1, (pathname[0] == '-') ?
+		       "deleted. Deleted from" : "created. Appended to");
+		return;
 	}
-	free(str);
-	return modified;
+	_printw("The pathname %s was %s globally readable file? ('Y'es/'N'o):",
+	       pathname + 1, (pathname[0] == '-') ?
+	       "deleted. Delete from" : "created. Append to");
+	while (true) {
+		c = getch2();
+		if (c == 'Y' || c == 'y' || c == 'N' || c == 'n')
+			break;
+		write(query_fd, "\n", 1);
+	}
+	_printw("%c\n", c);
+	if (c == 'Y' || c == 'y') {
+		if (pathname[0] == '-')
+			fprintf(fp, KEYWORD_DELETE);
+		fprintf(fp, KEYWORD_ALLOW_READ "%s\n", pathname + 1);
+		fflush(fp);
+	}
+	_printw("\n");
 }
+
+/* Variables */
+
+static _Bool has_retry_counter = false;
+static unsigned short int retries = 0;
+
+static int check_update = GLOBALLY_READABLE_FILES_UPDATE_AUTO;
 
 static int domain_policy_fd = EOF;
 static const int max_readline_history = 20;
@@ -308,6 +321,8 @@ static const char **readline_history = NULL;
 static int readline_history_count = 0;
 static const int buffer_len = 32768;
 static char *buffer = NULL;
+
+/* Main functions */
 
 static _Bool handle_query_new_format(unsigned int serial)
 {
@@ -599,7 +614,7 @@ int ccsqueryd_main(int argc, char *argv[])
 		select(query_fd > pipe_fd[0] ? query_fd + 1 : pipe_fd[0] + 1,
 		       &rfds, NULL, NULL, NULL);
 		if (pipe_fd[0] != EOF && FD_ISSET(pipe_fd[0], &rfds))
-			handle_update(pipe_fd[0]);
+			handle_update(check_update, pipe_fd[0]);
 		if (!FD_ISSET(query_fd, &rfds))
 			continue;
 

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.6-pre   2008/12/16
+ * Version: 1.6.6-pre   2008/12/22
  *
  */
 #include "ccstools.h"
@@ -22,15 +22,15 @@ struct readline_data {
 
 static void sigalrm_handler(int sig);
 static const char *get_last_name(const struct domain_policy *dp,
-                                 const int index);
+				 const int index);
 int add_string_entry(struct domain_policy *dp, const char *entry,
-                     const int index);
+		     const int index);
 int del_string_entry(struct domain_policy *dp, const char *entry,
-                     const int index);
+		     const int index);
 int find_domain(struct domain_policy *dp, const char *domainname0,
-                const _Bool is_dis, const _Bool is_dd);
+		const _Bool is_dis, const _Bool is_dd);
 int find_or_assign_new_domain(struct domain_policy *dp, const char *domainname,
-                              const _Bool is_dis, const _Bool is_dd);
+			      const _Bool is_dis, const _Bool is_dd);
 static _Bool is_keeper_domain(struct domain_policy *dp, const int index);
 static _Bool is_initializer_source(struct domain_policy *dp, const int index);
 static _Bool is_initializer_target(struct domain_policy *dp, const int index);
@@ -47,18 +47,18 @@ static int string_acl_compare(const void *a, const void *b);
 static int profile_entry_compare(const void *a, const void *b);
 static void read_generic_policy(void);
 static int add_domain_initializer_entry(const char *domainname,
-                                        const char *program,
+					const char *program,
 					const _Bool is_not);
 static int add_domain_initializer_policy(char *data, const _Bool is_not);
 static int add_domain_keeper_entry(const char *domainname, const char *program,
-                                   const _Bool is_not);
+				   const _Bool is_not);
 static int add_domain_keeper_policy(char *data, const _Bool is_not);
 static int add_path_group_entry(const char *group_name, const char *member_name,
-                                const _Bool is_delete);
+				const _Bool is_delete);
 static int add_path_group_policy(char *data, const _Bool is_delete);
 static void assign_domain_initializer_source(struct domain_policy *dp,
-                                             const struct path_info *domainname,
-                                             const char *program);
+					     const struct path_info *domainname,
+					     const char *program);
 static int domainname_attribute_compare(const void *a, const void *b);
 static void read_domain_and_exception_policy(struct domain_policy *dp);
 static void show_current(struct domain_policy *dp);
@@ -85,7 +85,7 @@ static int generic_acl_compare(const void *a, const void *b);
 static void delete_entry(struct domain_policy *dp, int current);
 static void add_entry(struct readline_data *rl);
 static void find_entry(struct domain_policy *dp, _Bool input, _Bool forward,
-                       int current, struct readline_data *rl);
+		       int current, struct readline_data *rl);
 static void set_profile(struct domain_policy *dp, int current);
 static void set_level(struct domain_policy *dp, int current);
 static void set_quota(struct domain_policy *dp, int current);
@@ -758,7 +758,7 @@ static int profile_entry_compare(const void *a, const void *b)
 		else
 			return a2 - b2;
 	} else {
-		const int a3 = strcspn(a1, "="); 
+		const int a3 = strcspn(a1, "=");
 		const int b3 = strcspn(b1, "=");
 		const int c = strncmp(a1, b1, a3 >= b3 ? b3 : a3);
 		if (c)
@@ -1296,7 +1296,7 @@ static void show_list(struct domain_policy *dp)
 			tmp_col = show_acl_line(index, list_indent);
 			break;
 		case SCREEN_PROFILE_LIST:
-			tmp_col = show_profile_line(index); 
+			tmp_col = show_profile_line(index);
 			break;
 		case SCREEN_MEMINFO_LIST:
 			tmp_col = show_meminfo_line(index);

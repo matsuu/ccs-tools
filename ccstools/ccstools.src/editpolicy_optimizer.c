@@ -14,19 +14,17 @@
 struct path_group_entry *find_path_group(const char *group_name);
 static int parse_ip(const char *address, struct ip_address_entry *entry);
 static int add_address_group_entry(const char *group_name,
-                                   const char *member_name,
-                                   const _Bool is_delete);
+				   const char *member_name,
+				   const _Bool is_delete);
 int add_address_group_policy(char *data, const _Bool is_delete);
-
 static struct address_group_entry *find_address_group(const char *group_name);
-
 static _Bool compare_path(struct path_info *sarg, struct path_info *darg,
 			  u8 directive);
 static _Bool compare_address(struct path_info *sarg, struct path_info *darg);
 static u8 split_acl(const u8 index, char *data, struct path_info *arg1,
-                    struct path_info *arg2, struct path_info *arg3);
+		    struct path_info *arg2, struct path_info *arg3);
 void editpolicy_try_optimize(struct domain_policy *dp, const int current,
-                             const int screen);
+			     const int screen);
 
 /* Utility functions */
 
