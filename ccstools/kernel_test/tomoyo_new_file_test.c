@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.5   2008/11/11
+ * Version: 1.6.6-pre   2008/12/22
  *
  */
 #include "include.h"
@@ -127,6 +127,7 @@ static void rmdir2(const char *pathname)
 
 static void stage_file_test(void)
 {
+#if 0
 	char *filename = "";
 	policy = "allow_read /proc/sys/net/ipv4/ip_local_port_range "
 		"if task.uid=0 task.gid=0";
@@ -206,7 +207,60 @@ static void stage_file_test(void)
 		errno = err;
 		show_result(err ? EOF : 0, 0);
 	}
+#endif
 
+	policy = "allow_read /dev/null if path1.type=char path1.dev_major=1 path1.dev_minor=3";
+	if (write_policy()) {
+		int fd = open("/dev/null", O_RDONLY);
+		show_result(fd, 1);
+		if (fd != EOF)
+			close(fd);
+		delete_policy();
+		fd = open("/dev/null", O_RDONLY);
+		show_result(fd, 0);
+		if (fd != EOF)
+			close(fd);
+	}
+
+	policy = "allow_read /dev/null if path1.perm=0666";
+	if (write_policy()) {
+		int fd = open("/dev/null", O_RDONLY);
+		show_result(fd, 1);
+		if (fd != EOF)
+			close(fd);
+		delete_policy();
+		fd = open("/dev/null", O_RDONLY);
+		show_result(fd, 0);
+		if (fd != EOF)
+			close(fd);
+	}
+
+	policy = "allow_read /dev/null if path1.perm=owner_read path1.perm=owner_write path1.perm!=owner_execute path1.perm=group_read path1.perm=group_write path1.perm!=group_execute path1.perm=others_read path1.perm=others_write path1.perm!=others_execute path1.perm!=setuid path1.perm!=setgid path1.perm!=sticky";
+	if (write_policy()) {
+		int fd = open("/dev/null", O_RDONLY);
+		show_result(fd, 1);
+		if (fd != EOF)
+			close(fd);
+		delete_policy();
+		fd = open("/dev/null", O_RDONLY);
+		show_result(fd, 0);
+		if (fd != EOF)
+			close(fd);
+	}
+
+	policy = "allow_read /dev/initctl if path1.type=fifo";
+	if (write_policy()) {
+		int fd = open("/dev/initctl", O_RDONLY);
+		show_result(fd, 1);
+		if (fd != EOF)
+			close(fd);
+		delete_policy();
+		fd = open("/dev/initctl", O_RDONLY);
+		show_result(fd, 0);
+		if (fd != EOF)
+			close(fd);
+	}
+#if 0
 	policy = "allow_read /dev/null if path1.parent.ino=path1.parent.ino";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDONLY);
@@ -543,6 +597,7 @@ static void stage_file_test(void)
 		write(exception_fd, cp, strlen(cp));
 	}
 	unlink2(filename);
+#endif
 }
 
 int main(int argc, char *argv[])
