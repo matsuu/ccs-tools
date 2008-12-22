@@ -127,7 +127,6 @@ static void rmdir2(const char *pathname)
 
 static void stage_file_test(void)
 {
-#if 0
 	char *filename = "";
 	policy = "allow_read /proc/sys/net/ipv4/ip_local_port_range "
 		"if task.uid=0 task.gid=0";
@@ -207,9 +206,9 @@ static void stage_file_test(void)
 		errno = err;
 		show_result(err ? EOF : 0, 0);
 	}
-#endif
 
-	policy = "allow_read /dev/null if path1.type=char path1.dev_major=1 path1.dev_minor=3";
+	policy = "allow_read /dev/null if path1.type=char path1.dev_major=1 "
+		"path1.dev_minor=3";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDONLY);
 		show_result(fd, 1);
@@ -235,7 +234,7 @@ static void stage_file_test(void)
 			close(fd);
 	}
 
-	policy = "allow_read /dev/null if path1.perm=owner_read path1.perm=owner_write path1.perm!=owner_execute path1.perm=group_read path1.perm=group_write path1.perm!=group_execute path1.perm=others_read path1.perm=others_write path1.perm!=others_execute path1.perm!=setuid path1.perm!=setgid path1.perm!=sticky";
+	policy = "allow_read /dev/null if path1.perm!=0777";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDONLY);
 		show_result(fd, 1);
@@ -246,6 +245,60 @@ static void stage_file_test(void)
 		show_result(fd, 0);
 		if (fd != EOF)
 			close(fd);
+	}
+
+	policy = "allow_read /dev/null if path1.perm=owner_read "
+		"path1.perm=owner_write path1.perm!=owner_execute "
+		"path1.perm=group_read path1.perm=group_write "
+		"path1.perm!=group_execute path1.perm=others_read "
+		"path1.perm=others_write path1.perm!=others_execute "
+		"path1.perm!=setuid path1.perm!=setgid path1.perm!=sticky";
+	if (write_policy()) {
+		int fd = open("/dev/null", O_RDONLY);
+		show_result(fd, 1);
+		if (fd != EOF)
+			close(fd);
+		delete_policy();
+		fd = open("/dev/null", O_RDONLY);
+		show_result(fd, 0);
+		if (fd != EOF)
+			close(fd);
+	}
+
+	policy = "allow_mkfifo /tmp/mknod_fifo_test "
+		"if path1.parent.perm=01777 path1.parent.perm=sticky "
+		"path1.parent.uid=0 path1.parent.gid=0";
+	if (write_policy()) {
+		filename = "/tmp/mknod_fifo_test";
+		show_result(mknod(filename, S_IFIFO, 0), 1);
+		delete_policy();
+		unlink2(filename);
+		show_result(mknod(filename, S_IFIFO, 0), 0);
+	}
+
+	{
+		char buffer[1024];
+		struct stat sbuf;
+		memset(buffer, 0, sizeof(buffer));
+		memset(&sbuf, 0, sizeof(sbuf));
+		filename = "/dev/null";
+		stat(filename, &sbuf);
+		snprintf(buffer, sizeof(buffer) - 1,
+			 "allow_write %s if path1.major=%u path1.minor=%u",
+			 filename, (unsigned int) MAJOR(sbuf.st_dev),
+			 (unsigned int) MINOR(sbuf.st_dev));
+		policy = buffer;
+		if (write_policy()) {
+			int fd = open(filename, O_WRONLY);
+			show_result(fd, 1);
+			if (fd != EOF)
+				close(fd);
+			delete_policy();
+			fd = open(filename, O_WRONLY);
+			show_result(fd, 0);
+			if (fd != EOF)
+				close(fd);
+		}
 	}
 
 	policy = "allow_read /dev/initctl if path1.type=fifo";
@@ -260,7 +313,7 @@ static void stage_file_test(void)
 		if (fd != EOF)
 			close(fd);
 	}
-#if 0
+
 	policy = "allow_read /dev/null if path1.parent.ino=path1.parent.ino";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDONLY);
@@ -597,7 +650,6 @@ static void stage_file_test(void)
 		write(exception_fd, cp, strlen(cp));
 	}
 	unlink2(filename);
-#endif
 }
 
 int main(int argc, char *argv[])
