@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2005-2008  NTT DATA CORPORATION
 #
-# Version: 1.6.5 2008/11/11
+# Version: 1.6.6-pre 2008/12/22
 #
 # This program is executed automatically by kernel
 # when execution of /sbin/init is requested.
@@ -125,6 +125,8 @@ if [ $CHDIR_OK -eq 1 ]; then
     elif [ "x$PROFILE" != "xdisable" ]; then
 	[ -r profile-$PROFILE.conf ] && cat profile-$PROFILE.conf > /proc/ccs/profile
     fi
+    [ -r meminfo.base ] && cat meminfo.base > /proc/ccs/meminfo
+    [ -r meminfo.conf ] && cat meminfo.conf > /proc/ccs/meminfo
 fi
 
 # Use disabled mode?

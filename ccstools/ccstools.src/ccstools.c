@@ -1126,6 +1126,8 @@ const char *proc_policy_dir           = "/proc/ccs/",
 	*disk_policy_manager          = "/etc/ccs/manager.conf",
 	*base_policy_manager          = "/etc/ccs/manager.base",
 	*proc_policy_meminfo          = "/proc/ccs/meminfo",
+	*disk_policy_meminfo          = "/etc/ccs/meminfo.conf",
+	*base_policy_meminfo          = "/etc/ccs/meminfo.base",
 	*proc_policy_query            = "/proc/ccs/query",
 	*proc_policy_grant_log        = "/proc/ccs/grant_log",
 	*proc_policy_reject_log       = "/proc/ccs/reject_log",
@@ -1223,6 +1225,10 @@ int main(int argc, char *argv[])
 			= "/etc/tomoyo/manager.base";
 		proc_policy_meminfo
 			= "/sys/kernel/security/tomoyo/meminfo";
+		disk_policy_meminfo
+			= "/etc/tomoyo/meminfo.conf";
+		base_policy_meminfo
+			= "/etc/tomoyo/meminfo.base";
 		proc_policy_query
 			= "/sys/kernel/security/tomoyo/query";
 		proc_policy_grant_log

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.6-pre   2008/12/16
+ * Version: 1.6.6-pre   2008/12/22
  *
  */
 
@@ -405,6 +405,8 @@ extern const char *proc_policy_dir,
 	*disk_policy_manager,
 	*base_policy_manager,
 	*proc_policy_meminfo,
+	*disk_policy_meminfo,
+	*base_policy_meminfo,
 	*proc_policy_query,
 	*proc_policy_grant_log,
 	*proc_policy_reject_log,

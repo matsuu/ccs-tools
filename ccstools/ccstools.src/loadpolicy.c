@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2008  NTT DATA CORPORATION
  *
- * Version: 1.6.6-pre   2008/12/16
+ * Version: 1.6.6-pre   2008/12/22
  *
  */
 #include "ccstools.h"
@@ -389,6 +389,7 @@ int loadpolicy_main(int argc, char *argv[])
 	int load_system_policy = 0;
 	int load_exception_policy = 0;
 	int load_domain_policy = 0;
+	int load_meminfo = 0;
 	_Bool refresh_policy = false;
 	if (access(proc_policy_dir, F_OK)) {
 		fprintf(stderr,
@@ -408,6 +409,7 @@ int loadpolicy_main(int argc, char *argv[])
 			char *f = strchr(ptr, 'f');
 			char *p = strchr(ptr, 'p');
 			char *m = strchr(ptr, 'm');
+			char *q = strchr(ptr, 'q');
 			char *i = strchr(ptr, '-');
 			if (s || a)
 				load_system_policy = 1;
@@ -419,15 +421,17 @@ int loadpolicy_main(int argc, char *argv[])
 				load_profile = 1;
 			if (m)
 				load_manager = 1;
+			if (q)
+				load_meminfo = 1;
 			if (f)
 				refresh_policy = true;
 			if (i)
 				read_from_stdin = true;
-			if (strcspn(ptr, "sedafpm-"))
+			if (strcspn(ptr, "sedafpmq-"))
 				goto usage;
 			if (read_from_stdin && load_system_policy +
 			    load_exception_policy + load_domain_policy +
-			    load_profile + load_manager != 1)
+			    load_profile + load_manager + load_meminfo != 1)
 				goto usage;
 		}
 	}
@@ -452,6 +456,15 @@ int loadpolicy_main(int argc, char *argv[])
 			move_file_to_proc(base_policy_manager,
 					  disk_policy_manager,
 					  proc_policy_manager);
+	}
+
+	if (load_meminfo) {
+		if (read_from_stdin)
+			move_file_to_proc(NULL, NULL, proc_policy_meminfo);
+		else
+			move_file_to_proc(base_policy_meminfo,
+					  disk_policy_meminfo,
+					  proc_policy_meminfo);
 	}
 
 	if (load_system_policy) {
@@ -500,15 +513,16 @@ int loadpolicy_main(int argc, char *argv[])
 	}
 	return 0;
 usage:
-	printf("%s [s][e][d][a][f][p][m][-]\n"
+	printf("%s [s][e][d][a][f][p][m][q][-]\n"
 	       "s : Load system_policy.\n"
 	       "e : Load exception_policy.\n"
 	       "d : Load domain_policy.\n"
 	       "a : Load system_policy,exception_policy,domain_policy.\n"
 	       "p : Load profile.\n"
 	       "m : Load manager.\n"
+	       "q : Load meminfo.\n"
 	       "- : Read policy from stdin. "
-	       "(Only one of 'sedpm' is possible when using '-'.)\n"
+	       "(Only one of 'sedpmq' is possible when using '-'.)\n"
 	       "f : Delete on-memory policy before loading on-disk policy. "
 	       "(Valid for 'sed'.)\n\n", argv[0]);
 	return 0;
