@@ -5,7 +5,7 @@ then
 cat << EOF
 init_policy.sh 1.6.5
 
-Copyright (C) 2005-2008 NTT DATA CORPORATION.
+Copyright (C) 2005-2009 NTT DATA CORPORATION.
 
 This program is free software; you may redistribute it under the terms of
 the GNU General Public License. This program has absolutely no warranty.
