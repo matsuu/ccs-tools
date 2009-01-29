@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-setprofile 1.6.5
+ccs-setprofile 1.6.7-pre
 
 Copyright (C) 2005-2009 NTT DATA CORPORATION.
 
