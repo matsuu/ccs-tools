@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-pre   2009/02/02
+ * Version: 1.6.7-pre   2009/02/17
  *
  */
 #include "ccstools.h"
@@ -114,6 +114,8 @@ static _Bool check_condition(char *condition)
 	       PATH2_PARENT_GID,
 	       PATH2_PARENT_INO,
 	       PATH1_TYPE,
+	       PATH1_MAJOR,
+	       PATH1_MINOR,
 	       PATH1_DEV_MAJOR,
 	       PATH1_DEV_MINOR,
 	       PATH1_MODE,
@@ -169,8 +171,10 @@ static _Bool check_condition(char *condition)
 		[PATH2_PARENT_GID]     = "path2.parent.gid",
 		[PATH2_PARENT_INO]     = "path2.parent.ino",
 		[PATH1_TYPE]           = "path1.type",
-		[PATH1_DEV_MAJOR]      = "path1.major",
-		[PATH1_DEV_MINOR]      = "path1.minor",
+		[PATH1_MAJOR]          = "path1.major",
+		[PATH1_MINOR]          = "path1.minor",
+		[PATH1_DEV_MAJOR]      = "path1.dev_major",
+		[PATH1_DEV_MINOR]      = "path1.dev_minor",
 		[PATH1_MODE]           = "path1.perm",
 		[PATH1_PARENT_MODE]    = "path1.parent.perm",
 		[PATH2_PARENT_MODE]    = "path2.parent.perm",
