@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: ccs-editpolicy [{s|e|d}]
+Usage: ccs-editpolicy [{s|e|d|p|m|q}] [readonly] [refresh=interval]
 
 This program edits TOMOYO Linux's policy currently loaded in the kernel.
 
@@ -22,6 +22,16 @@ This program edits TOMOYO Linux's policy currently loaded in the kernel.
  e     Set initial screen to exception policy editor.
 
  d     Set initial screen to domain policy editor. This is default.
+
+ p     Set initial screen to profile editor.
+
+ m     Set initial screen to manager editor.
+
+ q     Set initial screen to memory quota editor.
+
+ readonly             Browse mode. No editing is allowed.
+
+ refresh=interval     Reload automatically for every sec seconds.
 
 Examples:
 

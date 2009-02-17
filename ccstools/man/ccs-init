@@ -29,6 +29,8 @@ This program copies the following files.
 
    /etc/ccs/manager.base + /etc/ccs/manager.conf => /proc/ccs/manager
 
+   /etc/ccs/meminfo.base + /etc/ccs/meminfo.conf => /proc/ccs/meminfo
+
 If /etc/ccs/ccs-post-init is an executable file, /etc/ccs/ccs-post-init is also executed.
 You can use /etc/ccs/ccs-post-init for additional initialization purpose.
 For example, you can write

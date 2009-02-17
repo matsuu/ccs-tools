@@ -13,11 +13,11 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: ccs-loadpolicy [-][s][e][d][a][f][p][m]
+Usage: ccs-loadpolicy [-][s][e][d][a][f][p][m][q]
 
 This program loads TOMOYO Linux's policy from files or standard input into kernel.
 
- -     Read policy from stdin. Specify only one of "sedpm" option when you use this option.
+ -     Read policy from stdin. Specify only one of "sedpmq" option when you use this option.
 
  s     Load system policy. ( /etc/ccs/system_policy.base + /etc/ccs/system_policy.conf => /proc/ccs/system_policy )
 
@@ -30,6 +30,8 @@ This program loads TOMOYO Linux's policy from files or standard input into kerne
  p     Load profile. ( /etc/ccs/profile.base + /etc/ccs/profile.conf => /proc/ccs/profile )
 
  m     Load manager. ( /etc/ccs/manager.base + /etc/ccs/manager.conf => /proc/ccs/manager )
+
+ q     Load meminfo. ( /etc/ccs/meminfo.base + /etc/ccs/meminfo.conf => /proc/ccs/meminfo )
 
  f     Erase on-memory policy before loading on-disk policy. If not specified, on-disk policy is appended to on-memory policy.
        This option is valid for "seda" options.

@@ -375,3 +375,13 @@ Version 1.6.4 2008/09/03   Bug fix release.
 Version 1.6.5 2008/11/11   Third anniversary release.
 
   Updated coding style and fixed some bugs.
+
+Version 1.6.6 2009/02/02   Bug fix release.
+
+  The following programs were updated.
+
+    ccs-editpolicy:
+      Handle '\A' and '\a' correctly.
+
+    ccs-pathmatch:
+      Handle '\A' and '\a' correctly.
