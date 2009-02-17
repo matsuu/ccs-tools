@@ -16,7 +16,6 @@
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <syslog.h>
-#include <signal.h>
 #include <time.h>
 
 int main(int argc, char *argv[])
@@ -120,7 +119,6 @@ int main(int argc, char *argv[])
 			continue;
 		break;
 	}
-	signal(SIGCLD, SIG_IGN);
 	switch (fork()) {
 		time_t stamp;
 		char *cp1;
