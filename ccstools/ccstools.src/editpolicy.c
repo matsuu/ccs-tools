@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-pre   2009/02/17
+ * Version: 1.6.7-pre   2009/02/24
  *
  */
 #include "ccstools.h"
@@ -14,7 +14,6 @@ struct readline_data {
 	const char **history;
 	int count;
 	int max;
-	char *last_error;
 	char *search_buffer[MAXSCREEN];
 };
 
@@ -23,14 +22,6 @@ struct readline_data {
 static void sigalrm_handler(int sig);
 static const char *get_last_name(const struct domain_policy *dp,
 				 const int index);
-int add_string_entry(struct domain_policy *dp, const char *entry,
-		     const int index);
-int del_string_entry(struct domain_policy *dp, const char *entry,
-		     const int index);
-int find_domain(struct domain_policy *dp, const char *domainname0,
-		const _Bool is_dis, const _Bool is_dd);
-int find_or_assign_new_domain(struct domain_policy *dp, const char *domainname,
-			      const _Bool is_dis, const _Bool is_dd);
 static _Bool is_keeper_domain(struct domain_policy *dp, const int index);
 static _Bool is_initializer_source(struct domain_policy *dp, const int index);
 static _Bool is_initializer_target(struct domain_policy *dp, const int index);
@@ -74,7 +65,6 @@ static void up_arrow_key(struct domain_policy *dp);
 static void down_arrow_key(struct domain_policy *dp);
 static void page_up_key(struct domain_policy *dp);
 static void page_down_key(struct domain_policy *dp);
-int editpolicy_get_current(void);
 static void show_current(struct domain_policy *dp);
 static void adjust_cursor_pos(const int item_count);
 static void set_cursor_pos(const int index);
@@ -93,7 +83,6 @@ static int select_window(struct domain_policy *dp, const int current);
 static void show_command_key(const int screen, const _Bool readonly);
 static int generic_list_loop(struct domain_policy *dp);
 static void copy_fd_to_fp(int fd, FILE *fp);
-int editpolicy_main(int argc, char *argv[]);
 
 /* Utility Functions */
 
@@ -637,7 +626,32 @@ static int list_indent = 0;
 
 static int acl_sort_type = 1;
 
+static char *last_error = NULL;
+
 /* Main Functions */
+
+static void set_error(const char *filename)
+{
+	if (filename) {
+		const int len = strlen(filename) + 128;
+		last_error = realloc(last_error, len);
+		if (!last_error)
+			out_of_memory();
+		memset(last_error, 0, len);
+		snprintf(last_error, len - 1, "Can't open %s .", filename);
+	} else {
+		free(last_error);
+		last_error = NULL;
+	}
+}
+
+static int open2(const char *filename, int mode)
+{
+	const int fd = open(filename, mode);
+	if (fd == EOF && errno != ENOENT)
+		set_error(filename);
+	return fd;
+}
 
 static void sigalrm_handler(int sig)
 {
@@ -737,9 +751,13 @@ out:
 		close(fd[0]);
 		exit(1);
 	} else {
+		FILE *fp;
 		if (readonly_mode)
 			return NULL;
-		return fdopen(open(filename, O_WRONLY), "w");
+		fp = fdopen(open2(filename, O_WRONLY), "w");
+		if (!fp)
+			set_error(filename);
+		return fp;
 	}
 }
 
@@ -778,6 +796,7 @@ static void read_generic_policy(void)
 		free((void *)
 		     generic_acl_list[--generic_acl_list_count].operand);
 	if (!offline_mode && current_screen == SCREEN_ACL_LIST) {
+		/* Don't set error message if failed. */
 		fp = fopen(policy_file, "r+");
 		if (fp) {
 			fprintf(fp, "select domain=%s\n", current_domain);
@@ -786,8 +805,10 @@ static void read_generic_policy(void)
 	}
 	if (!fp)
 		fp = open_read(policy_file);
-	if (!fp)
+	if (!fp) {
+		set_error(policy_file);
 		return;
+	}
 	get();
 	while (freadline(fp)) {
 		u8 directive;
@@ -999,8 +1020,10 @@ static void read_domain_and_exception_policy(struct domain_policy *dp)
 
 	/* Load domain_initializer list, domain_keeper list. */
 	fp = open_read(proc_policy_exception_policy);
-	if (!fp)
+	if (!fp) {
+		set_error(proc_policy_exception_policy);
 		goto no_exception;
+	}
 	get();
 	while (freadline(fp)) {
 		if (str_starts(shared_buffer, KEYWORD_INITIALIZE_DOMAIN))
@@ -1024,6 +1047,7 @@ no_exception:
 	/* Load all domain list. */
 	fp = NULL;
 	if (!offline_mode) {
+		/* Don't set error message if failed. */
 		fp = fopen(policy_file, "r+");
 		if (fp) {
 			fprintf(fp, "select allow_execute\n");
@@ -1032,8 +1056,10 @@ no_exception:
 	}
 	if (!fp)
 		fp = open_read(proc_policy_domain_policy);
-	if (!fp)
+	if (!fp) {
+		set_error(proc_policy_domain_policy);
 		goto no_domain;
+	}
 	index = EOF;
 	get();
 	while (freadline(fp)) {
@@ -1588,11 +1614,11 @@ static void add_entry(struct readline_data *rl)
 	case SCREEN_DOMAIN_LIST:
 		if (!is_correct_domain(line)) {
 			const int len = strlen(line) + 128;
-			rl->last_error = realloc(rl->last_error, len);
-			if (!rl->last_error)
+			last_error = realloc(last_error, len);
+			if (!last_error)
 				out_of_memory();
-			memset(rl->last_error, 0, len);
-			snprintf(rl->last_error, len - 1,
+			memset(last_error, 0, len);
+			snprintf(last_error, len - 1,
 				 "%s is an invalid domainname.", line);
 			line[0] = '\0';
 		}
@@ -1877,13 +1903,13 @@ start:
 	}
 start2:
 	show_list(dp);
-	if (rl.last_error && current_screen == SCREEN_DOMAIN_LIST) {
+	if (last_error) {
 		move(1, 0);
-		printw("ERROR: %s", rl.last_error);
+		printw("ERROR: %s", last_error);
 		clrtoeol();
 		refresh();
-		free(rl.last_error);
-		rl.last_error = NULL;
+		free(last_error);
+		last_error = NULL;
 	}
 	while (true) {
 		const int current = editpolicy_get_current();
@@ -2204,80 +2230,100 @@ int editpolicy_main(int argc, char *argv[])
 		close(fd[1]);
 		persistent_fd = fd[0];
 		{
-			int fd = open(base_policy_system_policy, O_RDONLY);
+			int fd = open2(base_policy_system_policy, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp =
 					open_write(proc_policy_system_policy);
-				copy_fd_to_fp(fd, fp);
-				fclose(fp);
+				if (fp) {
+					copy_fd_to_fp(fd, fp);
+					fclose(fp);
+				}
 				close(fd);
 			}
-			fd = open(disk_policy_system_policy, O_RDONLY);
+			fd = open2(disk_policy_system_policy, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp =
 					open_write(proc_policy_system_policy);
-				copy_fd_to_fp(fd, fp);
-				fclose(fp);
+				if (fp) {
+					copy_fd_to_fp(fd, fp);
+					fclose(fp);
+				}
 				close(fd);
 			}
-			fd = open(base_policy_exception_policy, O_RDONLY);
+			fd = open2(base_policy_exception_policy, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp =
 				open_write(proc_policy_exception_policy);
-				copy_fd_to_fp(fd, fp);
-				fclose(fp);
+				if (fp) {
+					copy_fd_to_fp(fd, fp);
+					fclose(fp);
+				}
 				close(fd);
 			}
-			fd = open(disk_policy_exception_policy, O_RDONLY);
+			fd = open2(disk_policy_exception_policy, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp =
 				open_write(proc_policy_exception_policy);
-				copy_fd_to_fp(fd, fp);
-				fclose(fp);
+				if (fp) {
+					copy_fd_to_fp(fd, fp);
+					fclose(fp);
+				}
 				close(fd);
 			}
-			fd = open(base_policy_domain_policy, O_RDONLY);
+			fd = open2(base_policy_domain_policy, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp =
 					open_write(proc_policy_domain_policy);
-				copy_fd_to_fp(fd, fp);
-				fclose(fp);
+				if (fp) {
+					copy_fd_to_fp(fd, fp);
+					fclose(fp);
+				}
 				close(fd);
 			}
-			fd = open(disk_policy_domain_policy, O_RDONLY);
+			fd = open2(disk_policy_domain_policy, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp =
 					open_write(proc_policy_domain_policy);
-				copy_fd_to_fp(fd, fp);
-				fclose(fp);
+				if (fp) {
+					copy_fd_to_fp(fd, fp);
+					fclose(fp);
+				}
 				close(fd);
 			}
-			fd = open(base_policy_profile, O_RDONLY);
+			fd = open2(base_policy_profile, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp = open_write(proc_policy_profile);
-				copy_fd_to_fp(fd, fp);
-				fclose(fp);
+				if (fp) {
+					copy_fd_to_fp(fd, fp);
+					fclose(fp);
+				}
 				close(fd);
 			}
-			fd = open(disk_policy_profile, O_RDONLY);
+			fd = open2(disk_policy_profile, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp = open_write(proc_policy_profile);
-				copy_fd_to_fp(fd, fp);
-				fclose(fp);
+				if (fp) {
+					copy_fd_to_fp(fd, fp);
+					fclose(fp);
+				}
 				close(fd);
 			}
-			fd = open(base_policy_manager, O_RDONLY);
+			fd = open2(base_policy_manager, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp = open_write(proc_policy_manager);
-				copy_fd_to_fp(fd, fp);
-				fclose(fp);
+				if (fp) {
+					copy_fd_to_fp(fd, fp);
+					fclose(fp);
+				}
 				close(fd);
 			}
-			fd = open(disk_policy_manager, O_RDONLY);
+			fd = open2(disk_policy_manager, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp = open_write(proc_policy_manager);
-				copy_fd_to_fp(fd, fp);
-				fclose(fp);
+				if (fp) {
+					copy_fd_to_fp(fd, fp);
+					fclose(fp);
+				}
 				close(fd);
 			}
 		}
@@ -2288,10 +2334,12 @@ int editpolicy_main(int argc, char *argv[])
 			return 1;
 		}
 		if (!readonly_mode) {
-			const int fd1 = open(proc_policy_system_policy, O_RDWR);
-			const int fd2 = open(proc_policy_exception_policy,
-					     O_RDWR);
-			const int fd3 = open(proc_policy_domain_policy, O_RDWR);
+			const int fd1 = open2(proc_policy_system_policy,
+					      O_RDWR);
+			const int fd2 = open2(proc_policy_exception_policy,
+					      O_RDWR);
+			const int fd3 = open2(proc_policy_domain_policy,
+					      O_RDWR);
 			if ((fd1 != EOF && write(fd1, "", 0) != 0) ||
 			    (fd2 != EOF && write(fd2, "", 0) != 0) ||
 			    (fd3 != EOF && write(fd3, "", 0) != 0)) {

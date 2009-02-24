@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-pre   2009/02/17
+ * Version: 1.6.7-pre   2009/02/24
  *
  */
 #include "ccstools.h"

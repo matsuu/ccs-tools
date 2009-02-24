@@ -5,22 +5,14 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-pre   2009/02/17
+ * Version: 1.6.7-pre   2009/02/24
  *
  */
 #include "ccstools.h"
 
 /* Prototypes */
 
-void editpolicy_color_init(void);
 static void editpolicy_color_save(const _Bool flg);
-void editpolicy_color_change(const attr_t attr, const _Bool flg);
-void editpolicy_attr_change(const attr_t attr, const _Bool flg);
-void editpolicy_sttr_save(void);
-void editpolicy_sttr_restore(void);
-int editpolicy_color_head(const int screen);
-int editpolicy_color_cursor(const int screen);
-void editpolicy_line_draw(const int screen);
 
 /* Main functions */
 

@@ -5,15 +5,10 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-pre   2009/02/17
+ * Version: 1.6.7-pre   2009/02/24
  *
  */
 #include "ccstools.h"
-
-/* Prototypes */
-
-u8 find_directive(const _Bool forward, char *line);
-void editpolicy_init_keyword_map(void);
 
 /* Variables */
 

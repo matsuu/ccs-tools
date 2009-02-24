@@ -5,22 +5,18 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-pre   2009/02/17
+ * Version: 1.6.7-pre   2009/02/24
  *
  */
 #include "ccstools.h"
 
 /* Prototypes */
 
-void out_of_memory(void);
-_Bool str_starts(char *str, const char *begin);
 static _Bool is_byte_range(const char *str);
 static _Bool is_decimal(const char c);
 static _Bool is_hexadecimal(const char c);
 static _Bool is_alphabet_char(const char c);
 static u8 make_byte(const u8 c1, const u8 c2, const u8 c3);
-void normalize_line(unsigned char *line);
-char *make_filename(const char *prefix, const time_t time);
 static inline unsigned long partial_name_hash(unsigned long c,
 					      unsigned long prevhash);
 static inline unsigned int full_name_hash(const unsigned char *name,
@@ -28,45 +24,9 @@ static inline unsigned int full_name_hash(const unsigned char *name,
 static void *alloc_element(const unsigned int size);
 static int path_depth(const char *pathname);
 static int const_part_length(const char *filename);
-_Bool is_domain_def(const unsigned char *domainname);
-_Bool is_correct_domain(const unsigned char *domainname);
-void fprintf_encoded(FILE *fp, const char *pathname);
-_Bool decode(const char *ascii, char *bin);
-_Bool is_correct_path(const char *filename, const s8 start_type,
-		      const s8 pattern_type, const s8 end_type);
-static _Bool file_matches_pattern2(const char *filename,
-				   const char *filename_end,
-				   const char *pattern,
-				   const char *pattern_end);
-_Bool file_matches_pattern(const char *filename, const char *filename_end,
-			   const char *pattern, const char *pattern_end);
-_Bool path_matches_pattern(const struct path_info *filename,
-			   const struct path_info *pattern);
-int string_compare(const void *a, const void *b);
-_Bool pathcmp(const struct path_info *a, const struct path_info *b);
-void fill_path_info(struct path_info *ptr);
-const struct path_info *savename(const char *name);
-FILE *open_read(const char *filename);
-_Bool move_proc_to_file(const char *src, const char *base, const char *dest);
-_Bool is_identical_file(const char *file1, const char *file2);
-void clear_domain_policy(struct domain_policy *dp);
-int find_domain_by_ptr(struct domain_policy *dp,
-		       const struct path_info *domainname);
-_Bool save_domain_policy_with_diff(struct domain_policy *dp,
-				   struct domain_policy *bp,
-				   const char *proc, const char *base,
-				   const char *diff);
-const char *domain_name(const struct domain_policy *dp, const int index);
 static int domainname_compare(const void *a, const void *b);
 static int path_info_compare(const void *a, const void *b);
 static void sort_domain_policy(struct domain_policy *dp);
-void read_domain_policy(struct domain_policy *dp, const char *filename);
-void delete_domain(struct domain_policy *dp, const int index);
-void handle_domain_policy(struct domain_policy *dp, FILE *fp, _Bool is_write);
-void get(void);
-void put(void);
-void shprintf(const char *fmt, ...);
-_Bool freadline(FILE *fp);
 
 /* Utility functions */
 
@@ -1288,7 +1248,7 @@ show_version:
 	 * You should use either "symbolic links with 'alias' directive" or
 	 * "hard links".
 	 */
-	printf("ccstools version 1.6.7-pre build 2009/02/17\n");
+	printf("ccstools version 1.6.7-pre build 2009/02/24\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }

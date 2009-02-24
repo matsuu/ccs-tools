@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-pre   2009/02/17
+ * Version: 1.6.7-pre   2009/02/24
  *
  */
 #include "ccstools.h"
@@ -27,7 +27,6 @@ static _Bool convert_path_info(FILE *fp, const struct path_info *pattern,
 static _Bool check_path_info(const char *buffer);
 static _Bool handle_query_new_format(unsigned int serial);
 static _Bool handle_query_old_format(unsigned int serial);
-int ccsqueryd_main(int argc, char *argv[]);
 
 /* Utility functions */
 

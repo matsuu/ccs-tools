@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-pre   2009/02/17
+ * Version: 1.6.7-pre   2009/02/24
  *
  */
 #include "ccstools.h"
@@ -17,10 +17,8 @@ struct misc_policy {
 
 /* Prototypes */
 
-void send_fd(char *data, int *fd);
 static void handle_misc_policy(struct misc_policy *mp, FILE *fp,
 			       _Bool is_write);
-void editpolicy_offline_daemon(void);
 
 /* Utility functions */
 
