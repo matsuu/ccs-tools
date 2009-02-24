@@ -14,6 +14,7 @@ static int domain_fd = EOF;
 static int exception_fd = EOF;
 static const char *policy = "";
 static char self_domain[4096] = "";
+static _Bool has_cond = 1;
 
 static int write_policy(void)
 {
@@ -130,6 +131,8 @@ static void stage_file_test(void)
 	char *filename = "";
 	policy = "allow_read /proc/sys/net/ipv4/ip_local_port_range "
 		"if task.uid=0 task.gid=0";
+	if (!has_cond)
+		policy = "allow_read /proc/sys/net/ipv4/ip_local_port_range";
 	if (write_policy()) {
 		static int name[] = { CTL_NET, NET_IPV4,
 				      NET_IPV4_LOCAL_PORT_RANGE };
@@ -141,6 +144,8 @@ static void stage_file_test(void)
 	}
 	policy = "allow_write /proc/sys/net/ipv4/ip_local_port_range "
 		"if task.euid=0 0=0 1-100=10-1000";
+	if (!has_cond)
+		policy = "allow_write /proc/sys/net/ipv4/ip_local_port_range";
 	if (write_policy()) {
 		static int name[] = { CTL_NET, NET_IPV4,
 				      NET_IPV4_LOCAL_PORT_RANGE };
@@ -152,6 +157,8 @@ static void stage_file_test(void)
 	}
 	policy = "allow_read/write /proc/sys/net/ipv4/ip_local_port_range "
 		"if 1!=10-100";
+	if (!has_cond)
+		policy = "allow_read/write /proc/sys/net/ipv4/ip_local_port_range";
 	if (write_policy()) {
 		static int name[] = { CTL_NET, NET_IPV4,
 				      NET_IPV4_LOCAL_PORT_RANGE };
@@ -164,6 +171,8 @@ static void stage_file_test(void)
 
 	policy = "allow_read /bin/true "
 		"if path1.uid=0 path1.parent.uid=0 10=10-100";
+	if (!has_cond)
+		policy = "allow_read /bin/true";
 	if (write_policy()) {
 		show_result(uselib("/bin/true"), 1);
 		delete_policy();
@@ -171,6 +180,8 @@ static void stage_file_test(void)
 	}
 
 	policy = "allow_execute /bin/true if task.uid!=10 path1.parent.uid=0";
+	if (!has_cond)
+		policy = "allow_execute /bin/true";
 	if (write_policy()) {
 		int pipe_fd[2] = { EOF, EOF };
 		int err = 0;
@@ -209,6 +220,8 @@ static void stage_file_test(void)
 
 	policy = "allow_read /dev/null if path1.type=char path1.dev_major=1 "
 		"path1.dev_minor=3";
+	if (!has_cond)
+		policy = "allow_read /dev/null";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDONLY);
 		show_result(fd, 1);
@@ -222,6 +235,8 @@ static void stage_file_test(void)
 	}
 
 	policy = "allow_read /dev/null if path1.perm=0666";
+	if (!has_cond)
+		policy = "allow_read /dev/null";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDONLY);
 		show_result(fd, 1);
@@ -235,6 +250,8 @@ static void stage_file_test(void)
 	}
 
 	policy = "allow_read /dev/null if path1.perm!=0777";
+	if (!has_cond)
+		policy = "allow_read /dev/null";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDONLY);
 		show_result(fd, 1);
@@ -253,6 +270,8 @@ static void stage_file_test(void)
 		"path1.perm!=group_execute path1.perm=others_read "
 		"path1.perm=others_write path1.perm!=others_execute "
 		"path1.perm!=setuid path1.perm!=setgid path1.perm!=sticky";
+	if (!has_cond)
+		policy = "allow_read /dev/null";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDONLY);
 		show_result(fd, 1);
@@ -268,6 +287,8 @@ static void stage_file_test(void)
 	policy = "allow_mkfifo /tmp/mknod_fifo_test "
 		"if path1.parent.perm=01777 path1.parent.perm=sticky "
 		"path1.parent.uid=0 path1.parent.gid=0";
+	if (!has_cond)
+		policy = "allow_mkfifo /tmp/mknod_fifo_test";
 	if (write_policy()) {
 		filename = "/tmp/mknod_fifo_test";
 		show_result(mknod(filename, S_IFIFO, 0), 1);
@@ -287,6 +308,9 @@ static void stage_file_test(void)
 			 "allow_write %s if path1.major=%u path1.minor=%u",
 			 filename, (unsigned int) MAJOR(sbuf.st_dev),
 			 (unsigned int) MINOR(sbuf.st_dev));
+		if (!has_cond)
+			snprintf(buffer, sizeof(buffer) - 1,
+				 "allow_write %s", filename);
 		policy = buffer;
 		if (write_policy()) {
 			int fd = open(filename, O_WRONLY);
@@ -302,6 +326,8 @@ static void stage_file_test(void)
 	}
 
 	policy = "allow_read /dev/initctl if path1.type=fifo";
+	if (!has_cond)
+		policy = "allow_read /dev/initctl";
 	if (write_policy()) {
 		int fd = open("/dev/initctl", O_RDONLY);
 		show_result(fd, 1);
@@ -315,6 +341,8 @@ static void stage_file_test(void)
 	}
 
 	policy = "allow_read /dev/null if path1.parent.ino=path1.parent.ino";
+	if (!has_cond)
+		policy = "allow_read /dev/null";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDONLY);
 		show_result(fd, 1);
@@ -328,6 +356,8 @@ static void stage_file_test(void)
 	}
 
 	policy = "allow_write /dev/null if path1.uid=path1.gid";
+	if (!has_cond)
+		policy = "allow_write /dev/null";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_WRONLY);
 		show_result(fd, 1);
@@ -341,6 +371,8 @@ static void stage_file_test(void)
 	}
 
 	policy = "allow_read/write /dev/null if task.uid=path1.parent.uid";
+	if (!has_cond)
+		policy = "allow_read/write /dev/null if task.uid=path1.parent.uid";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDWR);
 		show_result(fd, 1);
@@ -354,8 +386,12 @@ static void stage_file_test(void)
 	}
 
 	policy = "allow_create /tmp/open_test if path1.parent.uid=task.uid";
+	if (!has_cond)
+		policy = "allow_create /tmp/open_test";
 	if (write_policy()) {
 		policy = "allow_write /tmp/open_test if path1.parent.uid=0";
+		if (!has_cond)
+			policy = "allow_write /tmp/open_test";
 		if (write_policy()) {
 			int fd = open("/tmp/open_test",
 				      O_WRONLY | O_CREAT | O_EXCL, 0666);
@@ -372,7 +408,9 @@ static void stage_file_test(void)
 			unlink2("/tmp/open_test");
 		}
 		policy = "allow_create /tmp/open_test "
-			"if path1.parent.uid=task.uid\n";
+			"if path1.parent.uid=task.uid";
+		if (!has_cond)
+			policy = "allow_create /tmp/open_test";
 		delete_policy();
 	}
 
@@ -395,7 +433,9 @@ static void stage_file_test(void)
 			unlink2("/tmp/open_test");
 		}
 		policy = "allow_write /tmp/open_test "
-			"if task.uid=0 path1.ino!=0\n";
+			"if task.uid=0 path1.ino!=0";
+		if (!has_cond)
+			policy = "allow_write /tmp/open_test";
 		delete_policy();
 	}
 
@@ -435,7 +475,7 @@ static void stage_file_test(void)
 			if (fd != EOF)
 				close(fd);
 		}
-		policy = "allow_write /tmp/truncate_test\n";
+		policy = "allow_write /tmp/truncate_test";
 		delete_policy();
 	}
 
@@ -671,6 +711,7 @@ int main(int argc, char *argv[])
 		cp = "use_profile 255\n";
 		write(domain_fd, cp, strlen(cp));
 	}
+	has_cond = !access("/proc/ccs/version", F_OK);
 	cp = "255-MAX_REJECT_LOG=1024\n";
 	write(profile_fd, cp, strlen(cp));
 	stage_file_test();
