@@ -1798,7 +1798,8 @@ static int select_window(struct domain_policy *dp, const int current)
 {
 	move(0, 0);
 	printw("Press one of below keys to switch window.\n\n");
-	printw("s     <<< System Policy Editor >>>\n");
+	if (offline_mode || access(proc_policy_system_policy, F_OK) == 0)
+		printw("s     <<< System Policy Editor >>>\n");
 	printw("e     <<< Exception Policy Editor >>>\n");
 	printw("d     <<< Domain Transition Editor >>>\n");
 	if (current_screen == SCREEN_DOMAIN_LIST &&
@@ -1816,7 +1817,9 @@ static int select_window(struct domain_policy *dp, const int current)
 	while (true) {
 		int c = getch2();
 		if (c == 'S' || c == 's')
-			return SCREEN_SYSTEM_LIST;
+			if (offline_mode ||
+			    access(proc_policy_system_policy, F_OK) == 0)
+				return SCREEN_SYSTEM_LIST;
 		if (c == 'E' || c == 'e')
 			return SCREEN_EXCEPTION_LIST;
 		if (c == 'D' || c == 'd')
