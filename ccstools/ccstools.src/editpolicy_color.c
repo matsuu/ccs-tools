@@ -42,6 +42,18 @@ void editpolicy_color_init(void)
 		  COLOR_YELLOW,     "ACL_HEAD" },
 		{ ACL_CURSOR,       COLOR_BLACK,
 		  COLOR_YELLOW,     "ACL_CURSOR" },
+		{ PROFILE_HEAD,     COLOR_WHITE,
+		  COLOR_RED,        "PROFILE_HEAD" },
+		{ PROFILE_CURSOR,   COLOR_WHITE,
+		  COLOR_RED,        "PROFILE_CURSOR" },
+		{ MANAGER_HEAD,     COLOR_WHITE,
+		  COLOR_GREEN,      "MANAGER_HEAD" },
+		{ MANAGER_CURSOR,   COLOR_WHITE,
+		  COLOR_GREEN,      "MANAGER_CURSOR" },
+		{ MEMORY_HEAD,      COLOR_WHITE,
+		  COLOR_YELLOW,     "MEMORY_HEAD" },
+		{ MEMORY_CURSOR,    COLOR_WHITE,
+		  COLOR_YELLOW,     "MEMORY_CURSOR" },
 		{ NORMAL,           COLOR_WHITE,
 		  COLOR_BLACK,      NULL }
 	};
@@ -126,24 +138,42 @@ void editpolicy_sttr_restore(void)
 
 int editpolicy_color_head(const int screen)
 {
-	if (screen == SCREEN_DOMAIN_LIST)
+	switch (screen) {
+	case SCREEN_DOMAIN_LIST:
 		return DOMAIN_HEAD;
-	if (screen == SCREEN_SYSTEM_LIST)
+	case SCREEN_SYSTEM_LIST:
 		return SYSTEM_HEAD;
-	if (screen == SCREEN_EXCEPTION_LIST)
+	case SCREEN_EXCEPTION_LIST:
 		return EXCEPTION_HEAD;
-	return ACL_HEAD;
+	case SCREEN_PROFILE_LIST:
+		return PROFILE_HEAD;
+	case SCREEN_MANAGER_LIST:
+		return MANAGER_HEAD;
+	case SCREEN_MEMINFO_LIST:
+		return MEMORY_HEAD;
+	default:
+		return ACL_HEAD;
+	}
 }
 
 int editpolicy_color_cursor(const int screen)
 {
-	if (screen == SCREEN_DOMAIN_LIST)
+	switch (screen) {
+	case SCREEN_DOMAIN_LIST:
 		return DOMAIN_CURSOR;
-	if (screen == SCREEN_SYSTEM_LIST)
+	case SCREEN_SYSTEM_LIST:
 		return SYSTEM_CURSOR;
-	if (screen == SCREEN_EXCEPTION_LIST)
+	case SCREEN_EXCEPTION_LIST:
 		return EXCEPTION_CURSOR;
-	return ACL_CURSOR;
+	case SCREEN_PROFILE_LIST:
+		return PROFILE_CURSOR;
+	case SCREEN_MANAGER_LIST:
+		return MANAGER_CURSOR;
+	case SCREEN_MEMINFO_LIST:
+		return MEMORY_CURSOR;
+	default:
+		return ACL_CURSOR;
+	}
 }
 
 void editpolicy_line_draw(const int screen)
