@@ -372,7 +372,7 @@ static void stage_file_test(void)
 
 	policy = "allow_read/write /dev/null if task.uid=path1.parent.uid";
 	if (!has_cond)
-		policy = "allow_read/write /dev/null if task.uid=path1.parent.uid";
+		policy = "allow_read/write /dev/null";
 	if (write_policy()) {
 		int fd = open("/dev/null", O_RDWR);
 		show_result(fd, 1);
@@ -415,8 +415,12 @@ static void stage_file_test(void)
 	}
 
 	policy = "allow_write /tmp/open_test if task.uid=0 path1.ino!=0";
+	if (!has_cond)
+		policy = "allow_write /tmp/open_test";
 	if (write_policy()) {
 		policy = "allow_create /tmp/open_test if 0=0";
+		if (!has_cond)
+			policy = "allow_create /tmp/open_test";
 		if (write_policy()) {
 			int fd = open("/tmp/open_test",
 				      O_WRONLY | O_CREAT | O_EXCL, 0666);
@@ -443,8 +447,12 @@ static void stage_file_test(void)
 	create2(filename);
 
 	policy = "allow_truncate /tmp/truncate_test if task.uid=path1.uid";
+	if (!has_cond)
+		policy = "allow_truncate /tmp/truncate_test";
 	if (write_policy()) {
 		policy = "allow_write /tmp/truncate_test if 1!=100-1000000";
+		if (!has_cond)
+			policy = "allow_write /tmp/truncate_test";
 		if (write_policy()) {
 			int fd = open(filename, O_WRONLY | O_TRUNC);
 			show_result(fd, 1);
@@ -458,6 +466,8 @@ static void stage_file_test(void)
 		}
 		policy = "allow_truncate /tmp/truncate_test "
 			"if task.uid=path1.uid";
+		if (!has_cond)
+			policy = "allow_truncate /tmp/truncate_test";
 		delete_policy();
 	}
 
