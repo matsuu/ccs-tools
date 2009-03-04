@@ -4,24 +4,12 @@
 #
 # Copyright (C) 2005-2009  NTT DATA CORPORATION
 #
-# Version: 2.2.0-pre   2009/02/17
+# Version: 2.2.0-pre   2009/03/04
 #
 
 cd ${0%/*}
 set -f
 export PATH=$PWD:/sbin:/bin:${PATH}
-
-PROFILE_TYPE="--full-profile"
-
-while [ $# -gt 0 ]
-do
-	case "$1" in
-	--file-only-profile|--full-profile)
-		PROFILE_TYPE="$1"
-		;;
-	esac
-	shift
-done
 
 # Verify realpath works.
 if ! realpath -n / > /dev/null; then
@@ -88,7 +76,7 @@ make_exception() {
 	#
 	# Make patterns for policy directory.
 	#
-	echo 'file_pattern /etc/tomoyo/system_policy.\$-\$-\$.\$:\$:\$.conf'
+	# echo 'file_pattern /etc/tomoyo/system_policy.\$-\$-\$.\$:\$:\$.conf'
 	echo 'file_pattern /etc/tomoyo/exception_policy.\$-\$-\$.\$:\$:\$.conf'
 	echo 'file_pattern /etc/tomoyo/domain_policy.\$-\$-\$.\$:\$:\$.conf'
 	
@@ -594,9 +582,7 @@ fi
 
 if [ ! -r /etc/tomoyo/profile.conf ]; then
 	echo Creating default profile.
-	case "$PROFILE_TYPE" in
-	--file-only-profile)
-		cat > /etc/tomoyo/profile.conf << EOF
+	cat > /etc/tomoyo/profile.conf << EOF
 0-COMMENT=-----Disabled Mode-----
 0-MAC_FOR_FILE=disabled
 0-TOMOYO_VERBOSE=disabled
@@ -610,204 +596,6 @@ if [ ! -r /etc/tomoyo/profile.conf ]; then
 3-MAC_FOR_FILE=enforcing
 3-TOMOYO_VERBOSE=enabled
 EOF
-		;;
-	*)
-		cat > /etc/tomoyo/profile.conf << EOF
-0-COMMENT=-----Disabled Mode-----
-0-MAC_FOR_FILE=disabled
-0-MAC_FOR_ARGV0=disabled
-0-MAC_FOR_ENV=disabled
-0-MAC_FOR_NETWORK=disabled
-0-MAC_FOR_SIGNAL=disabled
-0-DENY_CONCEAL_MOUNT=disabled
-0-RESTRICT_CHROOT=disabled
-0-RESTRICT_MOUNT=disabled
-0-RESTRICT_UNMOUNT=disabled
-0-RESTRICT_PIVOT_ROOT=disabled
-0-RESTRICT_AUTOBIND=disabled
-0-MAX_ACCEPT_ENTRY=2048
-0-MAX_GRANT_LOG=1024
-0-MAX_REJECT_LOG=1024
-0-TOMOYO_VERBOSE=enabled
-0-SLEEP_PERIOD=0
-0-MAC_FOR_CAPABILITY::inet_tcp_create=disabled
-0-MAC_FOR_CAPABILITY::inet_tcp_listen=disabled
-0-MAC_FOR_CAPABILITY::inet_tcp_connect=disabled
-0-MAC_FOR_CAPABILITY::use_inet_udp=disabled
-0-MAC_FOR_CAPABILITY::use_inet_ip=disabled
-0-MAC_FOR_CAPABILITY::use_route=disabled
-0-MAC_FOR_CAPABILITY::use_packet=disabled
-0-MAC_FOR_CAPABILITY::SYS_MOUNT=disabled
-0-MAC_FOR_CAPABILITY::SYS_UMOUNT=disabled
-0-MAC_FOR_CAPABILITY::SYS_REBOOT=disabled
-0-MAC_FOR_CAPABILITY::SYS_CHROOT=disabled
-0-MAC_FOR_CAPABILITY::SYS_KILL=disabled
-0-MAC_FOR_CAPABILITY::SYS_VHANGUP=disabled
-0-MAC_FOR_CAPABILITY::SYS_TIME=disabled
-0-MAC_FOR_CAPABILITY::SYS_NICE=disabled
-0-MAC_FOR_CAPABILITY::SYS_SETHOSTNAME=disabled
-0-MAC_FOR_CAPABILITY::use_kernel_module=disabled
-0-MAC_FOR_CAPABILITY::create_fifo=disabled
-0-MAC_FOR_CAPABILITY::create_block_dev=disabled
-0-MAC_FOR_CAPABILITY::create_char_dev=disabled
-0-MAC_FOR_CAPABILITY::create_unix_socket=disabled
-0-MAC_FOR_CAPABILITY::SYS_LINK=disabled
-0-MAC_FOR_CAPABILITY::SYS_SYMLINK=disabled
-0-MAC_FOR_CAPABILITY::SYS_RENAME=disabled
-0-MAC_FOR_CAPABILITY::SYS_UNLINK=disabled
-0-MAC_FOR_CAPABILITY::SYS_CHMOD=disabled
-0-MAC_FOR_CAPABILITY::SYS_CHOWN=disabled
-0-MAC_FOR_CAPABILITY::SYS_IOCTL=disabled
-0-MAC_FOR_CAPABILITY::SYS_KEXEC_LOAD=disabled
-0-MAC_FOR_CAPABILITY::SYS_PIVOT_ROOT=disabled
-0-MAC_FOR_CAPABILITY::SYS_PTRACE=disabled
-1-COMMENT=-----Learning Mode-----
-1-MAC_FOR_FILE=learning
-1-MAC_FOR_ARGV0=learning
-1-MAC_FOR_ENV=learning
-1-MAC_FOR_NETWORK=learning
-1-MAC_FOR_SIGNAL=learning
-1-DENY_CONCEAL_MOUNT=permissive
-1-RESTRICT_CHROOT=learning
-1-RESTRICT_MOUNT=learning
-1-RESTRICT_UNMOUNT=permissive
-1-RESTRICT_PIVOT_ROOT=learning
-1-RESTRICT_AUTOBIND=enabled
-1-MAX_ACCEPT_ENTRY=2048
-1-MAX_GRANT_LOG=1024
-1-MAX_REJECT_LOG=1024
-1-TOMOYO_VERBOSE=disabled
-1-SLEEP_PERIOD=0
-1-MAC_FOR_CAPABILITY::inet_tcp_create=learning
-1-MAC_FOR_CAPABILITY::inet_tcp_listen=learning
-1-MAC_FOR_CAPABILITY::inet_tcp_connect=learning
-1-MAC_FOR_CAPABILITY::use_inet_udp=learning
-1-MAC_FOR_CAPABILITY::use_inet_ip=learning
-1-MAC_FOR_CAPABILITY::use_route=learning
-1-MAC_FOR_CAPABILITY::use_packet=learning
-1-MAC_FOR_CAPABILITY::SYS_MOUNT=learning
-1-MAC_FOR_CAPABILITY::SYS_UMOUNT=learning
-1-MAC_FOR_CAPABILITY::SYS_REBOOT=learning
-1-MAC_FOR_CAPABILITY::SYS_CHROOT=learning
-1-MAC_FOR_CAPABILITY::SYS_KILL=learning
-1-MAC_FOR_CAPABILITY::SYS_VHANGUP=learning
-1-MAC_FOR_CAPABILITY::SYS_TIME=learning
-1-MAC_FOR_CAPABILITY::SYS_NICE=learning
-1-MAC_FOR_CAPABILITY::SYS_SETHOSTNAME=learning
-1-MAC_FOR_CAPABILITY::use_kernel_module=learning
-1-MAC_FOR_CAPABILITY::create_fifo=learning
-1-MAC_FOR_CAPABILITY::create_block_dev=learning
-1-MAC_FOR_CAPABILITY::create_char_dev=learning
-1-MAC_FOR_CAPABILITY::create_unix_socket=learning
-1-MAC_FOR_CAPABILITY::SYS_LINK=learning
-1-MAC_FOR_CAPABILITY::SYS_SYMLINK=learning
-1-MAC_FOR_CAPABILITY::SYS_RENAME=learning
-1-MAC_FOR_CAPABILITY::SYS_UNLINK=learning
-1-MAC_FOR_CAPABILITY::SYS_CHMOD=learning
-1-MAC_FOR_CAPABILITY::SYS_CHOWN=learning
-1-MAC_FOR_CAPABILITY::SYS_IOCTL=learning
-1-MAC_FOR_CAPABILITY::SYS_KEXEC_LOAD=learning
-1-MAC_FOR_CAPABILITY::SYS_PIVOT_ROOT=learning
-1-MAC_FOR_CAPABILITY::SYS_PTRACE=learning
-2-COMMENT=-----Permissive Mode-----
-2-MAC_FOR_FILE=permissive
-2-MAC_FOR_ARGV0=permissive
-2-MAC_FOR_ENV=permissive
-2-MAC_FOR_NETWORK=permissive
-2-MAC_FOR_SIGNAL=permissive
-2-DENY_CONCEAL_MOUNT=permissive
-2-RESTRICT_CHROOT=permissive
-2-RESTRICT_MOUNT=permissive
-2-RESTRICT_UNMOUNT=permissive
-2-RESTRICT_PIVOT_ROOT=permissive
-2-RESTRICT_AUTOBIND=enabled
-2-MAX_ACCEPT_ENTRY=2048
-2-MAX_GRANT_LOG=1024
-2-MAX_REJECT_LOG=1024
-2-TOMOYO_VERBOSE=enabled
-2-SLEEP_PERIOD=0
-2-MAC_FOR_CAPABILITY::inet_tcp_create=permissive
-2-MAC_FOR_CAPABILITY::inet_tcp_listen=permissive
-2-MAC_FOR_CAPABILITY::inet_tcp_connect=permissive
-2-MAC_FOR_CAPABILITY::use_inet_udp=permissive
-2-MAC_FOR_CAPABILITY::use_inet_ip=permissive
-2-MAC_FOR_CAPABILITY::use_route=permissive
-2-MAC_FOR_CAPABILITY::use_packet=permissive
-2-MAC_FOR_CAPABILITY::SYS_MOUNT=permissive
-2-MAC_FOR_CAPABILITY::SYS_UMOUNT=permissive
-2-MAC_FOR_CAPABILITY::SYS_REBOOT=permissive
-2-MAC_FOR_CAPABILITY::SYS_CHROOT=permissive
-2-MAC_FOR_CAPABILITY::SYS_KILL=permissive
-2-MAC_FOR_CAPABILITY::SYS_VHANGUP=permissive
-2-MAC_FOR_CAPABILITY::SYS_TIME=permissive
-2-MAC_FOR_CAPABILITY::SYS_NICE=permissive
-2-MAC_FOR_CAPABILITY::SYS_SETHOSTNAME=permissive
-2-MAC_FOR_CAPABILITY::use_kernel_module=permissive
-2-MAC_FOR_CAPABILITY::create_fifo=permissive
-2-MAC_FOR_CAPABILITY::create_block_dev=permissive
-2-MAC_FOR_CAPABILITY::create_char_dev=permissive
-2-MAC_FOR_CAPABILITY::create_unix_socket=permissive
-2-MAC_FOR_CAPABILITY::SYS_LINK=permissive
-2-MAC_FOR_CAPABILITY::SYS_SYMLINK=permissive
-2-MAC_FOR_CAPABILITY::SYS_RENAME=permissive
-2-MAC_FOR_CAPABILITY::SYS_UNLINK=permissive
-2-MAC_FOR_CAPABILITY::SYS_CHMOD=permissive
-2-MAC_FOR_CAPABILITY::SYS_CHOWN=permissive
-2-MAC_FOR_CAPABILITY::SYS_IOCTL=permissive
-2-MAC_FOR_CAPABILITY::SYS_KEXEC_LOAD=permissive
-2-MAC_FOR_CAPABILITY::SYS_PIVOT_ROOT=permissive
-2-MAC_FOR_CAPABILITY::SYS_PTRACE=permissive
-3-COMMENT=-----Enforcing Mode-----
-3-MAC_FOR_FILE=enforcing
-3-MAC_FOR_ARGV0=enforcing
-3-MAC_FOR_ENV=enforcing
-3-MAC_FOR_NETWORK=enforcing
-3-MAC_FOR_SIGNAL=enforcing
-3-DENY_CONCEAL_MOUNT=enforcing
-3-RESTRICT_CHROOT=enforcing
-3-RESTRICT_MOUNT=enforcing
-3-RESTRICT_UNMOUNT=enforcing
-3-RESTRICT_PIVOT_ROOT=enforcing
-3-RESTRICT_AUTOBIND=enabled
-3-MAX_ACCEPT_ENTRY=2048
-3-MAX_GRANT_LOG=1024
-3-MAX_REJECT_LOG=1024
-3-TOMOYO_VERBOSE=enabled
-3-SLEEP_PERIOD=0
-3-MAC_FOR_CAPABILITY::inet_tcp_create=enforcing
-3-MAC_FOR_CAPABILITY::inet_tcp_listen=enforcing
-3-MAC_FOR_CAPABILITY::inet_tcp_connect=enforcing
-3-MAC_FOR_CAPABILITY::use_inet_udp=enforcing
-3-MAC_FOR_CAPABILITY::use_inet_ip=enforcing
-3-MAC_FOR_CAPABILITY::use_route=enforcing
-3-MAC_FOR_CAPABILITY::use_packet=enforcing
-3-MAC_FOR_CAPABILITY::SYS_MOUNT=enforcing
-3-MAC_FOR_CAPABILITY::SYS_UMOUNT=enforcing
-3-MAC_FOR_CAPABILITY::SYS_REBOOT=enforcing
-3-MAC_FOR_CAPABILITY::SYS_CHROOT=enforcing
-3-MAC_FOR_CAPABILITY::SYS_KILL=enforcing
-3-MAC_FOR_CAPABILITY::SYS_VHANGUP=enforcing
-3-MAC_FOR_CAPABILITY::SYS_TIME=enforcing
-3-MAC_FOR_CAPABILITY::SYS_NICE=enforcing
-3-MAC_FOR_CAPABILITY::SYS_SETHOSTNAME=enforcing
-3-MAC_FOR_CAPABILITY::use_kernel_module=enforcing
-3-MAC_FOR_CAPABILITY::create_fifo=enforcing
-3-MAC_FOR_CAPABILITY::create_block_dev=enforcing
-3-MAC_FOR_CAPABILITY::create_char_dev=enforcing
-3-MAC_FOR_CAPABILITY::create_unix_socket=enforcing
-3-MAC_FOR_CAPABILITY::SYS_LINK=enforcing
-3-MAC_FOR_CAPABILITY::SYS_SYMLINK=enforcing
-3-MAC_FOR_CAPABILITY::SYS_RENAME=enforcing
-3-MAC_FOR_CAPABILITY::SYS_UNLINK=enforcing
-3-MAC_FOR_CAPABILITY::SYS_CHMOD=enforcing
-3-MAC_FOR_CAPABILITY::SYS_CHOWN=enforcing
-3-MAC_FOR_CAPABILITY::SYS_IOCTL=enforcing
-3-MAC_FOR_CAPABILITY::SYS_KEXEC_LOAD=enforcing
-3-MAC_FOR_CAPABILITY::SYS_PIVOT_ROOT=enforcing
-3-MAC_FOR_CAPABILITY::SYS_PTRACE=enforcing
-EOF
-		;;
-	esac
 fi
 
 if [ ! -r /etc/tomoyo/exception_policy.conf ]; then
@@ -815,10 +603,10 @@ if [ ! -r /etc/tomoyo/exception_policy.conf ]; then
 	make_exception > /etc/tomoyo/exception_policy.conf
 	make_alias >> /etc/tomoyo/exception_policy.conf
 fi
-if [ ! -r /etc/tomoyo/system_policy.conf ]; then
-	echo Creating system policy.
-	touch /etc/tomoyo/system_policy.conf
-fi
+#if [ ! -r /etc/tomoyo/system_policy.conf ]; then
+#	echo Creating system policy.
+#	touch /etc/tomoyo/system_policy.conf
+#fi
 if [ ! -r /etc/tomoyo/domain_policy.conf ]; then
 	echo Creating domain policy.
 	echo '<kernel>' > /etc/tomoyo/domain_policy.conf

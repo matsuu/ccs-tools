@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-init_policy.sh 1.6.7-pre
+init_policy.sh 1.6.7-rc
 
 Copyright (C) 2005-2009 NTT DATA CORPORATION.
 

@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-tomoyo_init_policy.sh 1.6.7-pre
+tomoyo_init_policy.sh 1.6.7-rc
 
 Copyright (C) 2005-2009 NTT DATA CORPORATION.
 
@@ -13,13 +13,10 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: tomoyo_init_policy.sh [--file-only-profile|--full-profile]
+Usage: tomoyo_init_policy.sh
 
 This program generates templates for all policy files.
 You need to review the output because automatically generated exception policy may contain redundant or dangerous entries.
-
-  --file-only-profile    Create profile with only file access control feature enabled.
-  --full-profile         Create profile with all features enabled.
 
 Examples:
 

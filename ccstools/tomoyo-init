@@ -4,13 +4,13 @@
 #
 # Copyright (C) 2005-2009  NTT DATA CORPORATION
 #
-# Version: 2.2.0-pre 2008/11/11
+# Version: 2.2.0-pre 2009/03/04
 #
 # This program is executed automatically by kernel
 # when execution of /sbin/init is requested.
 #
 
-POLICY_DIR=/proc/tomoyo/
+POLICY_DIR=/sys/kernel/security/tomoyo/
 PROFILE="default"
 TOMOYO_NOLOAD=0
 TOMOYO_QUIET=0
@@ -32,11 +32,6 @@ fi
 # Mount /sys/kernel/security if not mounted.
 if [ ! -d /sys/kernel/security/tomoyo/ ]; then
     grep -q securityfs /proc/filesystems && mount -nt securityfs none /sys/kernel/security && SECURITY_UNMOUNT=1
-fi
-
-# Use /sys/kernel/security/tomoyo/ as policy interface if it exists.
-if [ -d /sys/kernel/security/tomoyo/ ]; then
-    POLICY_DIR=/sys/kernel/security/tomoyo/
 fi
 
 # Unmount and exit if policy interface doesn't exist.
@@ -133,8 +128,8 @@ fi
 if [ $CHDIR_OK -eq 1 ]; then
     [ -r manager.base ] && cat manager.base > $POLICY_DIR/manager
     [ -r manager.conf ] && cat manager.conf > $POLICY_DIR/manager
-    [ -r system_policy.base -a -w $POLICY_DIR/system_policy ] && cat system_policy.base > $POLICY_DIR/system_policy
-    [ -r system_policy.conf -a -w $POLICY_DIR/system_policy ] && cat system_policy.conf > $POLICY_DIR/system_policy
+    # [ -r system_policy.base -a -w $POLICY_DIR/system_policy ] && cat system_policy.base > $POLICY_DIR/system_policy
+    # [ -r system_policy.conf -a -w $POLICY_DIR/system_policy ] && cat system_policy.conf > $POLICY_DIR/system_policy
     [ -r exception_policy.base -a -w $POLICY_DIR/exception_policy ] && cat exception_policy.base > $POLICY_DIR/exception_policy
     [ -r exception_policy.conf -a -w $POLICY_DIR/exception_policy ] && cat exception_policy.conf > $POLICY_DIR/exception_policy
     [ $TOMOYO_NOLOAD -eq 0 -a -r domain_policy.base -a -w $POLICY_DIR/domain_policy ] && cat domain_policy.base > $POLICY_DIR/domain_policy
