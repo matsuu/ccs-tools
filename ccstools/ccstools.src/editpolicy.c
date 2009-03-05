@@ -2220,6 +2220,10 @@ int editpolicy_main(int argc, char *argv[])
 		if (chdir(disk_policy_dir)) {
 			printf("Directory %s doesn't exist.\n",
 			       disk_policy_dir);
+			if (!chdir("/etc/tomoyo/"))
+				printf("If you want to edit /etc/tomoyo/ "
+				       "directory, please run \"ln -s tomoyo "
+				       "/etc/ccs\" manually.");
 			return 1;
 		}
 		if (socketpair(PF_UNIX, SOCK_STREAM, 0, fd)) {
