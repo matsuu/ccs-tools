@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-rc   2009/03/04
+ * Version: 1.6.7-rc   2009/03/05
  *
  */
 #include "ccstools.h"
@@ -610,10 +610,12 @@ const struct path_info *savename(const char *name)
 	if (!name)
 		return NULL;
 	len = strlen(name) + 1;
+	/*
 	if (len > CCS_MAX_PATHNAME_LEN) {
 		fprintf(stderr, "ERROR: Name too long for savename().\n");
 		return NULL;
 	}
+	*/
 	hash = full_name_hash((const unsigned char *) name, len - 1);
 	if (first_call) {
 		int i;
@@ -639,16 +641,16 @@ const struct path_info *savename(const char *name)
 			fmb = fmb->next;
 			continue;
 		}
-		cp = malloc(PAGE_SIZE);
+		cp = malloc(len < PAGE_SIZE ? PAGE_SIZE : len);
 		if (!cp)
 			out_of_memory();
 		fmb->next = alloc_element(sizeof(*fmb->next));
 		if (!fmb->next)
 			out_of_memory();
-		memset(cp, 0, PAGE_SIZE);
+		memset(cp, 0, len < PAGE_SIZE ? PAGE_SIZE : len);
 		fmb = fmb->next;
 		fmb->ptr = cp;
-		fmb->len = PAGE_SIZE;
+		fmb->len = len < PAGE_SIZE ? PAGE_SIZE : len;
 	}
 	ptr = alloc_element(sizeof(*ptr));
 	if (!ptr)
@@ -1248,7 +1250,7 @@ show_version:
 	 * You should use either "symbolic links with 'alias' directive" or
 	 * "hard links".
 	 */
-	printf("ccstools version 1.6.7-rc build 2009/03/04\n");
+	printf("ccstools version 1.6.7-rc build 2009/03/05\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }
