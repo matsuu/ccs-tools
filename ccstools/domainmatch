@@ -12,7 +12,6 @@
 #
 
 POLICY_FILE="/proc/ccs/domain_policy"
-[ -r /proc/tomoyo/domain_policy ] && POLICY_FILE="/proc/tomoyo/domain_policy"
 [ -r /sys/kernel/security/tomoyo/domain_policy ] && POLICY_FILE="/sys/kernel/security/tomoyo/domain_policy"
 
 awk -v STR="$1" -- ' BEGIN { flag = 0; } { if ( $1 == "<kernel>" ) { domain = $0; flag = 0; } else if (index($0, STR) > 0) { if (flag == 0) { print ""; print domain; } flag = 1; print $0; } } ' $POLICY_FILE 

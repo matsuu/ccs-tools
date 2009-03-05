@@ -123,19 +123,6 @@ static void ccs_test_pre_init(void)
 			"/sys/kernel/security/tomoyo/.process_status";
 		proc_policy_self_domain      =
 			"/sys/kernel/security/tomoyo/self_domain";
-	} else if (access("/proc/tomoyo/", F_OK) == 0) {
-		proc_policy_dir              = "/proc/tomoyo/";
-		proc_policy_domain_policy    = "/proc/tomoyo/domain_policy";
-		proc_policy_exception_policy = "/proc/tomoyo/exception_policy";
-		proc_policy_system_policy    = "/proc/tomoyo/system_policy";
-		proc_policy_profile          = "/proc/tomoyo/profile";
-		proc_policy_manager          = "/proc/tomoyo/manager";
-		proc_policy_query            = "/proc/tomoyo/query";
-		proc_policy_grant_log        = "/proc/tomoyo/grant_log";
-		proc_policy_reject_log       = "/proc/tomoyo/reject_log";
-		proc_policy_domain_status    = "/proc/tomoyo/.domain_status";
-		proc_policy_process_status   = "/proc/tomoyo/.process_status";
-		proc_policy_self_domain      = "/proc/tomoyo/self_domain";
 	}
 }
 
