@@ -346,7 +346,7 @@ static void update_domain_policy(struct domain_policy *dp,
 			= bp->list[base_index].string_count;
 		const struct path_info **proc_string_ptr;
 		int proc_string_count;
-		proc_index = find_domain_by_ptr(bp, domainname);
+		proc_index = find_domain_by_ptr(dp, domainname);
 		fprintf(proc_fp, "%s\n", domainname->name);
 		if (proc_index == EOF)
 			goto not_found;
