@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-rc   2009/03/04
+ * Version: 1.6.7-rc   2009/03/07
  *
  */
 #include "ccstools.h"
@@ -318,9 +318,10 @@ static void delete_proc_policy(const char *name)
 	fclose(proc_write_fp);
 }
 
-static void update_domain_policy(struct domain_policy *dp,
-				 struct domain_policy *bp, const char *base,
-				 const char *src, const char *dest)
+static void update_domain_policy(struct domain_policy *proc_policy,
+				 struct domain_policy *file_policy,
+				 const char *base, const char *src,
+				 const char *dest)
 {
 	int base_index;
 	int proc_index;
@@ -329,31 +330,31 @@ static void update_domain_policy(struct domain_policy *dp,
 		fprintf(stderr, "Can't open %s\n", dest);
 		return;
 	}
-	/* Load base and diff policy to bp->list. */
+	/* Load base and diff policy to file_policy->list. */
 	if (!access(base, R_OK))
-		read_domain_policy(bp, base);
-	read_domain_policy(bp, src);
-	/* Load proc policy to dp->list. */
-	read_domain_policy(dp, dest);
-	for (base_index = 0; base_index < bp->list_len; base_index++) {
+		read_domain_policy(file_policy, base);
+	read_domain_policy(file_policy, src);
+	/* Load proc policy to proc_policy->list. */
+	read_domain_policy(proc_policy, dest);
+	for (base_index = 0; base_index < file_policy->list_len; base_index++) {
 		int i;
 		int j;
 		const struct path_info *domainname
-			= bp->list[base_index].domainname;
+			= file_policy->list[base_index].domainname;
 		const struct path_info **base_string_ptr
-			= bp->list[base_index].string_ptr;
+			= file_policy->list[base_index].string_ptr;
 		const int base_string_count
-			= bp->list[base_index].string_count;
+			= file_policy->list[base_index].string_count;
 		const struct path_info **proc_string_ptr;
 		int proc_string_count;
-		proc_index = find_domain_by_ptr(dp, domainname);
+		proc_index = find_domain_by_ptr(proc_policy, domainname);
 		fprintf(proc_fp, "%s\n", domainname->name);
 		if (proc_index == EOF)
 			goto not_found;
 
 		/* Proc policy for this domain found. */
-		proc_string_ptr = dp->list[proc_index].string_ptr;
-		proc_string_count = dp->list[proc_index].string_count;
+		proc_string_ptr = proc_policy->list[proc_index].string_ptr;
+		proc_string_count = proc_policy->list[proc_index].string_count;
 		for (j = 0; j < proc_string_count; j++) {
 			for (i = 0; i < base_string_count; i++) {
 				if (base_string_ptr[i] == proc_string_ptr[j])
@@ -365,24 +366,24 @@ static void update_domain_policy(struct domain_policy *dp,
 				fprintf(proc_fp, "delete %s\n",
 					proc_string_ptr[j]->name);
 		}
-		delete_domain(dp, proc_index);
+		delete_domain(proc_policy, proc_index);
 not_found:
 		/* Append entries defined in base policy. */
 		for (i = 0; i < base_string_count; i++)
 			fprintf(proc_fp, "%s\n", base_string_ptr[i]->name);
 	}
 	/* Delete all domains that are not defined in base policy. */
-	for (proc_index = 0; proc_index < dp->list_len; proc_index++) {
+	for (proc_index = 0; proc_index < proc_policy->list_len; proc_index++) {
 		fprintf(proc_fp, "delete %s\n",
-			dp->list[proc_index].domainname->name);
+			proc_policy->list[proc_index].domainname->name);
 	}
 	fclose(proc_fp);
 }
 
 int loadpolicy_main(int argc, char *argv[])
 {
-	struct domain_policy dp = { NULL, 0, NULL };
-	struct domain_policy bp = { NULL, 0, NULL };
+	struct domain_policy proc_policy = { NULL, 0, NULL };
+	struct domain_policy file_policy = { NULL, 0, NULL };
 	_Bool read_from_stdin = false;
 	int load_profile = 0;
 	int load_manager = 0;
@@ -494,10 +495,11 @@ int loadpolicy_main(int argc, char *argv[])
 	if (load_domain_policy) {
 		if (refresh_policy) {
 			if (read_from_stdin)
-				update_domain_policy(&dp, &bp, NULL, NULL,
+				update_domain_policy(&proc_policy, &file_policy,
+						     NULL, NULL,
 						     proc_policy_domain_policy);
 			else
-				update_domain_policy(&dp, &bp,
+				update_domain_policy(&proc_policy, &file_policy,
 						     base_policy_domain_policy,
 						     disk_policy_domain_policy,
 						     proc_policy_domain_policy);
