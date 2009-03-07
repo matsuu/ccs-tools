@@ -117,6 +117,19 @@ enum socket_operation_type {
 
 #define CCSTOOLS_CONFIG_FILE "/usr/lib/ccs/ccstools.conf"
 
+#define disk_policy_domain_policy    "domain_policy.conf"
+#define base_policy_domain_policy    "domain_policy.base"
+#define disk_policy_exception_policy "exception_policy.conf"
+#define base_policy_exception_policy "exception_policy.base"
+#define disk_policy_system_policy    "system_policy.conf"
+#define base_policy_system_policy    "system_policy.base"
+#define disk_policy_profile          "profile.conf"
+#define base_policy_profile          "profile.base"
+#define disk_policy_manager          "manager.conf"
+#define base_policy_manager          "manager.base"
+#define disk_policy_meminfo          "meminfo.conf"
+#define base_policy_meminfo          "meminfo.base"
+
 enum editpolicy_directives {
 	DIRECTIVE_NONE,
 	DIRECTIVE_1,
@@ -393,23 +406,11 @@ extern struct editpolicy_directive directives[MAX_DIRECTIVE_INDEX];
 extern const char *proc_policy_dir,
 	*disk_policy_dir,
 	*proc_policy_domain_policy,
-	*disk_policy_domain_policy,
-	*base_policy_domain_policy,
 	*proc_policy_exception_policy,
-	*disk_policy_exception_policy,
-	*base_policy_exception_policy,
 	*proc_policy_system_policy,
-	*disk_policy_system_policy,
-	*base_policy_system_policy,
 	*proc_policy_profile,
-	*disk_policy_profile,
-	*base_policy_profile,
 	*proc_policy_manager,
-	*disk_policy_manager,
-	*base_policy_manager,
 	*proc_policy_meminfo,
-	*disk_policy_meminfo,
-	*base_policy_meminfo,
 	*proc_policy_query,
 	*proc_policy_grant_log,
 	*proc_policy_reject_log,

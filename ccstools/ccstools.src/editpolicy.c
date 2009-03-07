@@ -2260,6 +2260,7 @@ start2:
 
 int editpolicy_main(int argc, char *argv[])
 {
+	static char *policy_dir = NULL;
 	struct domain_policy dp = { NULL, 0, NULL };
 	struct domain_policy bp = { NULL, 0, NULL };
 	memset(current_y, 0, sizeof(current_y));
@@ -2293,6 +2294,7 @@ int editpolicy_main(int argc, char *argv[])
 				network_port = htons(atoi(cp + 1));
 				network_mode = true;
 			} else if (argv[i][0] == '/') {
+				policy_dir = argv[i];
 				offline_mode = true;
 			} else {
 				printf("Usage: %s [s|e|d|p|m|u] [readonly] "
@@ -2321,13 +2323,9 @@ int editpolicy_main(int argc, char *argv[])
 		close(fd);
 	} else if (offline_mode) {
 		int fd[2] = { EOF, EOF };
-		if (chdir(disk_policy_dir)) {
+		if (chdir(policy_dir)) {
 			printf("Directory %s doesn't exist.\n",
-			       disk_policy_dir);
-			if (!chdir("/etc/tomoyo/"))
-				printf("If you want to edit /etc/tomoyo/ "
-				       "directory, please run \"ln -s tomoyo "
-				       "/etc/ccs\" manually.");
+			       policy_dir);
 			return 1;
 		}
 		if (socketpair(PF_UNIX, SOCK_STREAM, 0, fd)) {

@@ -1047,23 +1047,11 @@ read_policy:
 const char *proc_policy_dir           = "/proc/ccs/",
 	*disk_policy_dir              = "/etc/ccs/",
 	*proc_policy_domain_policy    = "/proc/ccs/domain_policy",
-	*disk_policy_domain_policy    = "/etc/ccs/domain_policy.conf",
-	*base_policy_domain_policy    = "/etc/ccs/domain_policy.base",
 	*proc_policy_exception_policy = "/proc/ccs/exception_policy",
-	*disk_policy_exception_policy = "/etc/ccs/exception_policy.conf",
-	*base_policy_exception_policy = "/etc/ccs/exception_policy.base",
 	*proc_policy_system_policy    = "/proc/ccs/system_policy",
-	*disk_policy_system_policy    = "/etc/ccs/system_policy.conf",
-	*base_policy_system_policy    = "/etc/ccs/system_policy.base",
 	*proc_policy_profile          = "/proc/ccs/profile",
-	*disk_policy_profile          = "/etc/ccs/profile.conf",
-	*base_policy_profile          = "/etc/ccs/profile.base",
 	*proc_policy_manager          = "/proc/ccs/manager",
-	*disk_policy_manager          = "/etc/ccs/manager.conf",
-	*base_policy_manager          = "/etc/ccs/manager.base",
 	*proc_policy_meminfo          = "/proc/ccs/meminfo",
-	*disk_policy_meminfo          = "/etc/ccs/meminfo.conf",
-	*base_policy_meminfo          = "/etc/ccs/meminfo.base",
 	*proc_policy_query            = "/proc/ccs/query",
 	*proc_policy_grant_log        = "/proc/ccs/grant_log",
 	*proc_policy_reject_log       = "/proc/ccs/reject_log",
@@ -1142,40 +1130,16 @@ int main(int argc, char *argv[])
 			= "/etc/tomoyo/";
 		proc_policy_domain_policy
 			= "/sys/kernel/security/tomoyo/domain_policy";
-		disk_policy_domain_policy
-			= "/etc/tomoyo/domain_policy.conf";
-		base_policy_domain_policy
-			= "/etc/tomoyo/domain_policy.base";
 		proc_policy_exception_policy
 			= "/sys/kernel/security/tomoyo/exception_policy";
-		disk_policy_exception_policy
-			= "/etc/tomoyo/exception_policy.conf";
-		base_policy_exception_policy
-			= "/etc/tomoyo/exception_policy.base";
 		proc_policy_system_policy
 			= "/sys/kernel/security/tomoyo/system_policy";
-		disk_policy_system_policy
-			= "/etc/tomoyo/system_policy.conf";
-		base_policy_system_policy
-			= "/etc/tomoyo/system_policy.base";
 		proc_policy_profile
 			= "/sys/kernel/security/tomoyo/profile";
-		disk_policy_profile
-			= "/etc/tomoyo/profile.conf";
-		base_policy_profile
-			= "/etc/tomoyo/profile.base";
 		proc_policy_manager
 			= "/sys/kernel/security/tomoyo/manager";
-		disk_policy_manager
-			= "/etc/tomoyo/manager.conf";
-		base_policy_manager
-			= "/etc/tomoyo/manager.base";
 		proc_policy_meminfo
 			= "/sys/kernel/security/tomoyo/meminfo";
-		disk_policy_meminfo
-			= "/etc/tomoyo/meminfo.conf";
-		base_policy_meminfo
-			= "/etc/tomoyo/meminfo.base";
 		proc_policy_query
 			= "/sys/kernel/security/tomoyo/query";
 		proc_policy_grant_log
