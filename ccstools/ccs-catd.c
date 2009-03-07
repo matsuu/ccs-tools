@@ -13,18 +13,26 @@ int main(int argc, char *argv[])
 {
 	const int listener = socket(AF_INET, SOCK_STREAM, 0);
 	struct sockaddr_in addr;
+	socklen_t size = sizeof(addr);
+	char *port;
 	if (chdir("/proc/ccs/") && chdir("/sys/kernel/security/tomoyo/"))
 		return 1;
-	if (argc != 3) {
-		fprintf(stderr, "%s listen_address listen_port\n", argv[0]);
+	if (argc != 2) {
+usage:
+		fprintf(stderr, "%s listen_address:listen_port\n", argv[0]);
 		return 1;
 	}
+	port = strchr(argv[1], ':');
+	if (!port)
+		goto usage;
+	*port++ = '\0';
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = inet_addr(argv[1]);
-	addr.sin_port = htons(atoi(argv[2]));
+	addr.sin_port = htons(atoi(port));
 	if (bind(listener, (struct sockaddr *) &addr, sizeof(addr)) ||
-	    listen(listener, 5)) {
+	    listen(listener, 5) ||
+	    getsockname(listener, (struct sockaddr *) &addr, &size)) {
 		close(listener);
 		return 1;
 	}
