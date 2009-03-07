@@ -409,7 +409,7 @@ int loadpolicy_main(int argc, char *argv[])
 			char *f = strchr(ptr, 'f');
 			char *p = strchr(ptr, 'p');
 			char *m = strchr(ptr, 'm');
-			char *q = strchr(ptr, 'q');
+			char *u = strchr(ptr, 'u');
 			char *i = strchr(ptr, '-');
 			if (s || a)
 				load_system_policy = 1;
@@ -421,13 +421,13 @@ int loadpolicy_main(int argc, char *argv[])
 				load_profile = 1;
 			if (m)
 				load_manager = 1;
-			if (q)
+			if (u)
 				load_meminfo = 1;
 			if (f)
 				refresh_policy = true;
 			if (i)
 				read_from_stdin = true;
-			if (strcspn(ptr, "sedafpmq-"))
+			if (strcspn(ptr, "sedafpmu-"))
 				goto usage;
 			if (read_from_stdin && load_system_policy +
 			    load_exception_policy + load_domain_policy +
@@ -513,16 +513,16 @@ int loadpolicy_main(int argc, char *argv[])
 	}
 	return 0;
 usage:
-	printf("%s [s][e][d][a][f][p][m][q][-]\n"
+	printf("%s [s][e][d][a][f][p][m][u][-]\n"
 	       "s : Load system_policy.\n"
 	       "e : Load exception_policy.\n"
 	       "d : Load domain_policy.\n"
 	       "a : Load system_policy,exception_policy,domain_policy.\n"
 	       "p : Load profile.\n"
 	       "m : Load manager.\n"
-	       "q : Load meminfo.\n"
+	       "u : Load meminfo.\n"
 	       "- : Read policy from stdin. "
-	       "(Only one of 'sedpmq' is possible when using '-'.)\n"
+	       "(Only one of 'sedpmu' is possible when using '-'.)\n"
 	       "f : Delete on-memory policy before loading on-disk policy. "
 	       "(Valid for 'sed'.)\n\n", argv[0]);
 	return 0;
