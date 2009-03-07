@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-rc   2009/03/04
+ * Version: 1.6.7-rc   2009/03/07
  *
  */
 #include "ccstools.h"
@@ -590,6 +590,9 @@ static unsigned int refresh_interval = 0;
 static _Bool need_reload = false;
 
 _Bool offline_mode = false;
+_Bool network_mode = false;
+static u32 network_ip = INADDR_NONE;
+static u16 network_port = 0;
 
 struct path_group_entry *path_group_list = NULL;
 int path_group_list_len = 0;
@@ -733,7 +736,30 @@ is_domain_initializer(const struct path_info *domainname, const char *program)
 
 static FILE *open_write(const char *filename)
 {
-	if (offline_mode) {
+	if (network_mode) {
+		const int fd = socket(AF_INET, SOCK_STREAM, 0);
+		struct sockaddr_in addr;
+		FILE *fp;
+		memset(&addr, 0, sizeof(addr));
+		addr.sin_family = AF_INET;
+		addr.sin_addr.s_addr = network_ip;
+		addr.sin_port = network_port;
+		if (connect(fd, (struct sockaddr *) &addr, sizeof(addr))) {
+			close(fd);
+			set_error(filename);
+			return NULL;
+		}
+		fp = fdopen(fd, "r+");
+		fprintf(fp, "%s", filename);
+		fputc(0, fp);
+		fflush(fp);
+		if (fgetc(fp) != 0) {
+			fclose(fp);
+			set_error(filename);
+			return NULL;
+		}
+		return fp;
+	} else if (offline_mode) {
 		char request[1024];
 		int fd[2];
 		if (socketpair(PF_UNIX, SOCK_STREAM, 0, fd)) {
@@ -761,6 +787,58 @@ out:
 	}
 }
 
+FILE *open_read(const char *filename)
+{
+	if (network_mode) {
+		const int fd = socket(AF_INET, SOCK_STREAM, 0);
+		struct sockaddr_in addr;
+		FILE *fp;
+		memset(&addr, 0, sizeof(addr));
+		addr.sin_family = AF_INET;
+		addr.sin_addr.s_addr = network_ip;
+		addr.sin_port = network_port;
+		if (connect(fd, (struct sockaddr *) &addr, sizeof(addr))) {
+			close(fd);
+			set_error(filename);
+			return NULL;
+		}
+		fp = fdopen(fd, "r+");
+		fprintf(fp, "%s", filename);
+		fputc(0, fp);
+		fflush(fp);
+		if (fgetc(fp) != 0) {
+			fclose(fp);
+			set_error(filename);
+			return NULL;
+		}
+		fputc(0, fp);
+		fflush(fp);
+		return fp;
+	} else if (offline_mode) {
+		char request[1024];
+		int fd[2];
+		FILE *fp;
+		if (socketpair(PF_UNIX, SOCK_STREAM, 0, fd)) {
+			fprintf(stderr, "socketpair()\n");
+			exit(1);
+		}
+		if (shutdown(fd[0], SHUT_WR))
+			goto out;
+		fp = fdopen(fd[0], "r");
+		if (!fp)
+			goto out;
+		memset(request, 0, sizeof(request));
+		snprintf(request, sizeof(request) - 1, "GET %s", filename);
+		send_fd(request, &fd[1]);
+		return fp;
+out:
+		close(fd[1]);
+		close(fd[0]);
+		exit(1);
+	} else {
+		return fopen(filename, "r");
+	}
+}
 
 static int profile_entry_compare(const void *a, const void *b)
 {
@@ -795,11 +873,17 @@ static void read_generic_policy(void)
 	while (generic_acl_list_count)
 		free((void *)
 		     generic_acl_list[--generic_acl_list_count].operand);
-	if (!offline_mode && current_screen == SCREEN_ACL_LIST) {
-		/* Don't set error message if failed. */
-		fp = fopen(policy_file, "r+");
+	if (current_screen == SCREEN_ACL_LIST) {
+		if (network_mode)
+			/* We can read after write. */
+			fp = open_write(policy_file);
+		else if (!offline_mode)
+			/* Don't set error message if failed. */
+			fp = fopen(policy_file, "r+");
 		if (fp) {
 			fprintf(fp, "select domain=%s\n", current_domain);
+			if (network_mode)
+				fputc(0, fp);
 			fflush(fp);
 		}
 	}
@@ -1046,13 +1130,17 @@ no_exception:
 
 	/* Load all domain list. */
 	fp = NULL;
-	if (!offline_mode) {
+	if (network_mode)
+		/* We can read after write. */
+		fp = open_write(policy_file);
+	else if (!offline_mode)
 		/* Don't set error message if failed. */
 		fp = fopen(policy_file, "r+");
-		if (fp) {
-			fprintf(fp, "select allow_execute\n");
-			fflush(fp);
-		}
+	if (fp) {
+		fprintf(fp, "select allow_execute\n");
+		if (network_mode)
+			fputc(0, fp);
+		fflush(fp);
 	}
 	if (!fp)
 		fp = open_read(proc_policy_domain_policy);
@@ -1796,11 +1884,11 @@ out:
 
 static int select_window(struct domain_policy *dp, const int current)
 {
-	const _Bool s_ok = offline_mode ||
+	const _Bool s_ok = offline_mode || network_mode ||
 		access(proc_policy_system_policy, F_OK) == 0;
-	const _Bool e_ok = offline_mode ||
+	const _Bool e_ok = offline_mode || network_mode ||
 		access(proc_policy_exception_policy, F_OK) == 0;
-	const _Bool d_ok = offline_mode ||
+	const _Bool d_ok = offline_mode || network_mode ||
 		access(proc_policy_domain_policy, F_OK) == 0;
 	move(0, 0);
 	printw("Press one of below keys to switch window.\n\n");
@@ -2198,24 +2286,40 @@ int editpolicy_main(int argc, char *argv[])
 			else if (sscanf(argv[i], "refresh=%u",
 					&refresh_interval) == 1) {
 				/* */
+			} else if (strchr(argv[i], ':')) {
+				char *cp = strchr(argv[i], ':');
+				*cp = '\0';
+				network_ip = inet_addr(argv[i]);
+				network_port = htons(atoi(cp + 1));
+				network_mode = true;
+			} else if (argv[i][0] == '/') {
+				offline_mode = true;
 			} else {
 				printf("Usage: %s [s|e|d|p|m|q] [readonly] "
-				       "[refresh=interval]\n", argv[0]);
+				       "[refresh=interval] "
+				       "[{policy_dir|remote_ip:remote_port}]\n",
+				       argv[0]);
 				return 1;
 			}
 		}
 	}
 	editpolicy_init_keyword_map();
-	{
-		char *cp = strrchr(argv[0], '/');
-		if (!cp)
-			cp = argv[0];
-		else
-			cp++;
-		if (strstr(cp, "editpolicy_offline"))
-			offline_mode = true;
-	}
-	if (offline_mode) {
+	if (network_mode) {
+		const int fd = socket(AF_INET, SOCK_STREAM, 0);
+		struct sockaddr_in addr;
+		memset(&addr, 0, sizeof(addr));
+		addr.sin_family = AF_INET;
+		addr.sin_addr.s_addr = network_ip;
+		addr.sin_port = network_port;
+		if (connect(fd, (struct sockaddr *) &addr, sizeof(addr))) {
+			const u32 ip = ntohl(ip);
+			fprintf(stderr, "Can't connect to %u.%u.%u.%u:%u\n",
+				(u8) (ip >> 24), (u8) (ip >> 16),
+				(u8) (ip >> 8), (u8) ip, ntohs(network_port));
+                        return 1;
+                }
+		close(fd);
+	} else if (offline_mode) {
 		int fd[2] = { EOF, EOF };
 		if (chdir(disk_policy_dir)) {
 			printf("Directory %s doesn't exist.\n",
@@ -2381,7 +2485,7 @@ int editpolicy_main(int argc, char *argv[])
 		timeout(1000);
 	}
 	while (current_screen < MAXSCREEN) {
-		if (!offline_mode) {
+		if (!offline_mode && !network_mode) {
 			if (current_screen == SCREEN_DOMAIN_LIST &&
 			    access(proc_policy_domain_policy, F_OK))
 				current_screen = SCREEN_SYSTEM_LIST;

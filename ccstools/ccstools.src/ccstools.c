@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-rc   2009/03/05
+ * Version: 1.6.7-rc   2009/03/07
  *
  */
 #include "ccstools.h"
@@ -672,35 +672,6 @@ out:
 	return ptr ? &ptr->entry : NULL;
 }
 
-
-FILE *open_read(const char *filename)
-{
-	if (offline_mode) {
-		char request[1024];
-		int fd[2];
-		FILE *fp;
-		if (socketpair(PF_UNIX, SOCK_STREAM, 0, fd)) {
-			fprintf(stderr, "socketpair()\n");
-			exit(1);
-		}
-		if (shutdown(fd[0], SHUT_WR))
-			goto out;
-		fp = fdopen(fd[0], "r");
-		if (!fp)
-			goto out;
-		memset(request, 0, sizeof(request));
-		snprintf(request, sizeof(request) - 1, "GET %s", filename);
-		send_fd(request, &fd[1]);
-		return fp;
-out:
-		close(fd[1]);
-		close(fd[0]);
-		exit(1);
-	} else {
-		return fopen(filename, "r");
-	}
-}
-
 _Bool move_proc_to_file(const char *src, const char *base, const char *dest)
 {
 	FILE *proc_fp;
@@ -870,9 +841,12 @@ _Bool save_domain_policy_with_diff(struct domain_policy *dp,
 	read_domain_policy(dp, proc);
 	if (!access(base, R_OK)) {
 		_Bool om = offline_mode;
+		_Bool nm = network_mode;
 		offline_mode = false;
+		network_mode = false;
 		read_domain_policy(bp, base);
 		offline_mode = om;
+		network_mode = nm;
 	}
 
 	for (base_index = 0; base_index < bp->list_len; base_index++) {
@@ -1132,8 +1106,19 @@ _Bool freadline(FILE *fp)
 	if (!buffer_locked)
 		out_of_memory();
 	memset(shared_buffer, 0, sizeof(shared_buffer));
-	if (!fgets(shared_buffer, sizeof(shared_buffer) - 1, fp))
-		return false;
+	if (network_mode) {
+		int i;
+		for (i = 0; i < sizeof(shared_buffer) - 1; i++) {
+			if (fread(shared_buffer + i, 1, 1, fp) != 1 ||
+			    !shared_buffer[i])
+				return false;
+			if (shared_buffer[i] == '\n')
+				break;
+		}
+	} else {
+		if (!fgets(shared_buffer, sizeof(shared_buffer) - 1, fp))
+			return false;
+	}
 	cp = strchr(shared_buffer, '\n');
 	if (!cp)
 		return false;
@@ -1223,8 +1208,7 @@ retry:
 		ret = ldwatch_main(argc, argv);
 	else if (!strcmp(argv0, "findtemp"))
 		ret = findtemp_main(argc, argv);
-	else if (!strcmp(argv0, "editpolicy") ||
-		 !strcmp(argv0, "editpolicy_offline"))
+	else if (!strcmp(argv0, "editpolicy"))
 		ret = editpolicy_main(argc, argv);
 	else if (!strcmp(argv0, "checkpolicy"))
 		ret = checkpolicy_main(argc, argv);
@@ -1250,7 +1234,7 @@ show_version:
 	 * You should use either "symbolic links with 'alias' directive" or
 	 * "hard links".
 	 */
-	printf("ccstools version 1.6.7-rc build 2009/03/05\n");
+	printf("ccstools version 1.6.7-rc build 2009/03/07\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }

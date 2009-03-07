@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-rc   2009/03/04
+ * Version: 1.6.7-rc   2009/03/07
  *
  */
 
@@ -376,6 +376,7 @@ int simple_add_history(const char *buffer, const char **history,
 int getch2(void);
 
 extern _Bool offline_mode;
+extern _Bool network_mode;
 extern int persistent_fd;
 extern int query_fd;
 extern int path_group_list_len;
