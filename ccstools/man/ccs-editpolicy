@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: ccs-editpolicy [{s|e|d|p|m|q}] [readonly] [refresh=interval]
+Usage: ccs-editpolicy [{s|e|d|p|m|u}] [readonly] [refresh=interval] [{policy_dir|remote_ip:remote_port}]
 
 This program edits TOMOYO Linux's policy currently loaded in the kernel.
 
@@ -27,16 +27,26 @@ This program edits TOMOYO Linux's policy currently loaded in the kernel.
 
  m     Set initial screen to manager editor.
 
- q     Set initial screen to memory quota editor.
+ u     Set initial screen to memory usage.
 
  readonly             Browse mode. No editing is allowed.
 
  refresh=interval     Reload automatically for every sec seconds.
 
+ policy_dir     Edit policy files stored in file rather than on-memory policy.
+
+ remote_ip:remote_port     Edit policy via agent listening at specified IP address and port number. 
+
 Examples:
 
 # ccs-editpolicy
  Start policy editor with domain policy editor screen.
+
+# ccs-editpolicy /etc/ccs/
+ Edit policy stored in /etc/ccs/ directory.
+
+# ccs-editpolicy 192.168.1.1:10000
+ Edit policy via connecting to 192.168.11.1:10000 .
 
 Usage with images are available at http://tomoyo.sourceforge.jp/en/1.6.x/tool-editpolicy.html
 
@@ -46,14 +56,13 @@ cat << EOF | help2man -i - -N -s 8 -n "Edit TOMOYO Linux's policy" $0 | gzip -9 
 [SEE ALSO]
 
  ccs-loadpolicy (8)
+ ccs-catd (8)
 
 [NOTES]
 
  This is a symbolic link to /usr/lib/ccs/editpolicy .
 
  You need to register either path to this program ( /usr/lib/ccs/editpolicy ) or a domain for this program in /proc/ccs/manager before invoking this program.
-
- If you invoke this program as "editpolicy_offline" or "ccs-editpolicy_offline", you can edit policy files in /etc/ccs/ directory.
 
 [AUTHORS]
 

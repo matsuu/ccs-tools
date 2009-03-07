@@ -1906,7 +1906,7 @@ static int select_window(struct domain_policy *dp, const int current)
 	printw("m     <<< Manager Policy Editor >>>\n");
 	if (!offline_mode) {
 		/* printw("i     <<< Interactive Enforcing Mode >>>\n"); */
-		printw("q     <<< Memory Quota Editor >>>\n");
+		printw("u     <<< Memory Usage Editor >>>\n");
 	}
 	clrtobot();
 	refresh();
@@ -1939,7 +1939,7 @@ static int select_window(struct domain_policy *dp, const int current)
 			if (c == 'I' || c == 'i')
 				return SCREEN_QUERY_LIST;
 			*/
-			if (c == 'Q' || c == 'q')
+			if (c == 'U' || c == 'u')
 				return SCREEN_MEMINFO_LIST;
 		}
 		if (c == EOF)
@@ -1982,7 +1982,7 @@ static int generic_list_loop(struct domain_policy *dp)
 		list_caption = "Manager Policy Editor";
 	} else if (current_screen == SCREEN_MEMINFO_LIST) {
 		policy_file = proc_policy_meminfo;
-		list_caption = "Memory Quota Editor";
+		list_caption = "Memory Usage";
 	} else {
 		policy_file = proc_policy_domain_policy;
 		/* list_caption = "Domain Transition Editor"; */
@@ -2295,7 +2295,7 @@ int editpolicy_main(int argc, char *argv[])
 			} else if (argv[i][0] == '/') {
 				offline_mode = true;
 			} else {
-				printf("Usage: %s [s|e|d|p|m|q] [readonly] "
+				printf("Usage: %s [s|e|d|p|m|u] [readonly] "
 				       "[refresh=interval] "
 				       "[{policy_dir|remote_ip:remote_port}]\n",
 				       argv[0]);

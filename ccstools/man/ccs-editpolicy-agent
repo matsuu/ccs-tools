@@ -1,0 +1,51 @@
+#! /bin/sh
+
+if [ "$1" = "--version" ]
+then
+cat << EOF
+ccs-editpolicy-agent 1.6.7-rc
+
+Copyright (C) 2005-2009 NTT DATA CORPORATION.
+
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License. This program has absolutely no warranty.
+EOF
+elif [ "$1" = "--help" ]
+then
+cat << EOF
+Usage: ccs-editpolicy-agent listen_ip:listen_port
+
+This is a helper program for ccs-editpolicy .
+
+ listen_ip:listen_port     Listen at specified IP address and port number. 
+
+Examples:
+
+# ccs-editpolicy-agent 192.168.1.1:10000
+ Listen at 192.168.1.1 port 10000 .
+
+EOF
+else
+cat << EOF | help2man -i - -N -s 8 -n "Helper for editing TOMOYO Linux's policy" $0 | gzip -9 > man8/ccs-editpolicy-agent.8.gz
+[SEE ALSO]
+
+ ccs-editpolicy (8)
+
+[NOTES]
+
+ Don't run this program unless you know what you are doing.
+
+ This program allows anonymous users to edit policy. No user authentication is performed.
+
+ This program is designed for systems which running ccs-editpolicy is difficult due to resource limitation.
+ This program is not designed for PC and servers.
+
+ You need to register either path to this program or a domain for this program in /proc/ccs/manager before invoking this program.
+
+[AUTHORS]
+
+ penguin-kernel _at_ I-love.SAKURA.ne.jp
+
+EOF
+fi
+exit 0
