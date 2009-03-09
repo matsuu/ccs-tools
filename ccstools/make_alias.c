@@ -9,8 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
-#include <linux/kdev_t.h>
-#include <linux/major.h>
+#include <sys/vfs.h>
 
 static void printf_encoded(const char *str)
 {
@@ -34,7 +33,27 @@ static void scan_symlink(const char *path)
 {
 	char *base1;
 	char *base2;
-	char *cp = realpath(path, NULL);
+	char *cp;
+	struct statfs buf;
+	if (statfs(path, &buf))
+		return;
+	switch (buf.f_type) {
+	case 0x00009fa0: /* proc */
+	case 0x62656572: /* sys */
+	case 0x64626720: /* debug */
+	case 0x73636673: /* security */
+	case 0x00009fa2: /* usb */
+	case 0x0027e0eb: /* cgroup */
+	case 0x0BAD1DEA: /* futex */
+	case 0x2BAD1DEA: /* inotify */
+	case 0x09041934: /* anon inode */
+	case 0x00001373: /* device */
+	case 0x00001CD1: /* devpts */
+	case 0x42494E4D: /* binfmt_misc */
+	case 0xABABABAB: /* vmblock */
+		return;
+	}
+	cp = realpath(path, NULL);
 	if (!cp)
 		return;
 	base1 = strrchr(path, '/');
@@ -62,10 +81,7 @@ static void scan_dir(const char *dir)
 	static _Bool first = 1;
 	struct dirent **namelist;
 	int i;
-	int n;
-	if (stat(dir, &buf) || MAJOR(buf.st_dev) == UNNAMED_MAJOR)
-		return;
-	n = scandir(dir, &namelist, scandir_filter, 0);
+	int n = scandir(dir, &namelist, scandir_filter, 0);
 	if (n < 0)
 		return;
 	if (first) {
