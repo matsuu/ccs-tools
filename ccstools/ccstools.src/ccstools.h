@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-rc   2009/03/07
+ * Version: 1.6.7-rc   2009/03/09
  *
  */
 
@@ -117,18 +117,18 @@ enum socket_operation_type {
 
 #define CCSTOOLS_CONFIG_FILE "/usr/lib/ccs/ccstools.conf"
 
-#define disk_policy_domain_policy    "domain_policy.conf"
-#define base_policy_domain_policy    "domain_policy.base"
-#define disk_policy_exception_policy "exception_policy.conf"
-#define base_policy_exception_policy "exception_policy.base"
-#define disk_policy_system_policy    "system_policy.conf"
-#define base_policy_system_policy    "system_policy.base"
-#define disk_policy_profile          "profile.conf"
-#define base_policy_profile          "profile.base"
-#define disk_policy_manager          "manager.conf"
-#define base_policy_manager          "manager.base"
-#define disk_policy_meminfo          "meminfo.conf"
-#define base_policy_meminfo          "meminfo.base"
+#define DISK_POLICY_DOMAIN_POLICY    "domain_policy.conf"
+#define BASE_POLICY_DOMAIN_POLICY    "domain_policy.base"
+#define DISK_POLICY_EXCEPTION_POLICY "exception_policy.conf"
+#define BASE_POLICY_EXCEPTION_POLICY "exception_policy.base"
+#define DISK_POLICY_SYSTEM_POLICY    "system_policy.conf"
+#define BASE_POLICY_SYSTEM_POLICY    "system_policy.base"
+#define DISK_POLICY_PROFILE          "profile.conf"
+#define BASE_POLICY_PROFILE          "profile.base"
+#define DISK_POLICY_MANAGER          "manager.conf"
+#define BASE_POLICY_MANAGER          "manager.base"
+#define DISK_POLICY_MEMINFO          "meminfo.conf"
+#define BASE_POLICY_MEMINFO          "meminfo.base"
 
 enum editpolicy_directives {
 	DIRECTIVE_NONE,
@@ -389,7 +389,10 @@ int simple_add_history(const char *buffer, const char **history,
 int getch2(void);
 
 extern _Bool offline_mode;
+extern const char *policy_dir;
 extern _Bool network_mode;
+extern u32 network_ip;
+extern u16 network_port;
 extern int persistent_fd;
 extern int query_fd;
 extern int path_group_list_len;

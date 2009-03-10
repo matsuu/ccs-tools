@@ -13,25 +13,33 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: ccs-savepolicy [-][s][e][d][a][f][p][m]
+Usage: ccs-savepolicy [s][e][d][a][f][p][m][u] [{-|policy_dir} [remote_ip:remote_port]]
 
 This program saves TOMOYO Linux's policy from kernel into files.
 
- -     Write policy to stdout. Specify only one of "sedpm" option when you use this option.
+ s     Save system policy. ( /proc/ccs/system_policy - policy_dir/system_policy.base => policy_dir/system_policy.conf )
 
- s     Save system policy. ( /proc/ccs/system_policy - /etc/ccs/system_policy.base => /etc/ccs/system_policy.conf )
+ e     Save exception policy. ( /proc/ccs/exception_policy - policy_dir/exception_policy.base => policy_dir/exception_policy.conf )
 
- e     Save exception policy. ( /proc/ccs/exception_policy - /etc/ccs/exception_policy.base => /etc/ccs/exception_policy.conf )
-
- d     Save domain policy. ( /proc/ccs/domain_policy - /etc/ccs/domain_policy.base => /etc/ccs/domain_policy.conf )
+ d     Save domain policy. ( /proc/ccs/domain_policy - policy_dir/domain_policy.base => policy_dir/domain_policy.conf )
 
  a     Save system policy, exception policy and domain policy. This is default.
 
- p     Save profile. ( /proc/ccs/profile - /etc/ccs/profile.base => /etc/ccs/profile.conf )
+ p     Save profile. ( /proc/ccs/profile - policy_dir/profile.base => policy_dir/profile.conf )
 
- m     Save manager. ( /proc/ccs/manager - /etc/ccs/manager.base => /etc/ccs/manager.conf )
+ m     Save manager. ( /proc/ccs/manager - policy_dir/manager.base => policy_dir/manager.conf )
+
+ u     Print meminfo. Implies '-' option. ( /proc/ccs/meminfo )
 
  f     Forcefully save even if the on-memory policy and the on-disk policy are identical.
+
+ -     Write policy to stdout. Specify only one of "sedpmu" option when you use this option.
+
+ policy_dir     Save policy files into specified directory. Directory must starts with / .
+                Default is /etc/tomoyo/ if /sys/kernel/security/tomoyo/ exists,
+                none if remote_ip:remote_port is specified, /etc/ccs/ otherwise.
+
+ remote_ip:remote_port     Receive policy from agent listening at specified IP address and port number. 
 
 Examples:
 
@@ -41,12 +49,16 @@ Examples:
 # ccs-savepolicy e
  Save exception policy.
 
+# ccs-savepolicy /etc/ccs/192.168.1.1/ 192.168.1.1:10000
+ Receive policy from 192.168.1.1:10000 and save into /etc/ccs/192.168.1.1/ directory.
+
 EOF
 else
 cat << EOF | help2man -i - -N -s 8 -n "Save TOMOYO Linux's policy" $0 | gzip -9 > man8/ccs-savepolicy.8.gz
 [SEE ALSO]
 
  ccs-loadpolicy (8)
+ ccs-editpolicy-agent (8)
 
 [NOTES]
 

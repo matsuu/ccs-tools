@@ -13,7 +13,7 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: ccs-editpolicy [{s|e|d|p|m|u}] [readonly] [refresh=interval] [{policy_dir|remote_ip:remote_port}]
+Usage: ccs-editpolicy [{s|e|d|p|m|u}] [readonly] [refresh=interval] [policy_dir|remote_ip:remote_port]
 
 This program edits TOMOYO Linux's policy currently loaded in the kernel.
 
@@ -33,7 +33,8 @@ This program edits TOMOYO Linux's policy currently loaded in the kernel.
 
  refresh=interval     Reload automatically for every sec seconds.
 
- policy_dir     Edit policy files stored in file rather than on-memory policy.
+ policy_dir     Edit policy files stored in specified directory. Directory must starts with / .
+                Default is /etc/tomoyo/ if /sys/kernel/security/tomoyo/ exists, /etc/ccs/ otherwise.
 
  remote_ip:remote_port     Edit policy via agent listening at specified IP address and port number. 
 
@@ -42,8 +43,8 @@ Examples:
 # ccs-editpolicy
  Start policy editor with domain policy editor screen.
 
-# ccs-editpolicy /etc/ccs/
- Edit policy stored in /etc/ccs/ directory.
+# ccs-editpolicy /etc/ccs/192.168.1.1/
+ Edit policy stored in /etc/ccs/192.168.1.1/ directory.
 
 # ccs-editpolicy 192.168.1.1:10000
  Edit policy via connecting to 192.168.11.1:10000 .
@@ -56,7 +57,7 @@ cat << EOF | help2man -i - -N -s 8 -n "Edit TOMOYO Linux's policy" $0 | gzip -9 
 [SEE ALSO]
 
  ccs-loadpolicy (8)
- ccs-catd (8)
+ ccs-editpolicy-agent (8)
 
 [NOTES]
 

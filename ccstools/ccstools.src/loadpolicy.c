@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-rc   2009/03/07
+ * Version: 1.6.7-rc   2009/03/09
  *
  */
 #include "ccstools.h"
@@ -51,7 +51,7 @@ int diffpolicy_main(int argc, char *argv[])
 	struct domain_policy dp = { NULL, 0, NULL };
 	struct domain_policy bp = { NULL, 0, NULL };
 	const char *original = argc > 1 ? argv[1] : proc_policy_domain_policy;
-	const char *base = argc > 2 ? argv[2] : base_policy_domain_policy;
+	const char *base = argc > 2 ? argv[2] : BASE_POLICY_DOMAIN_POLICY;
 	const char *diff = argc > 3 ? argv[3] : NULL;
 	if (access(original, R_OK)) {
 		fprintf(stderr, "%s not found.\n", original);
@@ -70,13 +70,15 @@ int diffpolicy_main(int argc, char *argv[])
 
 static _Bool cat_file(const char *path)
 {
-	FILE *fp = fopen(path, "r");
+	FILE *fp = open_read(path);
 	if (!fp) {
 		fprintf(stderr, "Can't open %s\n", path);
 		return false;
 	}
 	while (true) {
 		int c = fgetc(fp);
+		if (network_mode && !c)
+			break;
 		if (c == EOF)
 			break;
 		putchar(c);
@@ -89,7 +91,6 @@ int savepolicy_main(int argc, char *argv[])
 {
 	struct domain_policy dp = { NULL, 0, NULL };
 	struct domain_policy bp = { NULL, 0, NULL };
-	_Bool remount_root = false;
 	char *filename;
 	_Bool write_to_stdout = false;
 	int save_profile = 0;
@@ -97,75 +98,102 @@ int savepolicy_main(int argc, char *argv[])
 	int save_system_policy = 0;
 	int save_exception_policy = 0;
 	int save_domain_policy = 0;
+	int save_meminfo = 0;
 	_Bool force_save = false;
 	time_t now = time(NULL);
-	if (access("/proc/self/", F_OK))
-		mount("/proc", "/proc", "proc", 0, NULL);
-	if (access(proc_policy_dir, F_OK)) {
+	int i;
+	policy_dir = NULL;
+	for (i = 1; i < argc; i++) {
+		char *ptr = argv[i];
+		char *cp = strchr(ptr, ':');
+		if (*ptr == '/') {
+			if (policy_dir)
+				goto usage;
+			policy_dir = ptr;
+			argv[i] = "";
+		} else if (cp) {
+			*cp++ = '\0';
+			network_ip = inet_addr(ptr);
+			network_port = htons(atoi(cp));
+			if (network_mode)
+				goto usage;
+			network_mode = true;
+			argv[i] = "";
+		}
+	}
+	if (!network_mode && access(proc_policy_dir, F_OK)) {
 		fprintf(stderr,
 			"You can't run this program for this kernel.\n");
 		return 0;
 	}
-	if (argc == 1) {
+	if (!network_mode && !policy_dir)
+		policy_dir = disk_policy_dir;
+	for (i = 1; i < argc; i++) {
+		char *ptr = argv[i];
+		char *s = strchr(ptr, 's');
+		char *e = strchr(ptr, 'e');
+		char *d = strchr(ptr, 'd');
+		char *a = strchr(ptr, 'a');
+		char *f = strchr(ptr, 'f');
+		char *p = strchr(ptr, 'p');
+		char *m = strchr(ptr, 'm');
+		char *u = strchr(ptr, 'u');
+		char *i = strchr(ptr, '-');
+		if (s || a)
+			save_system_policy = 1;
+		if (e || a)
+			save_exception_policy = 1;
+		if (d || a)
+			save_domain_policy = 1;
+		if (p)
+			save_profile = 1;
+		if (m)
+			save_manager = 1;
+		if (u) {
+			save_meminfo = 1;
+			write_to_stdout = true;
+		}
+		if (f)
+			force_save = true;
+		if (i)
+			write_to_stdout = true;
+		if (strcspn(ptr, "sedafpm-"))
+			goto usage;
+	}
+	if (!write_to_stdout && !policy_dir)
+		goto usage;
+	if (write_to_stdout && save_system_policy +
+	    save_exception_policy + save_domain_policy +
+	    save_profile + save_manager + save_meminfo != 1)
+		goto usage;
+	if (!write_to_stdout && !force_save && save_system_policy +
+	    save_exception_policy + save_domain_policy + save_profile +
+	    save_manager + save_meminfo == 0) {
 		force_save = true;
 		save_system_policy = 1;
 		save_exception_policy = 1;
 		save_domain_policy = 1;
-	} else {
-		int i;
-		for (i = 1; i < argc; i++) {
-			char *ptr = argv[i];
-			char *s = strchr(ptr, 's');
-			char *e = strchr(ptr, 'e');
-			char *d = strchr(ptr, 'd');
-			char *a = strchr(ptr, 'a');
-			char *f = strchr(ptr, 'f');
-			char *p = strchr(ptr, 'p');
-			char *m = strchr(ptr, 'm');
-			char *i = strchr(ptr, '-');
-			if (s || a)
-				save_system_policy = 1;
-			if (e || a)
-				save_exception_policy = 1;
-			if (d || a)
-				save_domain_policy = 1;
-			if (p)
-				save_profile = 1;
-			if (m)
-				save_manager = 1;
-			if (f)
-				force_save = true;
-			if (i)
-				write_to_stdout = true;
-			if (strcspn(ptr, "sedafpm-"))
-				goto usage;
-			if (write_to_stdout && save_system_policy +
-			    save_exception_policy + save_domain_policy +
-			    save_profile + save_manager != 1)
-				goto usage;
-		}
 	}
-	if (chdir(disk_policy_dir)) {
-		printf("Directory %s doesn't exist.\n", disk_policy_dir);
+	if (!write_to_stdout && chdir(policy_dir)) {
+		printf("Directory %s doesn't exist.\n", policy_dir);
 		return 1;
 	}
-	if (access(".", W_OK) == EOF) {
-		if (errno != EROFS ||
-		    mount("/", "/", "rootfs", MS_REMOUNT, NULL) == EOF) {
-			printf("Can't remount for read-write. (%s)\n",
-			       strerror(errno));
-			return 1;
-		}
-		remount_root = true;
-	}
 
-	/* Exclude nonexistent policy. */
-	if (access(proc_policy_system_policy, R_OK))
-		save_system_policy = 0;
-	if (access(proc_policy_exception_policy, R_OK))
-		save_exception_policy = 0;
-	if (access(proc_policy_domain_policy, R_OK))
-		save_domain_policy = 0;
+	if (!network_mode) {
+		/* Exclude nonexistent policy. */
+		if (access(proc_policy_system_policy, R_OK))
+			save_system_policy = 0;
+		if (access(proc_policy_exception_policy, R_OK))
+			save_exception_policy = 0;
+		if (access(proc_policy_domain_policy, R_OK))
+			save_domain_policy = 0;
+		if (access(proc_policy_profile, R_OK))
+			save_profile = 0;
+		if (access(proc_policy_manager, R_OK))
+			save_manager = 0;
+		if (access(proc_policy_meminfo, R_OK))
+			save_meminfo = 0;
+	}
 
 	if (write_to_stdout) {
 		if (save_profile)
@@ -178,19 +206,21 @@ int savepolicy_main(int argc, char *argv[])
 			cat_file(proc_policy_exception_policy);
 		else if (save_domain_policy)
 			cat_file(proc_policy_domain_policy);
+		else if (save_meminfo)
+			cat_file(proc_policy_meminfo);
 		goto done;
 	}
 	if (save_profile)
-		move_proc_to_file(proc_policy_profile, base_policy_profile,
-				  disk_policy_profile);
+		move_proc_to_file(proc_policy_profile, BASE_POLICY_PROFILE,
+				  DISK_POLICY_PROFILE);
 	if (save_manager)
-		move_proc_to_file(proc_policy_manager, base_policy_manager,
-				  disk_policy_manager);
+		move_proc_to_file(proc_policy_manager, BASE_POLICY_MANAGER,
+				  DISK_POLICY_MANAGER);
 
 	if (save_system_policy) {
 		filename = make_filename("system_policy", now);
 		if (move_proc_to_file(proc_policy_system_policy,
-				      base_policy_system_policy, filename)
+				      BASE_POLICY_SYSTEM_POLICY, filename)
 		    && !write_to_stdout) {
 			if (!force_save &&
 			    is_identical_file("system_policy.conf", filename)) {
@@ -205,7 +235,7 @@ int savepolicy_main(int argc, char *argv[])
 	if (save_exception_policy) {
 		filename = make_filename("exception_policy", now);
 		if (move_proc_to_file(proc_policy_exception_policy,
-				      base_policy_exception_policy, filename)
+				      BASE_POLICY_EXCEPTION_POLICY, filename)
 		    && !write_to_stdout) {
 			if (!force_save &&
 			    is_identical_file("exception_policy.conf",
@@ -222,7 +252,7 @@ int savepolicy_main(int argc, char *argv[])
 		filename = make_filename("domain_policy", now);
 		if (save_domain_policy_with_diff(&dp, &bp,
 						 proc_policy_domain_policy,
-						 base_policy_domain_policy,
+						 BASE_POLICY_DOMAIN_POLICY,
 						 filename)
 		    && !write_to_stdout) {
 			if (!force_save &&
@@ -235,17 +265,17 @@ int savepolicy_main(int argc, char *argv[])
 		}
 	}
 done:
-	if (remount_root)
-		mount("/", "/", "rootfs", MS_REMOUNT | MS_RDONLY, NULL);
 	return 0;
 usage:
-	printf("%s [s][e][d][a][f][p][m][-]\n"
+	printf("%s [s][e][d][a][f][p][m][u] [{-|policy_dir} "
+	       "[remote_ip:remote_port]]\n"
 	       "s : Save system_policy.\n"
 	       "e : Save exception_policy.\n"
 	       "d : Save domain_policy.\n"
 	       "a : Save system_policy,exception_policy,domain_policy.\n"
 	       "p : Save profile.\n"
 	       "m : Save manager.\n"
+	       "u : Write meminfo to stdout.\n"
 	       "- : Write policy to stdout. "
 	       "(Only one of 'sedpm' is possible when using '-'.)\n"
 	       "f : Save even if on-disk policy and on-memory policy "
@@ -259,12 +289,40 @@ usage:
 
 /***** loadpolicy start *****/
 
+static FILE *open_write(const char *filename)
+{
+	if (network_mode) {
+		const int fd = socket(AF_INET, SOCK_STREAM, 0);
+		struct sockaddr_in addr;
+		FILE *fp;
+		memset(&addr, 0, sizeof(addr));
+		addr.sin_family = AF_INET;
+		addr.sin_addr.s_addr = network_ip;
+		addr.sin_port = network_port;
+		if (connect(fd, (struct sockaddr *) &addr, sizeof(addr))) {
+			close(fd);
+			return NULL;
+		}
+		fp = fdopen(fd, "r+");
+		fprintf(fp, "%s", filename);
+		fputc(0, fp);
+		fflush(fp);
+		if (fgetc(fp) != 0) {
+			fclose(fp);
+			return NULL;
+		}
+		return fp;
+	} else {
+		return fopen(filename, "w+");
+	}
+}
+
 static void move_file_to_proc(const char *base, const char *src,
 			      const char *dest)
 {
 	FILE *file_fp = stdin;
 	FILE *base_fp;
-	FILE *proc_fp = fopen(dest, "w");
+	FILE *proc_fp = open_write(dest);
 	if (!proc_fp) {
 		fprintf(stderr, "Can't open %s\n", dest);
 		return;
@@ -298,24 +356,38 @@ static void move_file_to_proc(const char *base, const char *src,
 
 static void delete_proc_policy(const char *name)
 {
-	FILE *proc_write_fp = fopen(name, "w");
-	FILE *proc_read_fp = fopen(name, "r");
-	if (!proc_write_fp || !proc_read_fp) {
+	FILE *fp;
+	char **list = NULL;
+	int list_len = 0;
+	int i;
+	if (network_mode)
+		fp = open_read(name);
+	else
+		fp = fopen(name, "a+");
+	if (!fp) {
 		fprintf(stderr, "Can't open %s\n", name);
-		if (proc_write_fp)
-			fclose(proc_write_fp);
-		if (proc_read_fp)
-			fclose(proc_read_fp);
 		return;
 	}
 	get();
-	while (freadline(proc_read_fp)) {
-		if (shared_buffer[0])
-			fprintf(proc_write_fp, "delete %s\n", shared_buffer);
+	while (freadline(fp)) {
+		char *cp;
+		if (!shared_buffer[0])
+			continue;
+		list = realloc(list, sizeof(char *) * (list_len + 1));
+		if (!list)
+			out_of_memory();
+		cp = strdup(shared_buffer);
+		if (!cp)
+			out_of_memory();
+		list[list_len++] = cp;
 	}
 	put();
-	fclose(proc_read_fp);
-	fclose(proc_write_fp);
+	for (i = 0; i < list_len; i++) {  
+		fprintf(fp, "delete %s\n", list[i]);
+		free(list[i]);
+	}
+	free(list);
+	fclose(fp);
 }
 
 static void update_domain_policy(struct domain_policy *proc_policy,
@@ -325,17 +397,21 @@ static void update_domain_policy(struct domain_policy *proc_policy,
 {
 	int base_index;
 	int proc_index;
-	FILE *proc_fp = fopen(dest, "w");
+	FILE *proc_fp;
+	_Bool nm = network_mode;
+	/* Load base and diff policy to file_policy->list. */
+	network_mode = false;
+	if (!access(base, R_OK))
+		read_domain_policy(file_policy, base);
+	read_domain_policy(file_policy, src);
+	network_mode = nm;
+	/* Load proc policy to proc_policy->list. */
+	read_domain_policy(proc_policy, dest);
+	proc_fp = open_write(dest);
 	if (!proc_fp) {
 		fprintf(stderr, "Can't open %s\n", dest);
 		return;
 	}
-	/* Load base and diff policy to file_policy->list. */
-	if (!access(base, R_OK))
-		read_domain_policy(file_policy, base);
-	read_domain_policy(file_policy, src);
-	/* Load proc policy to proc_policy->list. */
-	read_domain_policy(proc_policy, dest);
 	for (base_index = 0; base_index < file_policy->list_len; base_index++) {
 		int i;
 		int j;
@@ -392,52 +468,70 @@ int loadpolicy_main(int argc, char *argv[])
 	int load_domain_policy = 0;
 	int load_meminfo = 0;
 	_Bool refresh_policy = false;
-	if (access(proc_policy_dir, F_OK)) {
-		fprintf(stderr,
-			"You can't run this program for this kernel.\n");
-		return 0;
-	}
-	if (argc == 1) {
-		goto usage;
-	} else {
-		int i;
-		for (i = 1; i < argc; i++) {
-			char *ptr = argv[i];
-			char *s = strchr(ptr, 's');
-			char *e = strchr(ptr, 'e');
-			char *d = strchr(ptr, 'd');
-			char *a = strchr(ptr, 'a');
-			char *f = strchr(ptr, 'f');
-			char *p = strchr(ptr, 'p');
-			char *m = strchr(ptr, 'm');
-			char *u = strchr(ptr, 'u');
-			char *i = strchr(ptr, '-');
-			if (s || a)
-				load_system_policy = 1;
-			if (e || a)
-				load_exception_policy = 1;
-			if (d || a)
-				load_domain_policy = 1;
-			if (p)
-				load_profile = 1;
-			if (m)
-				load_manager = 1;
-			if (u)
-				load_meminfo = 1;
-			if (f)
-				refresh_policy = true;
-			if (i)
-				read_from_stdin = true;
-			if (strcspn(ptr, "sedafpmu-"))
+	int i;
+	policy_dir = NULL;
+	for (i = 1; i < argc; i++) {
+		char *ptr = argv[i];
+		char *cp = strchr(ptr, ':');
+		if (*ptr == '/') {
+			if (policy_dir)
 				goto usage;
-			if (read_from_stdin && load_system_policy +
-			    load_exception_policy + load_domain_policy +
-			    load_profile + load_manager + load_meminfo != 1)
+			policy_dir = ptr;
+			argv[i] = "";
+		} else if (cp) {
+			*cp++ = '\0';
+			if (network_mode)
 				goto usage;
+			network_ip = inet_addr(ptr);
+			network_port = htons(atoi(cp));
+			network_mode = true;
+			argv[i] = "";
 		}
 	}
-	if (chdir(disk_policy_dir)) {
-		printf("Directory %s doesn't exist.\n", disk_policy_dir);
+	if (!network_mode && !policy_dir)
+		policy_dir = disk_policy_dir;
+	for (i = 1; i < argc; i++) {
+		char *ptr = argv[i];
+		char *s = strchr(ptr, 's');
+		char *e = strchr(ptr, 'e');
+		char *d = strchr(ptr, 'd');
+		char *a = strchr(ptr, 'a');
+		char *f = strchr(ptr, 'f');
+		char *p = strchr(ptr, 'p');
+		char *m = strchr(ptr, 'm');
+		char *u = strchr(ptr, 'u');
+		char *i = strchr(ptr, '-');
+		if (s || a)
+			load_system_policy = 1;
+		if (e || a)
+			load_exception_policy = 1;
+		if (d || a)
+			load_domain_policy = 1;
+		if (p)
+			load_profile = 1;
+		if (m)
+			load_manager = 1;
+		if (u)
+			load_meminfo = 1;
+		if (f)
+			refresh_policy = true;
+		if (i)
+			read_from_stdin = true;
+		if (strcspn(ptr, "sedafpmu-"))
+			goto usage;
+	}
+	if (!read_from_stdin && !policy_dir)
+		goto usage;
+	if (read_from_stdin && load_system_policy +
+	    load_exception_policy + load_domain_policy +
+	    load_profile + load_manager + load_meminfo != 1)
+		goto usage;
+	if (load_system_policy + load_exception_policy +
+	    load_domain_policy + load_profile + load_manager +
+	    load_meminfo == 0)
+		goto usage;
+	if (chdir(policy_dir)) {
+		printf("Directory %s doesn't exist.\n", policy_dir);
 		return 1;
 	}
 
@@ -445,8 +539,8 @@ int loadpolicy_main(int argc, char *argv[])
 		if (read_from_stdin)
 			move_file_to_proc(NULL, NULL, proc_policy_profile);
 		else
-			move_file_to_proc(base_policy_profile,
-					  disk_policy_profile,
+			move_file_to_proc(BASE_POLICY_PROFILE,
+					  DISK_POLICY_PROFILE,
 					  proc_policy_profile);
 	}
 
@@ -454,8 +548,8 @@ int loadpolicy_main(int argc, char *argv[])
 		if (read_from_stdin)
 			move_file_to_proc(NULL, NULL, proc_policy_manager);
 		else
-			move_file_to_proc(base_policy_manager,
-					  disk_policy_manager,
+			move_file_to_proc(BASE_POLICY_MANAGER,
+					  DISK_POLICY_MANAGER,
 					  proc_policy_manager);
 	}
 
@@ -463,8 +557,8 @@ int loadpolicy_main(int argc, char *argv[])
 		if (read_from_stdin)
 			move_file_to_proc(NULL, NULL, proc_policy_meminfo);
 		else
-			move_file_to_proc(base_policy_meminfo,
-					  disk_policy_meminfo,
+			move_file_to_proc(BASE_POLICY_MEMINFO,
+					  DISK_POLICY_MEMINFO,
 					  proc_policy_meminfo);
 	}
 
@@ -475,8 +569,8 @@ int loadpolicy_main(int argc, char *argv[])
 			move_file_to_proc(NULL, NULL,
 					  proc_policy_system_policy);
 		else
-			move_file_to_proc(base_policy_system_policy,
-					  disk_policy_system_policy,
+			move_file_to_proc(BASE_POLICY_SYSTEM_POLICY,
+					  DISK_POLICY_SYSTEM_POLICY,
 					  proc_policy_system_policy);
 	}
 
@@ -487,8 +581,8 @@ int loadpolicy_main(int argc, char *argv[])
 			move_file_to_proc(NULL, NULL,
 					  proc_policy_exception_policy);
 		else
-			move_file_to_proc(base_policy_exception_policy,
-					  disk_policy_exception_policy,
+			move_file_to_proc(BASE_POLICY_EXCEPTION_POLICY,
+					  DISK_POLICY_EXCEPTION_POLICY,
 					  proc_policy_exception_policy);
 	}
 
@@ -500,22 +594,23 @@ int loadpolicy_main(int argc, char *argv[])
 						     proc_policy_domain_policy);
 			else
 				update_domain_policy(&proc_policy, &file_policy,
-						     base_policy_domain_policy,
-						     disk_policy_domain_policy,
+						     BASE_POLICY_DOMAIN_POLICY,
+						     DISK_POLICY_DOMAIN_POLICY,
 						     proc_policy_domain_policy);
 		} else {
 			if (read_from_stdin)
 				move_file_to_proc(NULL, NULL,
 						  proc_policy_domain_policy);
 			else
-				move_file_to_proc(base_policy_domain_policy,
-						  disk_policy_domain_policy,
+				move_file_to_proc(BASE_POLICY_DOMAIN_POLICY,
+						  DISK_POLICY_DOMAIN_POLICY,
 						  proc_policy_domain_policy);
 		}
 	}
 	return 0;
 usage:
-	printf("%s [s][e][d][a][f][p][m][u][-]\n"
+	printf("%s [s][e][d][a][f][p][m][u] [{-|policy_dir} "
+	       "[remote_ip:remote_port]]\n"
 	       "s : Load system_policy.\n"
 	       "e : Load exception_policy.\n"
 	       "d : Load domain_policy.\n"
@@ -526,7 +621,8 @@ usage:
 	       "- : Read policy from stdin. "
 	       "(Only one of 'sedpmu' is possible when using '-'.)\n"
 	       "f : Delete on-memory policy before loading on-disk policy. "
-	       "(Valid for 'sed'.)\n\n", argv[0]);
+	       "(Valid for 'sed'.)\n\n",
+	       argv[0]);
 	return 0;
 }
 

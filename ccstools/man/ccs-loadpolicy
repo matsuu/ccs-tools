@@ -13,28 +13,34 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: ccs-loadpolicy [-][s][e][d][a][f][p][m][u]
+Usage: ccs-loadpolicy [s][e][d][a][f][p][m][u] [{-|policy_dir} [remote_ip:remote_port]]
 
 This program loads TOMOYO Linux's policy from files or standard input into kernel.
 
- -     Read policy from stdin. Specify only one of "sedpmu" option when you use this option.
+ s     Load system policy. ( policy_dir/system_policy.base + policy_dir/system_policy.conf => /proc/ccs/system_policy )
 
- s     Load system policy. ( /etc/ccs/system_policy.base + /etc/ccs/system_policy.conf => /proc/ccs/system_policy )
+ e     Load exception policy. ( policy_dirpolicy_dir/exception_policy.base + policy_dir/exception_policy.conf => /proc/ccs/exception_policy )
 
- e     Load exception policy. ( /etc/ccs/exception_policy.base + /etc/ccs/exception_policy.conf => /proc/ccs/exception_policy )
-
- d     Load domain policy. ( /etc/ccs/domain_policy.base + /etc/ccs/domain_policy.conf => /proc/ccs/domain_policy )
+ d     Load domain policy. ( policy_dir/domain_policy.base + policy_dir/domain_policy.conf => /proc/ccs/domain_policy )
 
  a     Load system policy, exception policy and domain policy.
 
- p     Load profile. ( /etc/ccs/profile.base + /etc/ccs/profile.conf => /proc/ccs/profile )
+ p     Load profile. ( policy_dir/profile.base + policy_dir/profile.conf => /proc/ccs/profile )
 
- m     Load manager. ( /etc/ccs/manager.base + /etc/ccs/manager.conf => /proc/ccs/manager )
+ m     Load manager. ( policy_dir/manager.base + policy_dir/manager.conf => /proc/ccs/manager )
 
- u     Load meminfo. ( /etc/ccs/meminfo.base + /etc/ccs/meminfo.conf => /proc/ccs/meminfo )
+ u     Load meminfo. ( policy_dir/meminfo.base + policy_dir/meminfo.conf => /proc/ccs/meminfo )
 
  f     Erase on-memory policy before loading on-disk policy. If not specified, on-disk policy is appended to on-memory policy.
        This option is valid for "seda" options.
+
+ -     Read policy from stdin. Specify only one of "sedpmu" option when you use this option.
+
+ policy_dir     Load policy files from specified directory. Directory must starts with / .
+                Default is /etc/tomoyo/ if /sys/kernel/security/tomoyo/ exists,
+                none if remote_ip:remote_port is specified, /etc/ccs/ otherwise.
+
+ remote_ip:remote_port     Send policy to agent listening at specified IP address and port number.
 
 Examples:
 
@@ -48,10 +54,13 @@ Examples:
  Add "allow_execute /sbin/init" to "<kernel>" domain.
 
 # ccs-loadpolicy df
- Replace currently loaded domain policy with /etc/ccs/domain_policy.base + /etc/ccs/domain_policy.conf .
+ Replace currently loaded domain policy with policy_dir/domain_policy.base + policy_dir/domain_policy.conf .
 
 # ccs-loadpolicy d
- Append /etc/ccs/domain_policy.base + /etc/ccs/domain_policy.conf into currently loaded domain policy.
+ Append policy_dir/domain_policy.base + policy_dir/domain_policy.conf into currently loaded domain policy.
+
+# ccs-loadpolicy d /etc/ccs/192.168.1.1/ 192.168.1.1:10000
+ Append /etc/ccs/192.168.1.1/domain_policy.base + /etc/ccs/192.168.1.1/domain_policy.conf to 192.168.11.1:10000 .
 
 EOF
 else
@@ -59,6 +68,7 @@ cat << EOF | help2man -i - -N -s 8 -n "Load TOMOYO Linux's policy manually" $0 |
 [SEE ALSO]
 
  ccs-init (8)
+ ccs-editpolicy-agent (8)
 
 [NOTES]
 

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-rc   2009/03/07
+ * Version: 1.6.7-rc   2009/03/09
  *
  */
 #include "ccstools.h"
@@ -590,9 +590,10 @@ static unsigned int refresh_interval = 0;
 static _Bool need_reload = false;
 
 _Bool offline_mode = false;
+const char *policy_dir = NULL;
 _Bool network_mode = false;
-static u32 network_ip = INADDR_NONE;
-static u16 network_port = 0;
+u32 network_ip = INADDR_NONE;
+u16 network_port = 0;
 
 struct path_group_entry *path_group_list = NULL;
 int path_group_list_len = 0;
@@ -790,29 +791,11 @@ out:
 FILE *open_read(const char *filename)
 {
 	if (network_mode) {
-		const int fd = socket(AF_INET, SOCK_STREAM, 0);
-		struct sockaddr_in addr;
-		FILE *fp;
-		memset(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET;
-		addr.sin_addr.s_addr = network_ip;
-		addr.sin_port = network_port;
-		if (connect(fd, (struct sockaddr *) &addr, sizeof(addr))) {
-			close(fd);
-			set_error(filename);
-			return NULL;
+		FILE *fp = open_write(filename);
+		if (fp) {
+			fputc(0, fp);
+			fflush(fp);
 		}
-		fp = fdopen(fd, "r+");
-		fprintf(fp, "%s", filename);
-		fputc(0, fp);
-		fflush(fp);
-		if (fgetc(fp) != 0) {
-			fclose(fp);
-			set_error(filename);
-			return NULL;
-		}
-		fputc(0, fp);
-		fflush(fp);
 		return fp;
 	} else if (offline_mode) {
 		char request[1024];
@@ -2260,7 +2243,6 @@ start2:
 
 int editpolicy_main(int argc, char *argv[])
 {
-	static char *policy_dir = NULL;
 	struct domain_policy dp = { NULL, 0, NULL };
 	struct domain_policy bp = { NULL, 0, NULL };
 	memset(current_y, 0, sizeof(current_y));
@@ -2270,33 +2252,37 @@ int editpolicy_main(int argc, char *argv[])
 	if (argc > 1) {
 		int i;
 		for (i = 1; i < argc; i++) {
-			if (!strcmp(argv[i], "s"))
-				current_screen = SCREEN_SYSTEM_LIST;
-			else if (!strcmp(argv[i], "e"))
-				current_screen = SCREEN_EXCEPTION_LIST;
-			else if (!strcmp(argv[i], "d"))
-				current_screen = SCREEN_DOMAIN_LIST;
-			else if (!strcmp(argv[i], "p"))
-				current_screen = SCREEN_PROFILE_LIST;
-			else if (!strcmp(argv[i], "m"))
-				current_screen = SCREEN_MANAGER_LIST;
-			else if (!strcmp(argv[i], "q"))
-				current_screen = SCREEN_MEMINFO_LIST;
-			else if (!strcmp(argv[i], "readonly"))
-				readonly_mode = true;
-			else if (sscanf(argv[i], "refresh=%u",
-					&refresh_interval) == 1) {
-				/* */
-			} else if (strchr(argv[i], ':')) {
-				char *cp = strchr(argv[i], ':');
-				*cp = '\0';
-				network_ip = inet_addr(argv[i]);
-				network_port = htons(atoi(cp + 1));
-				network_mode = true;
-			} else if (argv[i][0] == '/') {
-				policy_dir = argv[i];
+			char *ptr = argv[i];
+			char *cp = strchr(ptr, ':');
+			if (*ptr == '/') {
+				if (network_mode || offline_mode)
+					goto usage;
+				policy_dir = ptr;
 				offline_mode = true;
-			} else {
+			} else if (cp) {
+				*cp++ = '\0';
+				if (network_mode || offline_mode)
+					goto usage;
+				network_ip = inet_addr(ptr);
+				network_port = htons(atoi(cp));
+				network_mode = true;
+			} else if (!strcmp(ptr, "s"))
+				current_screen = SCREEN_SYSTEM_LIST;
+			else if (!strcmp(ptr, "e"))
+				current_screen = SCREEN_EXCEPTION_LIST;
+			else if (!strcmp(ptr, "d"))
+				current_screen = SCREEN_DOMAIN_LIST;
+			else if (!strcmp(ptr, "p"))
+				current_screen = SCREEN_PROFILE_LIST;
+			else if (!strcmp(ptr, "m"))
+				current_screen = SCREEN_MANAGER_LIST;
+			else if (!strcmp(ptr, "q"))
+				current_screen = SCREEN_MEMINFO_LIST;
+			else if (!strcmp(ptr, "readonly"))
+				readonly_mode = true;
+			else if (sscanf(ptr, "refresh=%u", &refresh_interval)
+				 != 1) {
+usage:
 				printf("Usage: %s [s|e|d|p|m|u] [readonly] "
 				       "[refresh=interval] "
 				       "[{policy_dir|remote_ip:remote_port}]\n",
@@ -2345,7 +2331,7 @@ int editpolicy_main(int argc, char *argv[])
 		close(fd[1]);
 		persistent_fd = fd[0];
 		{
-			int fd = open2(base_policy_system_policy, O_RDONLY);
+			int fd = open2(BASE_POLICY_SYSTEM_POLICY, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp =
 					open_write(proc_policy_system_policy);
@@ -2355,7 +2341,7 @@ int editpolicy_main(int argc, char *argv[])
 				}
 				close(fd);
 			}
-			fd = open2(disk_policy_system_policy, O_RDONLY);
+			fd = open2(DISK_POLICY_SYSTEM_POLICY, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp =
 					open_write(proc_policy_system_policy);
@@ -2365,7 +2351,7 @@ int editpolicy_main(int argc, char *argv[])
 				}
 				close(fd);
 			}
-			fd = open2(base_policy_exception_policy, O_RDONLY);
+			fd = open2(BASE_POLICY_EXCEPTION_POLICY, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp =
 				open_write(proc_policy_exception_policy);
@@ -2375,7 +2361,7 @@ int editpolicy_main(int argc, char *argv[])
 				}
 				close(fd);
 			}
-			fd = open2(disk_policy_exception_policy, O_RDONLY);
+			fd = open2(DISK_POLICY_EXCEPTION_POLICY, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp =
 				open_write(proc_policy_exception_policy);
@@ -2385,7 +2371,7 @@ int editpolicy_main(int argc, char *argv[])
 				}
 				close(fd);
 			}
-			fd = open2(base_policy_domain_policy, O_RDONLY);
+			fd = open2(BASE_POLICY_DOMAIN_POLICY, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp =
 					open_write(proc_policy_domain_policy);
@@ -2395,7 +2381,7 @@ int editpolicy_main(int argc, char *argv[])
 				}
 				close(fd);
 			}
-			fd = open2(disk_policy_domain_policy, O_RDONLY);
+			fd = open2(DISK_POLICY_DOMAIN_POLICY, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp =
 					open_write(proc_policy_domain_policy);
@@ -2405,7 +2391,7 @@ int editpolicy_main(int argc, char *argv[])
 				}
 				close(fd);
 			}
-			fd = open2(base_policy_profile, O_RDONLY);
+			fd = open2(BASE_POLICY_PROFILE, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp = open_write(proc_policy_profile);
 				if (fp) {
@@ -2414,7 +2400,7 @@ int editpolicy_main(int argc, char *argv[])
 				}
 				close(fd);
 			}
-			fd = open2(disk_policy_profile, O_RDONLY);
+			fd = open2(DISK_POLICY_PROFILE, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp = open_write(proc_policy_profile);
 				if (fp) {
@@ -2423,7 +2409,7 @@ int editpolicy_main(int argc, char *argv[])
 				}
 				close(fd);
 			}
-			fd = open2(base_policy_manager, O_RDONLY);
+			fd = open2(BASE_POLICY_MANAGER, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp = open_write(proc_policy_manager);
 				if (fp) {
@@ -2432,7 +2418,7 @@ int editpolicy_main(int argc, char *argv[])
 				}
 				close(fd);
 			}
-			fd = open2(disk_policy_manager, O_RDONLY);
+			fd = open2(DISK_POLICY_MANAGER, O_RDONLY);
 			if (fd != EOF) {
 				FILE *fp = open_write(proc_policy_manager);
 				if (fp) {
@@ -2509,7 +2495,7 @@ int editpolicy_main(int argc, char *argv[])
 		time_t now = time(NULL);
 		char *filename = make_filename("system_policy", now);
 		if (move_proc_to_file(proc_policy_system_policy,
-				      base_policy_system_policy, filename)) {
+				      BASE_POLICY_SYSTEM_POLICY, filename)) {
 			if (is_identical_file("system_policy.conf", filename)) {
 				unlink(filename);
 			} else {
@@ -2519,7 +2505,7 @@ int editpolicy_main(int argc, char *argv[])
 		}
 		filename = make_filename("exception_policy", now);
 		if (move_proc_to_file(proc_policy_exception_policy,
-				      base_policy_exception_policy, filename)) {
+				      BASE_POLICY_EXCEPTION_POLICY, filename)) {
 			if (is_identical_file("exception_policy.conf",
 					      filename)) {
 				unlink(filename);
@@ -2532,7 +2518,7 @@ int editpolicy_main(int argc, char *argv[])
 		filename = make_filename("domain_policy", now);
 		if (save_domain_policy_with_diff(&dp, &bp,
 						 proc_policy_domain_policy,
-						 base_policy_domain_policy,
+						 BASE_POLICY_DOMAIN_POLICY,
 						 filename)) {
 			if (is_identical_file("domain_policy.conf", filename)) {
 				unlink(filename);
@@ -2542,7 +2528,7 @@ int editpolicy_main(int argc, char *argv[])
 			}
 		}
 		filename = make_filename("profile", now);
-		if (move_proc_to_file(proc_policy_profile, base_policy_profile,
+		if (move_proc_to_file(proc_policy_profile, BASE_POLICY_PROFILE,
 				      filename)) {
 			if (is_identical_file("profile.conf", filename)) {
 				unlink(filename);
@@ -2552,7 +2538,7 @@ int editpolicy_main(int argc, char *argv[])
 			}
 		}
 		filename = make_filename("manager", now);
-		if (move_proc_to_file(proc_policy_manager, base_policy_manager,
+		if (move_proc_to_file(proc_policy_manager, BASE_POLICY_MANAGER,
 				      filename)) {
 			if (is_identical_file("manager.conf", filename)) {
 				unlink(filename);
