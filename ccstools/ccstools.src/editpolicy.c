@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-rc   2009/03/09
+ * Version: 1.6.7-rc   2009/03/10
  *
  */
 #include "ccstools.h"
@@ -2249,6 +2249,7 @@ int editpolicy_main(int argc, char *argv[])
 	memset(current_item_index, 0, sizeof(current_item_index));
 	memset(list_item_count, 0, sizeof(list_item_count));
 	memset(max_eat_col, 0, sizeof(max_eat_col));
+	policy_dir = NULL;
 	if (argc > 1) {
 		int i;
 		for (i = 1; i < argc; i++) {
@@ -2276,7 +2277,7 @@ int editpolicy_main(int argc, char *argv[])
 				current_screen = SCREEN_PROFILE_LIST;
 			else if (!strcmp(ptr, "m"))
 				current_screen = SCREEN_MANAGER_LIST;
-			else if (!strcmp(ptr, "q"))
+			else if (!strcmp(ptr, "u"))
 				current_screen = SCREEN_MEMINFO_LIST;
 			else if (!strcmp(ptr, "readonly"))
 				readonly_mode = true;

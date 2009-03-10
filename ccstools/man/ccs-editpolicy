@@ -34,7 +34,6 @@ This program edits TOMOYO Linux's policy currently loaded in the kernel.
  refresh=interval     Reload automatically for every sec seconds.
 
  policy_dir     Edit policy files stored in specified directory. Directory must starts with / .
-                Default is /etc/tomoyo/ if /sys/kernel/security/tomoyo/ exists, /etc/ccs/ otherwise.
 
  remote_ip:remote_port     Edit policy via agent listening at specified IP address and port number. 
 
