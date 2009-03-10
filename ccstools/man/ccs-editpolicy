@@ -46,7 +46,7 @@ Examples:
  Edit policy stored in /etc/ccs/192.168.1.1/ directory.
 
 # ccs-editpolicy 192.168.1.1:10000
- Edit policy via connecting to 192.168.11.1:10000 .
+ Edit policy via connecting to 192.168.1.1:10000 .
 
 Usage with images are available at http://tomoyo.sourceforge.jp/en/1.6.x/tool-editpolicy.html
 
