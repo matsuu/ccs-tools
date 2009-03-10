@@ -31,9 +31,9 @@ This program edits TOMOYO Linux's policy currently loaded in the kernel.
 
  readonly             Browse mode. No editing is allowed.
 
- refresh=interval     Reload automatically for every sec seconds.
+ refresh=interval     Reload automatically for every interval seconds.
 
- policy_dir     Edit policy files stored in specified directory. Directory must starts with / .
+ policy_dir     Edit policy files stored in policy_dir directory instead for policy currently loaded. Must starts with / .
 
  remote_ip:remote_port     Edit policy via agent listening at specified IP address and port number. 
 

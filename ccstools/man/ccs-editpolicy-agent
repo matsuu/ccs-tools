@@ -15,7 +15,7 @@ then
 cat << EOF
 Usage: ccs-editpolicy-agent listen_ip:listen_port
 
-This is a helper program for ccs-editpolicy .
+This is an agent program for ccs-editpolicy ccs-loadpolicy ccs-savepolicy .
 
  listen_ip:listen_port     Listen at specified IP address and port number. 
 
@@ -26,10 +26,12 @@ Examples:
 
 EOF
 else
-cat << EOF | help2man -i - -N -s 8 -n "Helper for editing TOMOYO Linux's policy" $0 | gzip -9 > man8/ccs-editpolicy-agent.8.gz
+cat << EOF | help2man -i - -N -s 8 -n "Agent for editing TOMOYO Linux's policy" $0 | gzip -9 > man8/ccs-editpolicy-agent.8.gz
 [SEE ALSO]
 
  ccs-editpolicy (8)
+ ccs-loadpolicy (8)
+ ccs-savepolicy (8)
 
 [NOTES]
 

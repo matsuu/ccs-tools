@@ -35,7 +35,7 @@ This program saves TOMOYO Linux's policy from kernel into files.
 
  -     Write policy to stdout. Specify only one of "sedpmu" option when you use this option.
 
- policy_dir     Save policy files into specified directory. Directory must starts with / .
+ policy_dir     Save policy files into policy_dir directory. Must starts with / .
                 Default is /etc/tomoyo/ if /sys/kernel/security/tomoyo/ exists,
                 none if remote_ip:remote_port is specified, /etc/ccs/ otherwise.
 
