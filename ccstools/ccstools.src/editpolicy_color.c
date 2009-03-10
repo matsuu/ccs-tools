@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-rc   2009/03/04
+ * Version: 1.6.7-rc   2009/03/10
  *
  */
 #include "ccstools.h"
@@ -50,9 +50,9 @@ void editpolicy_color_init(void)
 		  COLOR_GREEN,      "MANAGER_HEAD" },
 		{ MANAGER_CURSOR,   COLOR_WHITE,
 		  COLOR_GREEN,      "MANAGER_CURSOR" },
-		{ MEMORY_HEAD,      COLOR_WHITE,
+		{ MEMORY_HEAD,      COLOR_BLACK,
 		  COLOR_YELLOW,     "MEMORY_HEAD" },
-		{ MEMORY_CURSOR,    COLOR_WHITE,
+		{ MEMORY_CURSOR,    COLOR_BLACK,
 		  COLOR_YELLOW,     "MEMORY_CURSOR" },
 		{ NORMAL,           COLOR_WHITE,
 		  COLOR_BLACK,      NULL }

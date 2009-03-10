@@ -1889,7 +1889,7 @@ static int select_window(struct domain_policy *dp, const int current)
 	printw("m     <<< Manager Policy Editor >>>\n");
 	if (!offline_mode) {
 		/* printw("i     <<< Interactive Enforcing Mode >>>\n"); */
-		printw("u     <<< Memory Usage Editor >>>\n");
+		printw("u     <<< Memory Usage >>>\n");
 	}
 	clrtobot();
 	refresh();

@@ -157,7 +157,7 @@ int savepolicy_main(int argc, char *argv[])
 			force_save = true;
 		if (i)
 			write_to_stdout = true;
-		if (strcspn(ptr, "sedafpm-"))
+		if (strcspn(ptr, "sedafpmu-"))
 			goto usage;
 	}
 	if (!write_to_stdout && !policy_dir)
@@ -275,9 +275,9 @@ usage:
 	       "a : Save system_policy,exception_policy,domain_policy.\n"
 	       "p : Save profile.\n"
 	       "m : Save manager.\n"
-	       "u : Write meminfo to stdout.\n"
+	       "u : Write meminfo to stdout. Implies '-'\n"
 	       "- : Write policy to stdout. "
-	       "(Only one of 'sedpm' is possible when using '-'.)\n"
+	       "(Only one of 'sedpmu' is possible when using '-'.)\n"
 	       "f : Save even if on-disk policy and on-memory policy "
 	       "are the same. (Valid for 'sed'.)\n\n"
 	       "If no options given, this program assumes 'a' and 'f' "
@@ -530,7 +530,7 @@ int loadpolicy_main(int argc, char *argv[])
 	    load_domain_policy + load_profile + load_manager +
 	    load_meminfo == 0)
 		goto usage;
-	if (chdir(policy_dir)) {
+	if (!read_from_stdin && chdir(policy_dir)) {
 		printf("Directory %s doesn't exist.\n", policy_dir);
 		return 1;
 	}
@@ -597,6 +597,8 @@ int loadpolicy_main(int argc, char *argv[])
 						     BASE_POLICY_DOMAIN_POLICY,
 						     DISK_POLICY_DOMAIN_POLICY,
 						     proc_policy_domain_policy);
+			clear_domain_policy(&proc_policy);
+			clear_domain_policy(&file_policy);
 		} else {
 			if (read_from_stdin)
 				move_file_to_proc(NULL, NULL,

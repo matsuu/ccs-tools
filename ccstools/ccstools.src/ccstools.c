@@ -596,6 +596,13 @@ void fill_path_info(struct path_info *ptr)
 	ptr->depth = path_depth(name);
 }
 
+static unsigned int memsize(const unsigned int size)
+{
+	if (size <= 1048576)
+		return ((size / PAGE_SIZE) + 1) * PAGE_SIZE;
+	return 0;
+}
+
 const struct path_info *savename(const char *name)
 {
 	static struct free_memory_block_list fmb_list = { NULL, NULL, 0 };
@@ -610,12 +617,6 @@ const struct path_info *savename(const char *name)
 	if (!name)
 		return NULL;
 	len = strlen(name) + 1;
-	/*
-	if (len > CCS_MAX_PATHNAME_LEN) {
-		fprintf(stderr, "ERROR: Name too long for savename().\n");
-		return NULL;
-	}
-	*/
 	hash = full_name_hash((const unsigned char *) name, len - 1);
 	if (first_call) {
 		int i;
@@ -625,8 +626,6 @@ const struct path_info *savename(const char *name)
 			name_list[i].entry.name = "/";
 			fill_path_info(&name_list[i].entry);
 		}
-		if (CCS_MAX_PATHNAME_LEN > PAGE_SIZE)
-			abort();
 	}
 	ptr = &name_list[hash % SAVENAME_MAX_HASH];
 	while (ptr) {
@@ -641,16 +640,16 @@ const struct path_info *savename(const char *name)
 			fmb = fmb->next;
 			continue;
 		}
-		cp = malloc(len < PAGE_SIZE ? PAGE_SIZE : len);
+		cp = malloc(memsize(len));
 		if (!cp)
 			out_of_memory();
 		fmb->next = alloc_element(sizeof(*fmb->next));
 		if (!fmb->next)
 			out_of_memory();
-		memset(cp, 0, len < PAGE_SIZE ? PAGE_SIZE : len);
+		memset(cp, 0, memsize(len));
 		fmb = fmb->next;
 		fmb->ptr = cp;
-		fmb->len = len < PAGE_SIZE ? PAGE_SIZE : len;
+		fmb->len = memsize(len);
 	}
 	ptr = alloc_element(sizeof(*ptr));
 	if (!ptr)
