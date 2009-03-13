@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-rc   2009/03/10
+ * Version: 1.6.7-rc   2009/03/13
  *
  */
 #include "ccstools.h"
@@ -2099,7 +2099,6 @@ start2:
 			case SCREEN_EXCEPTION_LIST:
 			case SCREEN_ACL_LIST:
 			case SCREEN_DOMAIN_LIST:
-			case SCREEN_PROFILE_LIST:
 			case SCREEN_MANAGER_LIST:
 				delete_entry(dp, current);
 				goto start;
