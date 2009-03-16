@@ -2316,7 +2316,7 @@ usage:
 		addr.sin_addr.s_addr = network_ip;
 		addr.sin_port = network_port;
 		if (connect(fd, (struct sockaddr *) &addr, sizeof(addr))) {
-			const u32 ip = ntohl(ip);
+			const u32 ip = ntohl(network_ip);
 			fprintf(stderr, "Can't connect to %u.%u.%u.%u:%u\n",
 				(u8) (ip >> 24), (u8) (ip >> 16),
 				(u8) (ip >> 8), (u8) ip, ntohs(network_port));
