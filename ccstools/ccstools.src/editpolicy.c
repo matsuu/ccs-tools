@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7-rc   2009/03/13
+ * Version: 1.6.7-rc   2009/03/16
  *
  */
 #include "ccstools.h"
@@ -82,19 +82,24 @@ static void set_quota(struct domain_policy *dp, int current);
 static int select_window(struct domain_policy *dp, const int current);
 static void show_command_key(const int screen, const _Bool readonly);
 static int generic_list_loop(struct domain_policy *dp);
-static void copy_fd_to_fp(int fd, FILE *fp);
+static void copy_file(const char *source, const char *dest);
 
 /* Utility Functions */
 
-static void copy_fd_to_fp(int fd, FILE *fp)
+static void copy_file(const char *source, const char *dest)
 {
-	char buffer[1024];
-	while (true) {
-		const int len = read(fd, buffer, sizeof(buffer));
-		if (len <= 0)
+	FILE *fp_in = fopen(source, "r");
+	FILE *fp_out = fp_in ? open_write(dest) : NULL;
+	while (fp_in && fp_out) {
+		int c = fgetc(fp_in);
+		if (c == EOF)
 			break;
-		fwrite(buffer, len, 1, fp);
+		fputc(c, fp_out);
 	}
+	if (fp_out)
+		fclose(fp_out);
+	if (fp_in)
+		fclose(fp_in);
 }
 
 static const char *get_last_name(const struct domain_policy *dp,
@@ -633,6 +638,16 @@ static int acl_sort_type = 1;
 static char *last_error = NULL;
 
 /* Main Functions */
+
+static void close_write(FILE *fp)
+{
+	if (network_mode) {
+		fputc(0, fp);
+		fflush(fp);
+		fgetc(fp);
+	}
+	fclose(fp);
+}
 
 static void set_error(const char *filename)
 {
@@ -1646,7 +1661,7 @@ static void delete_entry(struct domain_policy *dp, int current)
 				continue;
 			fprintf(fp, "delete %s\n", domain_name(dp, index));
 		}
-		fclose(fp);
+		close_write(fp);
 	} else {
 		int index;
 		FILE *fp = open_write(policy_file);
@@ -1663,12 +1678,13 @@ static void delete_entry(struct domain_policy *dp, int current)
 				directives[directive].original,
 				generic_acl_list[index].operand);
 		}
-		fclose(fp);
+		close_write(fp);
 	}
 }
 
 static void add_entry(struct readline_data *rl)
 {
+	FILE *fp;
 	char *line;
 	editpolicy_attr_change(A_BOLD, true);  /* add color */
 	line = simple_readline(window_height - 1, 0, "Enter new entry> ",
@@ -1677,7 +1693,7 @@ static void add_entry(struct readline_data *rl)
 	if (!line || !*line)
 		goto out;
 	rl->count = simple_add_history(line, rl->history, rl->count, rl->max);
-	FILE *fp = open_write(policy_file);
+	fp = open_write(policy_file);
 	if (!fp)
 		goto out;
 	switch (current_screen) {
@@ -1710,7 +1726,7 @@ static void add_entry(struct readline_data *rl)
 		break;
 	}
 	fprintf(fp, "%s\n", line);
-	fclose(fp);
+	close_write(fp);
 out:
 	free(line);
 }
@@ -1793,7 +1809,7 @@ static void set_profile(struct domain_policy *dp, int current)
 		fprintf(fp, "select %s\n" KEYWORD_USE_PROFILE "%s\n",
 			domain_name(dp, index), line);
 	}
-	fclose(fp);
+	close_write(fp);
 out:
 	free(line);
 }
@@ -1827,7 +1843,7 @@ static void set_level(struct domain_policy *dp, int current)
 			shared_buffer, line);
 		put();
 	}
-	fclose(fp);
+	close_write(fp);
 out:
 	free(line);
 }
@@ -1860,7 +1876,7 @@ static void set_quota(struct domain_policy *dp, int current)
 		fprintf(fp, "%s: %s\n", shared_buffer, line);
 		put();
 	}
-	fclose(fp);
+	close_write(fp);
 out:
 	free(line);
 }
@@ -2330,104 +2346,18 @@ usage:
 		}
 		close(fd[1]);
 		persistent_fd = fd[0];
-		{
-			int fd = open2(BASE_POLICY_SYSTEM_POLICY, O_RDONLY);
-			if (fd != EOF) {
-				FILE *fp =
-					open_write(proc_policy_system_policy);
-				if (fp) {
-					copy_fd_to_fp(fd, fp);
-					fclose(fp);
-				}
-				close(fd);
-			}
-			fd = open2(DISK_POLICY_SYSTEM_POLICY, O_RDONLY);
-			if (fd != EOF) {
-				FILE *fp =
-					open_write(proc_policy_system_policy);
-				if (fp) {
-					copy_fd_to_fp(fd, fp);
-					fclose(fp);
-				}
-				close(fd);
-			}
-			fd = open2(BASE_POLICY_EXCEPTION_POLICY, O_RDONLY);
-			if (fd != EOF) {
-				FILE *fp =
-				open_write(proc_policy_exception_policy);
-				if (fp) {
-					copy_fd_to_fp(fd, fp);
-					fclose(fp);
-				}
-				close(fd);
-			}
-			fd = open2(DISK_POLICY_EXCEPTION_POLICY, O_RDONLY);
-			if (fd != EOF) {
-				FILE *fp =
-				open_write(proc_policy_exception_policy);
-				if (fp) {
-					copy_fd_to_fp(fd, fp);
-					fclose(fp);
-				}
-				close(fd);
-			}
-			fd = open2(BASE_POLICY_DOMAIN_POLICY, O_RDONLY);
-			if (fd != EOF) {
-				FILE *fp =
-					open_write(proc_policy_domain_policy);
-				if (fp) {
-					copy_fd_to_fp(fd, fp);
-					fclose(fp);
-				}
-				close(fd);
-			}
-			fd = open2(DISK_POLICY_DOMAIN_POLICY, O_RDONLY);
-			if (fd != EOF) {
-				FILE *fp =
-					open_write(proc_policy_domain_policy);
-				if (fp) {
-					copy_fd_to_fp(fd, fp);
-					fclose(fp);
-				}
-				close(fd);
-			}
-			fd = open2(BASE_POLICY_PROFILE, O_RDONLY);
-			if (fd != EOF) {
-				FILE *fp = open_write(proc_policy_profile);
-				if (fp) {
-					copy_fd_to_fp(fd, fp);
-					fclose(fp);
-				}
-				close(fd);
-			}
-			fd = open2(DISK_POLICY_PROFILE, O_RDONLY);
-			if (fd != EOF) {
-				FILE *fp = open_write(proc_policy_profile);
-				if (fp) {
-					copy_fd_to_fp(fd, fp);
-					fclose(fp);
-				}
-				close(fd);
-			}
-			fd = open2(BASE_POLICY_MANAGER, O_RDONLY);
-			if (fd != EOF) {
-				FILE *fp = open_write(proc_policy_manager);
-				if (fp) {
-					copy_fd_to_fp(fd, fp);
-					fclose(fp);
-				}
-				close(fd);
-			}
-			fd = open2(DISK_POLICY_MANAGER, O_RDONLY);
-			if (fd != EOF) {
-				FILE *fp = open_write(proc_policy_manager);
-				if (fp) {
-					copy_fd_to_fp(fd, fp);
-					fclose(fp);
-				}
-				close(fd);
-			}
-		}
+		copy_file(BASE_POLICY_SYSTEM_POLICY, proc_policy_system_policy);
+		copy_file(DISK_POLICY_SYSTEM_POLICY, proc_policy_system_policy);
+		copy_file(BASE_POLICY_EXCEPTION_POLICY,
+			  proc_policy_exception_policy);
+		copy_file(DISK_POLICY_EXCEPTION_POLICY,
+			  proc_policy_exception_policy);
+		copy_file(BASE_POLICY_DOMAIN_POLICY, proc_policy_domain_policy);
+		copy_file(DISK_POLICY_DOMAIN_POLICY, proc_policy_domain_policy);
+		copy_file(BASE_POLICY_PROFILE, proc_policy_profile);
+		copy_file(DISK_POLICY_PROFILE, proc_policy_profile);
+		copy_file(BASE_POLICY_MANAGER, proc_policy_manager);
+		copy_file(DISK_POLICY_MANAGER, proc_policy_manager);
 	} else {
 		if (chdir(proc_policy_dir)) {
 			fprintf(stderr,
