@@ -102,6 +102,8 @@ make_exception() {
 	done
 	[ -d /var/spool/postfix/ ] && echo 'file_pattern /var/spool/postfix/deferred/\x/'
 	[ -d /var/spool/postfix/ ] && echo 'file_pattern /var/spool/postfix/deferred/\x/\X'
+	[ -d /var/spool/postfix/ ] && echo 'file_pattern /var/spool/postfix/defer/\x/'
+	[ -d /var/spool/postfix/ ] && echo 'file_pattern /var/spool/postfix/defer/\x/\X'
 	
 	#
 	# Make patterns for man(1).
