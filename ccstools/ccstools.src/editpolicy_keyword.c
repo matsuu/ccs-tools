@@ -38,6 +38,7 @@ struct editpolicy_directive directives[MAX_DIRECTIVE_INDEX] = {
 	[DIRECTIVE_ALLOW_LINK]       = { "allow_link", NULL, 0, 0 },
 	[DIRECTIVE_ALLOW_RENAME]     = { "allow_rename", NULL, 0, 0 },
 	[DIRECTIVE_ALLOW_REWRITE]    = { "allow_rewrite", NULL, 0, 0 },
+	[DIRECTIVE_ALLOW_IOCTL]      = { "allow_ioctl", NULL, 0, 0 },
 	[DIRECTIVE_ALLOW_ARGV0]      = { "allow_argv0", NULL, 0, 0 },
 	[DIRECTIVE_ALLOW_SIGNAL]     = { "allow_signal", NULL, 0, 0 },
 	[DIRECTIVE_ALLOW_NETWORK]    = { "allow_network", NULL, 0, 0 },

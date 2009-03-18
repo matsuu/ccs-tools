@@ -81,6 +81,7 @@ enum socket_operation_type {
 #define KEYWORD_ALIAS                    "alias "
 #define KEYWORD_ALLOW_ARGV0              "allow_argv0 "
 #define KEYWORD_ALLOW_ENV                "allow_env "
+#define KEYWORD_ALLOW_IOCTL              "allow_ioctl "
 #define KEYWORD_ALLOW_CAPABILITY         "allow_capability "
 #define KEYWORD_ALLOW_CHROOT             "allow_chroot "
 #define KEYWORD_ALLOW_MOUNT              "allow_mount "
@@ -159,6 +160,7 @@ enum editpolicy_directives {
 	DIRECTIVE_ALLOW_ARGV0,
 	DIRECTIVE_ALLOW_SIGNAL,
 	DIRECTIVE_ALLOW_NETWORK,
+	DIRECTIVE_ALLOW_IOCTL,
 	DIRECTIVE_ALLOW_ENV,
 	DIRECTIVE_ADDRESS_GROUP,
 	DIRECTIVE_AGGREGATOR,

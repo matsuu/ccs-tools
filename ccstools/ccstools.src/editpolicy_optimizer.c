@@ -327,6 +327,7 @@ void editpolicy_try_optimize(struct domain_policy *dp, const int current,
 		case DIRECTIVE_ALLOW_LINK:
 		case DIRECTIVE_ALLOW_RENAME:
 		case DIRECTIVE_ALLOW_REWRITE:
+		case DIRECTIVE_ALLOW_IOCTL:
 			if (!compare_path(&sarg1, &darg1, d_index))
 				continue;
 			break;
@@ -392,6 +393,8 @@ void editpolicy_try_optimize(struct domain_policy *dp, const int current,
 			break;
 		case DIRECTIVE_ALLOW_NETWORK:
 			/* Port number component. */
+		case DIRECTIVE_ALLOW_IOCTL:
+			/* Ioctl command number component. */
 			switch (sscanf(sarg2.name, "%u-%u", &smin, &smax)) {
 			case 1:
 				smax = smin;
