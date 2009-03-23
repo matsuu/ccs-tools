@@ -415,6 +415,38 @@ static void check_env_policy(char *data)
 	}
 }
 
+static void check_ioctl_policy(char *data)
+{
+	char *cmd = strchr(data, ' ');
+	unsigned int start = 0;
+	unsigned int end = 0;
+	if (!cmd) {
+		printf("%u: ERROR: Too few parameters.\n", line);
+		errors++;
+		return;
+	}
+	*cmd++ = '\0';
+	if (!is_correct_path(data, 0, 0, 0)) {
+		printf("%u: ERROR: '%s' is a bad pathname.\n", line, data);
+		errors++;
+	}
+	switch (sscanf(cmd, "%u-%u", &start, &end)) {
+	case 1:
+		end = start;
+		break;
+	case 2:
+		break;
+	default:
+		end = 0;
+		start = 1;
+		break;
+	}
+	if (end < start) {
+		printf("%u: ERROR: '%s' is a bad cmd number.\n", line, cmd);
+		errors++;
+	}
+}
+
 static void check_network_policy(char *data)
 {
 	int sock_type;
@@ -853,6 +885,8 @@ static void check_domain_policy(void)
 			check_argv0_policy(shared_buffer);
 		else if (str_starts(shared_buffer, KEYWORD_ALLOW_ENV))
 			check_env_policy(shared_buffer);
+		else if (str_starts(shared_buffer, KEYWORD_ALLOW_IOCTL))
+			check_ioctl_policy(shared_buffer);
 		else
 			check_file_policy(shared_buffer);
 	}

@@ -700,6 +700,23 @@ static void stage_file_test(void)
 		write(exception_fd, cp, strlen(cp));
 	}
 	unlink2(filename);
+
+	if (has_cond) {
+		const char *cp = "255-MAC_FOR_IOCTL=enforcing\n";
+		write(profile_fd, cp, strlen(cp));
+		policy = "allow_ioctl socket:[family=2;type=2;protocol=17] "
+			"35089-35091 if task.uid=0";
+		if (write_policy()) {
+			int fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+			show_result(ioctl(fd, 35090, 0), 1);
+			delete_policy();
+			show_result(ioctl(fd, 35090, 0), 0);
+			if (fd != EOF)
+				close(fd);
+		}
+		cp = "255-MAC_FOR_IOCTL=disabled\n";
+		write(profile_fd, cp, strlen(cp));
+	}
 }
 
 int main(int argc, char *argv[])
