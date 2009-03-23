@@ -704,13 +704,21 @@ static void stage_file_test(void)
 	if (has_cond) {
 		const char *cp = "255-MAC_FOR_IOCTL=enforcing\n";
 		write(profile_fd, cp, strlen(cp));
-		policy = "allow_ioctl socket:[family=2;type=2;protocol=17] "
-			"35089-35091 if task.uid=0";
+		policy = "allow_ioctl socket:[family=2:type=2:protocol=17] "
+			"35122-35124 if task.uid=0";
 		if (write_policy()) {
+			struct ifreq ifreq;
 			int fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
-			show_result(ioctl(fd, 35090, 0), 1);
+			memset(&ifreq, 0, sizeof(ifreq));
+			snprintf(ifreq.ifr_name, sizeof(ifreq.ifr_name) - 1, "lo");
+			show_result(ioctl(fd, 35123, &ifreq), 1);
 			delete_policy();
-			show_result(ioctl(fd, 35090, 0), 0);
+			policy = "allow_ioctl socket:[family=2:type=2:protocol=17] "
+				"0-35122";
+			if (write_policy()) {
+				show_result(ioctl(fd, 35123, &ifreq), 0);
+				delete_policy();
+			}
 			if (fd != EOF)
 				close(fd);
 		}

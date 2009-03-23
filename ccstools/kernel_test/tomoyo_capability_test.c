@@ -406,11 +406,20 @@ static void stage_capability_test(void)
 	unset_capability("SYS_CHOWN");
 
 	set_capability("SYS_IOCTL");
-	{
+	if (0) {
 		int fd = open("/dev/null", O_RDONLY);
 		show_prompt("SYS_IOCTL");
 		show_result(ioctl(fd, 0 /* Use invalid value so that nothing
 					  happen. */));
+		close(fd);
+	}
+	{
+		struct ifreq ifreq;
+		int fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+		memset(&ifreq, 0, sizeof(ifreq));
+		snprintf(ifreq.ifr_name, sizeof(ifreq.ifr_name) - 1, "lo");
+		show_prompt("SYS_IOCTL");
+		show_result(ioctl(fd, 35123, &ifreq));
 		close(fd);
 	}
 	unset_capability("SYS_IOCTL");

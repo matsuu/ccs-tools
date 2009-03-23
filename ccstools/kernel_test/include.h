@@ -38,6 +38,8 @@ struct module;
 #include <linux/ip.h>
 #include <sched.h>
 #include <sys/ptrace.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
 
 #ifndef __NR_sys_kexec_load
 #ifdef __NR_kexec_load

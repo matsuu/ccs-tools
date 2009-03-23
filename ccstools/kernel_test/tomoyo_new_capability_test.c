@@ -632,13 +632,23 @@ static void stage_capability_test(void)
 
 	capability = "SYS_IOCTL";
 	set_capability();
-	if (write_policy()) {
+	if (0 && write_policy()) {
 		int fd = open("/dev/null", O_RDONLY);
 		show_result(ioctl(fd, 0 /* Use invalid value so that nothing
 					   happen. */), 1);
 		delete_policy();
 		show_result(ioctl(fd, 0 /* Use invalid value so that nothing
 					   happen. */), 0);
+		close(fd);
+	}
+	if (write_policy()) {
+		struct ifreq ifreq;
+		int fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+		memset(&ifreq, 0, sizeof(ifreq));
+		snprintf(ifreq.ifr_name, sizeof(ifreq.ifr_name) - 1, "lo");
+		show_result(ioctl(fd, 35123, &ifreq), 1);
+		delete_policy();
+		show_result(ioctl(fd, 35123, &ifreq), 0);
 		close(fd);
 	}
 	unset_capability();
