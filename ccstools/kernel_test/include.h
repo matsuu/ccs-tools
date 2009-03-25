@@ -47,42 +47,45 @@ struct module;
 #endif
 #endif
 
-static pid_t gettid(void)
+static inline pid_t gettid(void)
 {
 	return syscall(__NR_gettid);
 }
-static int uselib(const char *library)
+static inline int uselib(const char *library)
 {
 	return syscall(__NR_uselib, library);
 }
-static caddr_t create_module(const char *name, size_t size)
+static inline caddr_t create_module(const char *name, size_t size)
 {
 	return (caddr_t) syscall(__NR_create_module, name, size);
 }
-static int pivot_root(const char *new_root, const char *put_old)
+static inline int pivot_root(const char *new_root, const char *put_old)
 {
 	return syscall(__NR_pivot_root, new_root, put_old);
 }
-static int tkill(int tid, int sig)
+static inline int tkill(int tid, int sig)
 {
 	return syscall(__NR_tkill, tid, sig);
 }
 #ifdef __NR_tgkill
-static int tgkill(int tgid, int tid, int sig)
+static inline int tgkill(int tgid, int tid, int sig)
 {
 	return syscall(__NR_tgkill, tgid, tid, sig);
 }
 #endif
 #ifdef __NR_sys_kexec_load
 struct kexec_segment;
-static long sys_kexec_load(unsigned long entry, unsigned long nr_segments,
+static inline long sys_kexec_load(unsigned long entry, unsigned long nr_segments,
 			   struct kexec_segment *segments, unsigned long flags)
 {
 	return (long) syscall(__NR_sys_kexec_load, entry, nr_segments,
 			      segments, flags);
 }
 #endif
-int reboot(int magic, int magic2, int flag, void *arg);
+static inline int reboot(int magic, int magic2, int flag, void *arg)
+{
+	return syscall(__NR_reboot, magic, magic2, flag, arg);
+}
 int init_module(const char *name, struct module *image);
 int delete_module(const char *name);
 
@@ -170,7 +173,7 @@ static void clear_status(void)
 		}
 		write(profile_fd, "=0\n", 3);
 	}
-	write(profile_fd, "255-SLEEP_PERIOD=1\n", 19);
+	//write(profile_fd, "255-SLEEP_PERIOD=1\n", 19);
 	fclose(fp);
 }
 

@@ -52,7 +52,8 @@ int main(int argc, char *argv[])
 		pivot_root_dir = "/sys/kernel/security/";
 	system_fd = open(proc_policy_system_policy, O_RDWR);
 	if (system_fd == EOF) {
-		fprintf(stderr, "Can't open %s .\n", proc_policy_system_policy);
+		fprintf(stderr, "You can't use this program for this kernel."
+			"\n");
 		return 1;
 	}
 	if (write(system_fd, "", 0) != 0) {

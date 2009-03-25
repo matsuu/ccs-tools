@@ -732,8 +732,11 @@ int main(int argc, char *argv[])
 	char *cp;
 	ccs_test_init();
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
-	if (domain_fd == EOF && errno == ENOENT)
+	if (domain_fd == EOF && errno == ENOENT) {
+		fprintf(stderr, "You can't use this program for this kernel."
+			"\n");
 		return 1;
+	}
 	exception_fd = open(proc_policy_exception_policy, O_WRONLY);
 	{
 		int self_fd = open(proc_policy_self_domain, O_RDONLY);

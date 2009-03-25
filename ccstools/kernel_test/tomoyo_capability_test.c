@@ -223,21 +223,35 @@ static void stage_capability_test(void)
 
 	set_capability("SYS_MOUNT");
 	show_prompt("SYS_MOUNT");
-	show_result(mount("/", "/", "nonexistent", 0, NULL));
+	show_result(mount("/", "/", "tmpfs", 0, NULL));
 	unset_capability("SYS_MOUNT");
 
 	set_capability("SYS_UMOUNT");
 	show_prompt("SYS_UMOUNT");
-	show_result(umount("/"));
+	mount("/tmp", "/tmp", "tmpfs", 0, NULL);
+	show_result(umount("/tmp"));
 	unset_capability("SYS_UMOUNT");
-	if (access("/", W_OK))
-		mount("", "/", "", MS_REMOUNT, NULL);
 
 	set_capability("SYS_REBOOT");
 	show_prompt("SYS_REBOOT");
-	show_result(reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
-			  0x0000C0DE /* Use invalid value so that the system
-					won't reboot. */, NULL));
+	{
+		FILE *fp = fopen("/proc/sys/kernel/ctrl-alt-del", "a+");
+		unsigned int c;
+		if (fp && fscanf(fp, "%u", &c) == 1) {
+			show_result(reboot(LINUX_REBOOT_MAGIC1,
+					   LINUX_REBOOT_MAGIC2,
+					   LINUX_REBOOT_CMD_CAD_ON,
+					   NULL));
+			fprintf(fp, "%u\n", c);
+		} else {
+			show_result(reboot(LINUX_REBOOT_MAGIC1,
+					   LINUX_REBOOT_MAGIC2,
+					   0x0000C0DE /* Use invalid value */,
+					   NULL));
+		}
+		if (fp)
+			fclose(fp);
+	}
 	unset_capability("SYS_REBOOT");
 
 	set_capability("SYS_CHROOT");
@@ -455,8 +469,11 @@ static void stage_capability_test(void)
 int main(int argc, char *argv[])
 {
 	ccs_test_pre_init();
-	if (access(proc_policy_domain_policy, F_OK))
+	if (access(proc_policy_domain_policy, F_OK)) {
+		fprintf(stderr, "You can't use this program for this kernel."
+			"\n");
 		return 1;
+	}
 	ccs_test_init();
 	printf("***** Testing capability hooks in enforce mode. *****\n");
 	is_enforce = 1;

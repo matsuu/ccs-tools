@@ -17,8 +17,11 @@ int main(int raw_argc, char *raw_argv[])
 	char *cp2;
 	FILE *fp;
 	int error;
-	if (access(proc_policy_domain_policy, F_OK))
+	if (access(proc_policy_domain_policy, F_OK)) {
+		fprintf(stderr, "You can't use this program for this kernel."
+			"\n");
 		return 1;
+	}
 	ccs_test_init();
 	memset(buffer, 0, sizeof(buffer));
 	fp = fopen(proc_policy_process_status, "r+");

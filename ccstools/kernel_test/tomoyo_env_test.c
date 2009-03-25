@@ -90,8 +90,11 @@ static void stage_env_test(void)
 int main(int argc, char *argv[])
 {
 	ccs_test_init();
-	if (access(proc_policy_domain_policy, F_OK))
+	if (access(proc_policy_domain_policy, F_OK)) {
+		fprintf(stderr, "You can't use this program for this kernel."
+			"\n");
 		return 1;
+	}
 	stage_env_test();
 	clear_status();
 	return 0;

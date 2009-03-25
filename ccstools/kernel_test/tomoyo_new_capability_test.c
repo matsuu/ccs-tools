@@ -332,37 +332,52 @@ static void stage_capability_test(void)
 	capability = "SYS_MOUNT";
 	set_capability();
 	if (write_policy()) {
-		show_result(mount("/", "/", "nonexistent", 0, NULL), 1);
+		show_result(mount("/", "/", "tmpfs", 0, NULL), 1);
 		delete_policy();
-		show_result(mount("/", "/", "nonexistent", 0, NULL), 0);
+		show_result(mount("/", "/", "tmpfs", 0, NULL), 0);
 	}
 	unset_capability();
 
 	capability = "SYS_UMOUNT";
 	set_capability();
 	if (write_policy()) {
-		show_result(umount("/"), 1);
-		if (access("/", W_OK))
-			mount("", "/", "", MS_REMOUNT, NULL);
+		mount("/tmp", "/tmp", "tmpfs", 0, NULL);
+		show_result(umount("/tmp"), 1);
 		delete_policy();
+		mount("/tmp", "/tmp", "tmpfs", 0, NULL);
 		show_result(umount("/"), 0);
-		if (access("/", W_OK))
-			mount("", "/", "", MS_REMOUNT, NULL);
 	}
 	unset_capability();
 
 	capability = "SYS_REBOOT";
 	set_capability();
 	if (write_policy()) {
-		show_result(reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
-				   0x0000C0DE /* Use invalid value so that
-						 the system won't reboot. */,
-				   NULL), 1);
-		delete_policy();
-		show_result(reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
-				   0x0000C0DE /* Use invalid value so that
-						 the system won't reboot. */,
-				   NULL), 0);
+		FILE *fp = fopen("/proc/sys/kernel/ctrl-alt-del", "a+");
+		unsigned int c;
+		if (fp && fscanf(fp, "%u", &c) == 1) {
+			show_result(reboot(LINUX_REBOOT_MAGIC1,
+					   LINUX_REBOOT_MAGIC2,
+					   LINUX_REBOOT_CMD_CAD_ON,
+					   NULL), 1);
+			delete_policy();
+			show_result(reboot(LINUX_REBOOT_MAGIC1,
+					   LINUX_REBOOT_MAGIC2,
+					   LINUX_REBOOT_CMD_CAD_ON,
+					   NULL), 0);
+			fprintf(fp, "%u\n", c);
+		} else {
+			show_result(reboot(LINUX_REBOOT_MAGIC1,
+					   LINUX_REBOOT_MAGIC2,
+					   0x0000C0DE /* Use invalid value */,
+					   NULL), 1);
+			delete_policy();
+			show_result(reboot(LINUX_REBOOT_MAGIC1,
+					   LINUX_REBOOT_MAGIC2,
+					   0x0000C0DE /* Use invalid value. */,
+					   NULL), 0);
+		}
+		if (fp)
+			fclose(fp);
 	}
 	unset_capability();
 
@@ -706,8 +721,11 @@ int main(int argc, char *argv[])
 {
 	ccs_test_init();
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
-	if (domain_fd == EOF && errno == ENOENT)
+	if (domain_fd == EOF && errno == ENOENT) {
+		fprintf(stderr, "You can't use this program for this kernel."
+			"\n");
 		return 1;
+	}
 	{
 		int self_fd = open(proc_policy_self_domain, O_RDONLY);
 		memset(self_domain, 0, sizeof(self_domain));
