@@ -1764,7 +1764,11 @@ start_search:
 		}
 		if (current_screen == SCREEN_DOMAIN_LIST)
 			cp = get_last_name(dp, index);
-		else {
+		else if (current_screen == SCREEN_PROFILE_LIST) {
+			shprintf("%u-%s", generic_acl_list[index].directive,
+				 generic_acl_list[index].operand);
+			cp = shared_buffer;
+		} else {
 			const u8 directive = generic_acl_list[index].directive;
 			shprintf("%s %s", directives[directive].alias,
 				 generic_acl_list[index].operand);
