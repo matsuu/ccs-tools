@@ -617,6 +617,7 @@ EOF
 		cat > /etc/ccs/profile.conf << EOF
 0-COMMENT=-----Disabled Mode-----
 0-MAC_FOR_FILE=disabled
+0-MAC_FOR_IOCTL=disabled
 0-MAC_FOR_ARGV0=disabled
 0-MAC_FOR_ENV=disabled
 0-MAC_FOR_NETWORK=disabled
@@ -665,6 +666,7 @@ EOF
 0-MAC_FOR_CAPABILITY::SYS_PTRACE=disabled
 1-COMMENT=-----Learning Mode-----
 1-MAC_FOR_FILE=learning
+1-MAC_FOR_IOCTL=learning
 1-MAC_FOR_ARGV0=learning
 1-MAC_FOR_ENV=learning
 1-MAC_FOR_NETWORK=learning
@@ -713,6 +715,7 @@ EOF
 1-MAC_FOR_CAPABILITY::SYS_PTRACE=learning
 2-COMMENT=-----Permissive Mode-----
 2-MAC_FOR_FILE=permissive
+2-MAC_FOR_IOCTL=permissive
 2-MAC_FOR_ARGV0=permissive
 2-MAC_FOR_ENV=permissive
 2-MAC_FOR_NETWORK=permissive
@@ -761,6 +764,7 @@ EOF
 2-MAC_FOR_CAPABILITY::SYS_PTRACE=permissive
 3-COMMENT=-----Enforcing Mode-----
 3-MAC_FOR_FILE=enforcing
+3-MAC_FOR_IOCTL=enforcing
 3-MAC_FOR_ARGV0=enforcing
 3-MAC_FOR_ENV=enforcing
 3-MAC_FOR_NETWORK=enforcing
@@ -815,7 +819,10 @@ fi
 if [ ! -r /etc/ccs/exception_policy.conf ]; then
 	echo Creating exception policy. This will take several minutes.
 	make_exception > /etc/ccs/exception_policy.conf
-	make_alias >> /etc/ccs/exception_policy.conf
+	### Old version. ###
+	# make_alias >> /etc/ccs/exception_policy.conf
+	### New version. ###
+	./make_alias | grep -v '/[SK][0-9][0-9]' >> /etc/ccs/exception_policy.conf
 fi
 if [ ! -r /etc/ccs/system_policy.conf ]; then
 	echo Creating system policy.

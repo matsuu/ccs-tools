@@ -29,12 +29,37 @@ static void printf_encoded(const char *str)
 	}
 }
 
-static void scan_symlink(const char *path)
+static void scan_symlink(char *path)
 {
 	char *base1;
 	char *base2;
-	char *cp;
+	char *cp = strrchr(path, '/');
 	struct statfs buf;
+	int ret;
+	if (!cp)
+		return;
+	*cp = '\0';
+	ret = statfs(path, &buf);
+	*cp = '/';
+	if (ret)
+		return;
+	switch (buf.f_type) {
+	case 0x00009FA0: /* proc */
+	case 0x62656572: /* sys */
+	case 0x64626720: /* debug */
+	case 0x73636673: /* security */
+	case 0x00009FA2: /* usb */
+	case 0x0027E0EB: /* cgroup */
+	case 0x0BAD1DEA: /* futex */
+	case 0x2BAD1DEA: /* inotify */
+	case 0x00001373: /* device */
+	case 0x00001CD1: /* devpts */
+	case 0x42494E4D: /* binfmt_misc */
+	case 0x67596969: /* rpc_pipefs */
+	case 0x19800202: /* mqueue */
+	case 0xABABABAB: /* vmblock */
+		return;
+	}
 	if (statfs(path, &buf))
 		return;
 	switch (buf.f_type) {

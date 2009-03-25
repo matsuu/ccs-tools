@@ -385,3 +385,32 @@ Version 1.6.6 2009/02/02   Bug fix release.
 
     ccs-pathmatch:
       Handle '\A' and '\a' correctly.
+
+Version 1.6.7 2009/04/01   Feature enhancement release.
+
+  ccs-editpolicy:
+    Add ability to edit profile and manager and meminfo.
+    Add ability to edit policy files in arbitrary location.
+    Add ability to edit policy remotely.
+    Add readonly mode option for showcase use.
+    Add automatic refresh option for showcase use.
+
+  ccs-loadpolicy:
+    Add ability to load policy remotely.
+    Add ability to load meminfo.
+
+  ccs-savepolicy:
+    Add ability to save policy remotely.
+    Add ability to print meminfo.
+
+  ccs-editpolicy-agent:
+    This program gives ccs-editpolicy and ccs-loadpolicy and ccs-savepolicy
+    ability to manage embedded systems remotely via TCP/IP networking.
+
+  ccs-editpolicy_offline:
+    This program was removed because its functionality was merged into
+    ccs-editpolicy.
+
+  ccs-setlevel:
+    This program became obsolete because its functionality was merged into
+    ccs-editpolicy and ccs-loadpolicy.

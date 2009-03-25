@@ -42,6 +42,9 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) /usr/lib/ccs/ccstools.conf
 
 %changelog
+* Wed Apr 01 2009 1.6.7-1
+- Feature enhancement release.
+
 * Mon Feb 02 2009 1.6.6-1
 - Fix is_alphabet_char() bug.
 

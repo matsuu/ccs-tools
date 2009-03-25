@@ -603,7 +603,10 @@ fi
 if [ ! -r /etc/tomoyo/exception_policy.conf ]; then
 	echo Creating exception policy. This will take several minutes.
 	make_exception > /etc/tomoyo/exception_policy.conf
-	make_alias >> /etc/tomoyo/exception_policy.conf
+	### Old version. ###
+	# make_alias >> /etc/tomoyo/exception_policy.conf
+	### New version. ###
+	./make_alias | grep -v '/[SK][0-9][0-9]' >> /etc/tomoyo/exception_policy.conf
 fi
 #if [ ! -r /etc/tomoyo/system_policy.conf ]; then
 #	echo Creating system policy.
