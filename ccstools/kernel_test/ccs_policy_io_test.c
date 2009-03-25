@@ -57,6 +57,8 @@ static void stage_policy_io_test(void)
 	int i;
 	policy_file = proc_policy_system_policy;
 	fd = open(policy_file, O_WRONLY);
+	if (fd == EOF && errno == ENOENT)
+		goto no_system;
 	for (i = 0; i < 3; i++) {
 		try_io("allow_chroot /", 1);
 		try_io("allow_chroot ", 0);
@@ -126,8 +128,12 @@ static void stage_policy_io_test(void)
 		try_io("allow_mount /proc/bus/usb /proc/bus/usb/ usbfs 0x0", 1);
 	}
 	close(fd);
+ no_system:
+
 	policy_file = proc_policy_exception_policy;
 	fd = open(policy_file, O_WRONLY);
+	if (fd == EOF && errno == ENOENT)
+		return;
 	for (i = 0; i < 3; i++) {
 		try_io("allow_read /tmp/abc", 1);
 		try_io("allow_read /tmp/abc\\*", 1);

@@ -455,6 +455,8 @@ static void stage_capability_test(void)
 int main(int argc, char *argv[])
 {
 	ccs_test_pre_init();
+	if (access(proc_policy_domain_policy, F_OK))
+		return 1;
 	ccs_test_init();
 	printf("***** Testing capability hooks in enforce mode. *****\n");
 	is_enforce = 1;

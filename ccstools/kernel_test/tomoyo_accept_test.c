@@ -88,6 +88,8 @@ int main(int argc, char *argv[])
 {
 	static char self_domain[4096];
 	ccs_test_pre_init();
+	if (access(proc_policy_domain_policy, F_OK))
+		return 1;
 	fp_level = fopen(proc_policy_profile, "w");
 	if (!fp_level) {
 		fprintf(stderr, "Can't open %s\n", proc_policy_profile);

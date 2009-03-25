@@ -285,6 +285,8 @@ int main(int argc, char *argv[])
 {
 	ccs_test_init();
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
+	if (domain_fd == EOF && errno == ENOENT)
+		return 1;
 	{
 		int self_fd = open(proc_policy_self_domain, O_RDONLY);
 		memset(self_domain, 0, sizeof(self_domain));

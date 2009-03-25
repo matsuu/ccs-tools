@@ -178,6 +178,8 @@ int main(int argc, char *argv[])
 	ccs_test_init();
 	self_fd = open(proc_policy_self_domain, O_RDONLY);
 	domain_fd = open(proc_policy_domain_policy, O_WRONLY);
+	if (domain_fd == EOF && errno == ENOENT)
+		return 1;
 	memset(self_domain, 0, sizeof(self_domain));
 	read(self_fd, self_domain, sizeof(self_domain) - 1);
 	close(self_fd);
