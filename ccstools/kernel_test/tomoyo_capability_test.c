@@ -238,16 +238,11 @@ static void stage_capability_test(void)
 		FILE *fp = fopen("/proc/sys/kernel/ctrl-alt-del", "a+");
 		unsigned int c;
 		if (fp && fscanf(fp, "%u", &c) == 1) {
-			show_result(reboot(LINUX_REBOOT_MAGIC1,
-					   LINUX_REBOOT_MAGIC2,
-					   LINUX_REBOOT_CMD_CAD_ON,
-					   NULL));
+			show_result(reboot(LINUX_REBOOT_CMD_CAD_ON));
 			fprintf(fp, "%u\n", c);
 		} else {
-			show_result(reboot(LINUX_REBOOT_MAGIC1,
-					   LINUX_REBOOT_MAGIC2,
-					   0x0000C0DE /* Use invalid value */,
-					   NULL));
+			/* Use invalid value */
+			show_result(reboot(0x0000C0DE));
 		}
 		if (fp)
 			fclose(fp);

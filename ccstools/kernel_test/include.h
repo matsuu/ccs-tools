@@ -82,10 +82,8 @@ static inline long sys_kexec_load(unsigned long entry, unsigned long nr_segments
 			      segments, flags);
 }
 #endif
-static inline int reboot(int magic, int magic2, int flag, void *arg)
-{
-	return syscall(__NR_reboot, magic, magic2, flag, arg);
-}
+/* reboot() in glibc takes just one argument. */
+int reboot(int cmd);
 int init_module(const char *name, struct module *image);
 int delete_module(const char *name);
 
