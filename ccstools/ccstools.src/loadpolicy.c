@@ -10,6 +10,16 @@
  */
 #include "ccstools.h"
 
+static void close_write(FILE *fp)
+{
+	if (network_mode) {
+		fputc(0, fp);
+		fflush(fp);
+		fgetc(fp);
+	}
+	fclose(fp);
+}
+
 static int write_domain_policy(struct domain_policy *dp, const int fd)
 {
 	int i;
@@ -349,12 +359,7 @@ static void move_file_to_proc(const char *base, const char *src,
 			fprintf(proc_fp, "%s\n", shared_buffer);
 	}
 	put();
-	if (network_mode) {
-		fputc(0, proc_fp);
-		fflush(proc_fp);
-		fgetc(proc_fp);
-	}
-	fclose(proc_fp);
+	close_write(proc_fp);
 	if (file_fp != stdin)
 		fclose(file_fp);
 }
@@ -382,13 +387,8 @@ static void delete_proc_policy(const char *name)
 	while (freadline(fp_in))
 		fprintf(fp_out, "delete %s\n", shared_buffer);
 	put();
-	if (network_mode) {
-		fputc(0, fp_out);
-		fflush(fp_out);
-		fgetc(fp_out);
-	}
 	fclose(fp_in);
-	fclose(fp_out);
+	close_write(fp_out);
 }
 
 static void update_domain_policy(struct domain_policy *proc_policy,
@@ -456,12 +456,7 @@ not_found:
 		fprintf(proc_fp, "delete %s\n",
 			proc_policy->list[proc_index].domainname->name);
 	}
-	if (network_mode) {
-		fputc(0, proc_fp);
-		fflush(proc_fp);
-		fgetc(proc_fp);
-	}
-	fclose(proc_fp);
+	close_write(proc_fp);
 }
 
 int loadpolicy_main(int argc, char *argv[])
