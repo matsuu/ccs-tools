@@ -417,6 +417,7 @@ static void update_domain_policy(struct domain_policy *proc_policy,
 		int j;
 		const struct path_info *domainname
 			= file_policy->list[base_index].domainname;
+		const u8 profile = file_policy->list[base_index].profile;
 		const struct path_info **base_string_ptr
 			= file_policy->list[base_index].string_ptr;
 		const int base_string_count
@@ -447,6 +448,7 @@ not_found:
 		/* Append entries defined in base policy. */
 		for (i = 0; i < base_string_count; i++)
 			fprintf(proc_fp, "%s\n", base_string_ptr[i]->name);
+		fprintf(proc_fp, "use_profile %u\n", profile);
 	}
 	/* Delete all domains that are not defined in base policy. */
 	for (proc_index = 0; proc_index < proc_policy->list_len; proc_index++) {
