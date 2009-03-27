@@ -69,6 +69,7 @@ struct editpolicy_directive directives[MAX_DIRECTIVE_INDEX] = {
 	[DIRECTIVE_PATH_GROUP]       = { "path_group", NULL, 0, 0 },
 	[DIRECTIVE_QUOTA_EXCEEDED]   = { "quota_exceeded", NULL, 0, 0 },
 	[DIRECTIVE_USE_PROFILE]      = { "use_profile", NULL, 0, 0 },
+	[DIRECTIVE_TRANSITION_FAILED] = { "transition_failed", NULL, 0, 0 },
 };
 
 /* Main functions */
