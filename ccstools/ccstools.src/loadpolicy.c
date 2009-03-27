@@ -356,38 +356,30 @@ static void move_file_to_proc(const char *base, const char *src,
 
 static void delete_proc_policy(const char *name)
 {
-	FILE *fp;
-	char **list = NULL;
-	int list_len = 0;
-	int i;
-	if (network_mode)
-		fp = open_read(name);
-	else
-		fp = fopen(name, "a+");
-	if (!fp) {
+	FILE *fp_in;
+	FILE *fp_out;
+	if (network_mode) {
+		fp_in = open_read(name);
+		fp_out = open_write(name);
+	} else {
+		fp_in = fopen(name, "r");
+		fp_out = fopen(name, "w");
+	}
+	if (!fp_in || !fp_out) {
 		fprintf(stderr, "Can't open %s\n", name);
+		if (fp_in)
+			fclose(fp_in);
+		if (fp_out)
+			fclose(fp_out);
 		return;
 	}
 	get();
-	while (freadline(fp)) {
-		char *cp;
-		if (!shared_buffer[0])
-			continue;
-		list = realloc(list, sizeof(char *) * (list_len + 1));
-		if (!list)
-			out_of_memory();
-		cp = strdup(shared_buffer);
-		if (!cp)
-			out_of_memory();
-		list[list_len++] = cp;
-	}
+	while (freadline(fp_in))
+		fprintf(fp_out, "delete %s\n", shared_buffer);
 	put();
-	for (i = 0; i < list_len; i++) {  
-		fprintf(fp, "delete %s\n", list[i]);
-		free(list[i]);
-	}
-	free(list);
-	fclose(fp);
+	fflush(fp_out);
+	fclose(fp_in);
+	fclose(fp_out);
 }
 
 static void update_domain_policy(struct domain_policy *proc_policy,
