@@ -80,7 +80,7 @@ static void set_profile(struct domain_policy *dp, int current);
 static void set_level(struct domain_policy *dp, int current);
 static void set_quota(struct domain_policy *dp, int current);
 static int select_window(struct domain_policy *dp, const int current);
-static void show_command_key(const int screen, const _Bool readonly);
+static _Bool show_command_key(const int screen, const _Bool readonly);
 static int generic_list_loop(struct domain_policy *dp);
 static void copy_file(const char *source, const char *dest);
 
@@ -503,7 +503,7 @@ static int show_meminfo_line(int index)
 	return now;
 }
 
-static void show_command_key(const int screen, const _Bool readonly)
+static _Bool show_command_key(const int screen, const _Bool readonly)
 {
 	int c;
 	clear();
@@ -585,7 +585,10 @@ static void show_command_key(const int screen, const _Bool readonly)
 		c = getch2();
 		if (c == '?' || c == EOF)
 			break;
+		if (c == 'Q' || c == 'q')
+			return false;
 	}
+	return true;
 }
 
 /* Variables */
@@ -1911,6 +1914,7 @@ static int select_window(struct domain_policy *dp, const int current)
 		/* printw("i     <<< Interactive Enforcing Mode >>>\n"); */
 		printw("u     <<< Memory Usage >>>\n");
 	}
+	printw("q     Quit this editor.\n");
 	clrtobot();
 	refresh();
 	while (true) {
@@ -1945,6 +1949,8 @@ static int select_window(struct domain_policy *dp, const int current)
 			if (c == 'U' || c == 'u')
 				return SCREEN_MEMINFO_LIST;
 		}
+		if (c == 'Q' || c == 'q')
+			return MAXSCREEN;
 		if (c == EOF)
 			return MAXSCREEN;
 	}
@@ -2254,8 +2260,9 @@ start2:
 		case 'W':
 			return select_window(dp, current);
 		case '?':
-			show_command_key(current_screen, readonly_mode);
-			goto start;
+			if (show_command_key(current_screen, readonly_mode))
+				goto start;
+			return MAXSCREEN;
 		}
 	}
 }
