@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-tomoyo-init 1.6.7-rc
+tomoyo-init 2.2.0
 
 Copyright (C) 2005-2009 NTT DATA CORPORATION.
 
@@ -18,8 +18,6 @@ Usage: tomoyo-init
 This program is automatically called to load policy from files into kernel when /sbin/init starts.
 
 This program copies the following files.
-
-   /etc/tomoyo/system_policy.base + /etc/tomoyo/system_policy.conf => /sys/kernel/security/tomoyo/system_policy
 
    /etc/tomoyo/exception_policy.base + /etc/tomoyo/exception_policy.conf => /sys/kernel/security/tomoyo/exception_policy
 

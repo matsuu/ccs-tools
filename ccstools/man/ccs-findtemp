@@ -3,7 +3,7 @@
 if [ "$1" = "--version" ]
 then
 cat << EOF
-ccs-findtemp 1.6.7-rc
+ccs-findtemp 1.6.7
 
 Copyright (C) 2005-2009 NTT DATA CORPORATION.
 
