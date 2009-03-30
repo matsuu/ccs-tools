@@ -346,7 +346,7 @@ static void move_file_to_proc(const char *base, const char *src,
 		}
 	}
 	get();
-	base_fp = fopen(base, "r");
+	base_fp = base ? fopen(base, "r") : NULL;
 	if (base_fp) {
 		while (freadline(base_fp)) {
 			if (shared_buffer[0])
@@ -402,7 +402,7 @@ static void update_domain_policy(struct domain_policy *proc_policy,
 	_Bool nm = network_mode;
 	/* Load base and diff policy to file_policy->list. */
 	network_mode = false;
-	if (!access(base, R_OK))
+	if (base && !access(base, R_OK))
 		read_domain_policy(file_policy, base);
 	read_domain_policy(file_policy, src);
 	network_mode = nm;
