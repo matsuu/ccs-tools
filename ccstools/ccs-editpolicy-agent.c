@@ -102,7 +102,7 @@ usage:
 		       ntohs(addr.sin_port));
 		fflush(stdout);
 	}
-	signal(SIGCLD, SIG_IGN);
+	signal(SIGCHLD, SIG_IGN);
 	while (1) {
 		socklen_t size = sizeof(addr);
 		const int client = accept(listener, (struct sockaddr *) &addr,
