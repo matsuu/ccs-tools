@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7   2009/04/01
+ * Version: 1.6.7+   2009/04/05
  *
  */
 #include "include.h"
@@ -81,6 +81,8 @@ static void show_result4(int result)
 	if (result == EOF) {
 		if (errno == EDESTADDRREQ)
 			printf("OK: Destination address required.\n");
+		else if (errno == ENOTCONN)
+			printf("OK: Transport endpoint is not connected.\n");
 		else
 			printf("BUG!: %s\n", strerror(errno));
 	} else {
