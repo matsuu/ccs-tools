@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7   2009/04/01
+ * Version: 1.6.7+   2009/04/07
  *
  */
 #include "include.h"
@@ -173,7 +173,7 @@ static void stage_policy_io_test(void)
 		try_io("path_group TEST3 boo", 1);
 		try_io("path_group TEST3 boo/", 1);
 		try_io("address_group TEST 0.0.0.0", 1);
-		try_io("address_group TEST 0.0.0.0-1.1.1.1", 1);
+		try_io("address_group TEST 0.0.0.0-1.2.3.4", 1);
 		try_io("address_group TEST 0:0:0:0:0:0:0:ff", 1);
 		try_io("address_group TEST "
 		       "0:0:0:0:0:0:0:0-ff:ff:ff:ff:ff:ff:ff:ff", 1);

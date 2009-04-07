@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7   2009/04/01
+ * Version: 1.6.7+   2009/04/07
  *
  */
 #include "include.h"
@@ -182,6 +182,57 @@ static void stage_network_test(void)
 			close(fd2);
 		if (fd1 != EOF)
 			close(fd1);
+	}
+
+	{ /* IPv4 address_group */
+		char buffer[1024];
+		FILE *fp = fopen(proc_policy_exception_policy, "w");
+		int fd1 = socket(PF_INET, SOCK_STREAM, 0);
+		int fd2 = socket(PF_INET, SOCK_STREAM, 0);
+		struct sockaddr_in saddr;
+		write_status("TOMOYO_VERBOSE=enabled\n");
+		memset(buffer, 0, sizeof(buffer));
+		policy = buffer;
+		memset(&saddr, 0, sizeof(saddr));
+		saddr.sin_family = AF_INET;
+		saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+		saddr.sin_port = htons(10001);
+		fprintf(fp, "address_group TESTADDRESS 127.0.0.1\n");
+		fflush(fp);
+		snprintf(buffer, sizeof(buffer) - 1,
+			 "allow_network TCP bind @TESTADDRESS 10001");
+		errno = 0;
+		show_result(bind(fd1, (struct sockaddr *) &saddr,
+				 sizeof(saddr)), 0);
+		if (write_policy()) {
+			show_result(bind(fd1, (struct sockaddr *) &saddr,
+					 sizeof(saddr)), 1);
+			delete_policy();
+		}
+		fprintf(fp, "delete address_group TESTADDRESS 127.0.0.1\n");
+		fflush(fp);
+		saddr.sin_port = htons(20002);
+		fprintf(fp, "address_group TESTADDRESS "
+			"127.0.0.0-127.255.255.255\n");
+		fflush(fp);
+		snprintf(buffer, sizeof(buffer) - 1,
+			 "allow_network TCP bind @TESTADDRESS 20002");
+		errno = 0;
+		show_result(bind(fd2, (struct sockaddr *) &saddr,
+				 sizeof(saddr)), 0);
+		if (write_policy()) {
+			show_result(bind(fd2, (struct sockaddr *) &saddr,
+					 sizeof(saddr)), 1);
+			delete_policy();
+		}
+		fprintf(fp, "delete address_group TESTADDRESS "
+			"127.0.0.0-127.255.255.255\n");
+		fflush(fp);
+		if (fd1 != EOF)
+			close(fd1);
+		if (fd2 != EOF)
+			close(fd2);
+		write_status("TOMOYO_VERBOSE=disabled\n");
 	}
 
 	i = socket(PF_INET6, SOCK_STREAM, 0);
