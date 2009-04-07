@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <signal.h>
 
+static _Bool verbose = 0;
+
 static void do_child(const int client)
 {
 	int i;
@@ -36,6 +38,11 @@ static void do_child(const int client)
 		/* Return \0 to indicate success. */
 		if (write(client, "", 1) != 1)
 			goto out;
+		if (verbose) {
+			write(2, "opened ", 7);
+			write(2, buffer, strlen(buffer));
+			write(2, "\n", 1);
+		}
 		while (1) {
 			char c;
 			/* Read a byte. */
@@ -45,6 +52,8 @@ static void do_child(const int client)
 				/* Write that byte. */
 				if (write(fd, &c, 1) != 1)
 					goto out;
+				if (verbose)
+					write(1, &c, 1);
 				continue;
 			}
 			/* Read until EOF. */
@@ -63,6 +72,8 @@ static void do_child(const int client)
 		}
 	}
  out:
+	if (verbose)
+		write(2, "disconnected\n", 13);
 	close(fd);
 	close(client);
 }
@@ -75,6 +86,18 @@ int main(int argc, char *argv[])
 	char *port;
 	if (chdir("/proc/ccs/") && chdir("/sys/kernel/security/tomoyo/"))
 		return 1;
+	{
+		int i;
+		for (i = 1; i < argc; i++) {
+			if (strcmp(argv[i], "--verbose"))
+				continue;
+			verbose = 1;
+			argc--;
+			for (; i < argc; i++)
+				argv[i] = argv[i + 1];
+			break;
+		}
+	}
 	if (argc != 2) {
 usage:
 		fprintf(stderr, "%s listen_address:listen_port\n", argv[0]);
@@ -102,19 +125,30 @@ usage:
 		       ntohs(addr.sin_port));
 		fflush(stdout);
 	}
+	close(0);
+	if (!verbose) {
+		close(1);
+		close(2);
+	}
 	signal(SIGCHLD, SIG_IGN);
 	while (1) {
 		socklen_t size = sizeof(addr);
 		const int client = accept(listener, (struct sockaddr *) &addr,
 					  &size);
-		if (client == EOF)
+		if (client == EOF) {
+			if (verbose)
+				fprintf(stderr, "accept() failed\n");
 			continue;
+		}
 		switch (fork()) {
 		case 0:
 			close(listener);
 			do_child(client);
 			_exit(0);
 		case -1:
+			if (verbose)
+				fprintf(stderr, "fork() failed\n");
+			close(client);
 			break;
 		default:
 			close(client);
