@@ -769,6 +769,7 @@ static FILE *open_write(const char *filename)
 			return NULL;
 		}
 		fp = fdopen(fd, "r+");
+		setbuf(fp, NULL);
 		fprintf(fp, "%s", filename);
 		fputc(0, fp);
 		fflush(fp);
