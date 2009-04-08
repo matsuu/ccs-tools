@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7   2009/04/01
+ * Version: 1.6.7+   2009/04/08
  *
  */
 #include <errno.h>
@@ -149,10 +149,13 @@ static void clear_status(void)
 	}
 	while (memset(buffer, 0, sizeof(buffer)),
 	       fgets(buffer, sizeof(buffer) - 10, fp)) {
+		const char *mode;
+		int v;
 		char *cp = strchr(buffer, '=');
 		if (!cp)
 			continue;
 		*cp = '\0';
+		mode = cp + 1;
 		cp = strchr(buffer, '-');
 		if (!cp)
 			continue;
@@ -165,13 +168,15 @@ static void clear_status(void)
 		*/
 		write(profile_fd, "255-", 4);
 		write(profile_fd, cp, strlen(cp));
-		if (!strcmp(cp, "COMMENT")) {
-			const char *cmd = "=Profile for kernel test\n";
-			write(profile_fd, cmd, strlen(cmd)); continue;
-		}
-		write(profile_fd, "=0\n", 3);
+		if (!strcmp(cp, "COMMENT"))
+			mode = "=Profile for kernel test\n";
+		else if (sscanf(mode, "%u", &v) == 1)
+			mode = "=0\n";
+		else
+			mode = "=disabled\n";
+		write(profile_fd, mode, strlen(mode));
 	}
-	//write(profile_fd, "255-SLEEP_PERIOD=1\n", 19);
+	/* write(profile_fd, "255-SLEEP_PERIOD=1\n", 19); */
 	fclose(fp);
 }
 

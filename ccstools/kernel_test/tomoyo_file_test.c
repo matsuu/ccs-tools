@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7   2009/04/01
+ * Version: 1.6.7+   2009/04/08
  *
  */
 #include "include.h"
@@ -217,9 +217,9 @@ static void creanup_files(void)
 static void set_file_enforce(int enforce)
 {
 	if (enforce)
-		write_status("MAC_FOR_FILE=3\n");
+		write_status("MAC_FOR_FILE=enforcing\n");
 	else
-		write_status("MAC_FOR_FILE=2\n");
+		write_status("MAC_FOR_FILE=permissive\n");
 }
 
 int main(int argc, char *argv[])

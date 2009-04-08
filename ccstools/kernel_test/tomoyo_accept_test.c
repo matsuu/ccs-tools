@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7   2009/04/01
+ * Version: 1.6.7+   2009/04/08
  *
  */
 #include "include.h"
@@ -98,8 +98,8 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Can't open %s\n", proc_policy_profile);
 		exit(1);
 	}
-	fprintf(fp_level, "255-COMMENT=Test\n255-TOMOYO_VERBOSE=0\n"
-		"255-MAC_FOR_FILE=0\n255-MAX_ACCEPT_ENTRY=2048\n");
+	fprintf(fp_level, "255-COMMENT=Test\n255-TOMOYO_VERBOSE=disabled\n"
+		"255-MAC_FOR_FILE=disabled\n255-MAX_ACCEPT_ENTRY=2048\n");
 	fflush(fp_level);
 	fp_domain = fopen(proc_policy_domain_policy, "w");
 	if (!fp_domain) {
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
-	fprintf(fp_level, "255-MAC_FOR_FILE=0\n");
+	fprintf(fp_level, "255-MAC_FOR_FILE=disabled\n");
 	fflush(fp_level);
 	printf("Done\n");
 	return 0;

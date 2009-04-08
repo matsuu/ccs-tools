@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7+   2009/04/05
+ * Version: 1.6.7+   2009/04/08
  *
  */
 #include "include.h"
@@ -94,9 +94,9 @@ static void set_enforce(int flag)
 {
 	is_enforce = flag;
 	if (flag)
-		write_status("MAC_FOR_NETWORK=3\n");
+		write_status("MAC_FOR_NETWORK=enforcing\n");
 	else
-		write_status("MAC_FOR_NETWORK=2\n");
+		write_status("MAC_FOR_NETWORK=permissive\n");
 }
 
 static void stage_network_test(void)

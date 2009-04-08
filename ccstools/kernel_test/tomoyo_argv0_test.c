@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7   2009/04/01
+ * Version: 1.6.7+   2009/04/08
  *
  */
 #include "include.h"
@@ -46,7 +46,7 @@ static void stage_argv0_test(void)
 	memset(buffer, 0, sizeof(buffer));
 	{
 		is_enforce = 0;
-		write_status("MAC_FOR_ARGV0=2\n");
+		write_status("MAC_FOR_ARGV0=permissive\n");
 		if (fork() == 0) {
 			execv("/bin/true", argv);
 			_exit(errno);
@@ -59,7 +59,7 @@ static void stage_argv0_test(void)
 		show_result(errno ? EOF : 0);
 
 		is_enforce = 1;
-		write_status("MAC_FOR_ARGV0=3\n");
+		write_status("MAC_FOR_ARGV0=enforcing\n");
 		if (fork() == 0) {
 			execv("/bin/true", argv);
 			_exit(errno);

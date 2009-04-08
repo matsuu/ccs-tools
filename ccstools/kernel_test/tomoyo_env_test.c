@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7   2009/04/01
+ * Version: 1.6.7+   2009/04/08
  *
  */
 #include "include.h"
@@ -47,7 +47,7 @@ static void stage_env_test(void)
 	memset(buffer, 0, sizeof(buffer));
 	{
 		is_enforce = 0;
-		write_status("MAC_FOR_ENV=2\n");
+		write_status("MAC_FOR_ENV=permissive\n");
 		if (fork() == 0) {
 			execve("/bin/true", argv, envp);
 			_exit(errno);
@@ -60,7 +60,7 @@ static void stage_env_test(void)
 		show_result(errno ? EOF : 0);
 
 		is_enforce = 1;
-		write_status("MAC_FOR_ENV=3\n");
+		write_status("MAC_FOR_ENV=enforcing\n");
 		if (fork() == 0) {
 			execve("/bin/true", argv, envp);
 			_exit(errno);

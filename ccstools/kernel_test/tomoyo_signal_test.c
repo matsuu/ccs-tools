@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7   2009/04/01
+ * Version: 1.6.7+   2009/04/08
  *
  */
 #include "include.h"
@@ -59,13 +59,13 @@ static int do_parent(const char *self)
 	int j;
 	for (i = 0; i < 2; i++) {
 		if (i == 0) {
-			write_status("MAC_FOR_SIGNAL=3\n");
+			write_status("MAC_FOR_SIGNAL=enforcing\n");
 			is_enforce = 1;
 			printf("***** Testing signal hooks in enforce mode. "
 			       "*****\n");
 			fflush(stdout);
 		} else {
-			write_status("MAC_FOR_SIGNAL=2\n");
+			write_status("MAC_FOR_SIGNAL=permissive\n");
 			is_enforce = 0;
 			printf("***** Testing signal hooks in permissive mode. "
 			       "*****\n");

@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7   2009/04/01
+ * Version: 1.6.7+   2009/04/08
  *
  */
 #define _GNU_SOURCE
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 			mknod(dev_ram_path, S_IFBLK, MKDEV(1, 0));
 		}
 		memset(buf, 0, sizeof(buf));
-		write_status("RESTRICT_MOUNT=3\n");
+		write_status("RESTRICT_MOUNT=enforcing\n");
 
 		/* Test standard case */
 		show_prompt("mount('none', '" TEST_DIR "', 'tmpfs') for '"
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 		write_policy("delete allow_mount none " TEST_DIR_PATTERN
 			    " tmpfs 0\n");
 
-		write_status("RESTRICT_MOUNT=0\n");
+		write_status("RESTRICT_MOUNT=disabled\n");
 		while (umount(TEST_DIR) == 0)
 			c++; /* Dummy. */
 	}
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 	/* Test mount(). */
 	{
 		mount("none", TEST_DIR, "tmpfs", 0, NULL);
-		write_status("RESTRICT_MOUNT=3\n");
+		write_status("RESTRICT_MOUNT=enforcing\n");
 
 		/* Test remount case */
 		show_prompt("mount('" TEST_DIR "', MS_REMOUNT)", 1);
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
 		write_policy("delete allow_mount " TEST_DIR " " TEST_DIR_MOVE
 			    " --move 0\n");
 
-		write_status("RESTRICT_MOUNT=0\n");
+		write_status("RESTRICT_MOUNT=disabled\n");
 		while (umount(TEST_DIR) == 0)
 			c++; /* Dummy. */
 	}
@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
 	/* Test mount(). */
 	{
 		mount("none", TEST_DIR, "tmpfs", 0, NULL);
-		write_status("DENY_CONCEAL_MOUNT=3\n");
+		write_status("DENY_CONCEAL_MOUNT=enforcing\n");
 
 		show_prompt("mount('none', '" TEST_DIR "', 'tmpfs')", 1);
 		if (mount("none", TEST_DIR, "tmpfs", 0, NULL) == EOF &&
@@ -246,7 +246,7 @@ int main(int argc, char *argv[])
 		else
 			printf("BUG: %s\n", strerror(errno));
 
-		write_status("DENY_CONCEAL_MOUNT=2\n");
+		write_status("DENY_CONCEAL_MOUNT=permissive\n");
 
 		show_prompt("mount('none', '" TEST_DIR "', 'tmpfs')", 0);
 		if (mount("none", TEST_DIR, "tmpfs", 0, NULL) == 0)
@@ -254,14 +254,14 @@ int main(int argc, char *argv[])
 		else
 			printf("FAILED: %s\n", strerror(errno));
 
-		write_status("DENY_CONCEAL_MOUNT=0\n");
+		write_status("DENY_CONCEAL_MOUNT=disabled\n");
 		while (umount(TEST_DIR) == 0)
 			c++; /* Dummy. */
 	}
 
 	/* Test umount(). */
 	{
-		write_status("RESTRICT_UNMOUNT=3\n");
+		write_status("RESTRICT_UNMOUNT=enforcing\n");
 
 		/* Test standard case */
 		write_policy("deny_unmount " TEST_DIR "\n");
@@ -292,14 +292,14 @@ int main(int argc, char *argv[])
 			printf("BUG: %s\n", strerror(errno));
 		write_policy("delete deny_unmount " TEST_DIR_PATTERN "\n");
 
-		write_status("RESTRICT_UNMOUNT=0\n");
+		write_status("RESTRICT_UNMOUNT=disabled\n");
 		while (umount(TEST_DIR) == 0)
 			c++; /* Dummy. */
 	}
 
 	/* Test chroot(). */
 	{
-		write_status("RESTRICT_CHROOT=3\n");
+		write_status("RESTRICT_CHROOT=enforcing\n");
 
 		/* Test standard case */
 		write_policy("allow_chroot " TEST_DIR "\n");
@@ -344,14 +344,14 @@ int main(int argc, char *argv[])
 		wait(NULL);
 		write_policy("delete allow_chroot " TEST_DIR_PATTERN "\n");
 
-		write_status("RESTRICT_CHROOT=0\n");
+		write_status("RESTRICT_CHROOT=disabled\n");
 	}
 
 	/* Test pivot_root(). */
 	{
 		int error;
 		char *stack = malloc(8192);
-		write_status("RESTRICT_PIVOT_ROOT=3\n");
+		write_status("RESTRICT_PIVOT_ROOT=enforcing\n");
 
 		snprintf(stack, 8191, "allow_pivot_root %s %s\n",
 			 pivot_root_dir, proc_policy_dir);
@@ -391,7 +391,7 @@ int main(int argc, char *argv[])
 		else
 			printf("BUG: %s\n", strerror(errno));
 
-		write_status("RESTRICT_PIVOT_ROOT=2\n");
+		write_status("RESTRICT_PIVOT_ROOT=permissive\n");
 		snprintf(stack, 8191, "pivot_root('%s', '%s')", pivot_root_dir,
 			 proc_policy_dir);
 		show_prompt(stack, 0);
@@ -408,7 +408,7 @@ int main(int argc, char *argv[])
 		else
 			printf("FAILED: %s\n", strerror(errno));
 
-		write_status("RESTRICT_PIVOT_ROOT=0\n");
+		write_status("RESTRICT_PIVOT_ROOT=disabled\n");
 
 		free(stack);
 	}
