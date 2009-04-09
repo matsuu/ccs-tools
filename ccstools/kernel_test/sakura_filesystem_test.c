@@ -62,6 +62,26 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	/* Test mount(). */
+	{
+		write_status("RESTRICT_MOUNT=enforcing\n");
+		show_prompt("mount('dev\\011name', '/', 'fs\\011name') ", 1);
+		if (mount("dev\tname", "/", "fs\tname", 0, NULL) == EOF &&
+		    errno == EPERM)
+			printf("OK: Permission denied.\n");
+		else
+			printf("BUG: %s\n", strerror(errno));
+		write_status("RESTRICT_MOUNT=learning\n");
+		show_prompt("mount('dev\\011name', '/', 'fs\\011name') ", 0);
+		if (mount("dev\tname", "/", "fs\tname", 0, NULL) == EOF &&
+		    errno == ENOMEM)
+			printf("OK: Out of memory.\n");
+		else
+			printf("BUG: %s\n", strerror(errno));
+		write_policy("delete allow_mount dev\\011name / fs\\011name 0\n");
+		write_status("RESTRICT_MOUNT=disabled\n");
+	}
+
 	mkdir(TEST_DIR, 0755);
 	mkdir(TEST_DIR_BIND, 0755);
 	mkdir(TEST_DIR_MOVE, 0755);
