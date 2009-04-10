@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7+   2009/04/08
+ * Version: 1.6.7+   2009/04/10
  *
  */
 #define _GNU_SOURCE
@@ -69,6 +69,8 @@ int main(int argc, char *argv[])
 		if (mount("dev\tname", "/", "fs\tname", 0, NULL) == EOF &&
 		    errno == EPERM)
 			printf("OK: Permission denied.\n");
+		else if (errno == ENODEV)
+			printf("OK: No such device.\n");
 		else
 			printf("BUG: %s\n", strerror(errno));
 		write_status("RESTRICT_MOUNT=learning\n");
@@ -76,6 +78,8 @@ int main(int argc, char *argv[])
 		if (mount("dev\tname", "/", "fs\tname", 0, NULL) == EOF &&
 		    errno == ENOMEM)
 			printf("OK: Out of memory.\n");
+		else if (errno == ENODEV)
+			printf("OK: No such device.\n");
 		else
 			printf("BUG: %s\n", strerror(errno));
 		write_policy("delete allow_mount dev\\011name / fs\\011name 0\n");
