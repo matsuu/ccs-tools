@@ -82,7 +82,37 @@ int main(int argc, char *argv[])
 			printf("OK: No such device.\n");
 		else
 			printf("BUG: %s\n", strerror(errno));
+		write_status("RESTRICT_MOUNT=enforcing\n");
+		show_prompt("mount('dev\\011name', '/', 'fs\\011name') ", 0);
+		if (mount("dev\tname", "/", "fs\tname", 0, NULL) == EOF &&
+		    errno == ENOMEM)
+			printf("OK: Out of memory.\n");
+		else if (errno == ENODEV)
+			printf("OK: No such device.\n");
+		else
+			printf("BUG: %s\n", strerror(errno));
 		write_policy("delete allow_mount dev\\011name / fs\\011name 0\n");
+		show_prompt("mount('dev\\011name', '/', 'fs\\011name') ", 1);
+		if (mount("dev\tname", "/", "fs\tname", 0, NULL) == EOF &&
+		    errno == EPERM)
+			printf("OK: Permission denied.\n");
+		else if (errno == ENODEV)
+			printf("OK: No such device.\n");
+		else
+			printf("BUG: %s\n", strerror(errno));
+		write_status("RESTRICT_MOUNT=learning\n");
+		show_prompt("mount(NULL, '/', 'tmpfs') ", 0);
+		if (mount(NULL, "/", "tmpfs", 0, NULL))
+			printf("BUG: %s\n", strerror(errno));
+		else
+			printf("OK: Success\n");
+		write_status("RESTRICT_MOUNT=enforcing\n");
+		show_prompt("mount(NULL, '/', 'tmpfs') ", 0);
+		if (mount(NULL, "/", "tmpfs", 0, NULL))
+			printf("BUG: %s\n", strerror(errno));
+		else
+			printf("OK: Success\n");
+		write_policy("delete allow_mount <NULL> / tmpfs 0\n");
 		write_status("RESTRICT_MOUNT=disabled\n");
 	}
 
