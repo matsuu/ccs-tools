@@ -182,7 +182,7 @@ static void make_mode(const char *argv0)
 	tp.c_lflag &= ~(ICANON | ECHO);
 	tp.c_cc[VTIME] = 0;
 	tp.c_cc[VMIN] = 1;
-	fprintf(stderr, "You have choosen make mode, so I will "
+	fprintf(stderr, "You have chosen make mode, so I will "
 		"generate script template for you.\n\n"
 		"Before you start, you need to decide the password and "
 		"acceptable interval.\n\n"
