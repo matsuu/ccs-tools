@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7+   2009/04/10
+ * Version: 1.6.7+   2009/04/20
  *
  */
 #define _GNU_SOURCE
@@ -112,7 +112,45 @@ int main(int argc, char *argv[])
 			printf("BUG: %s\n", strerror(errno));
 		else
 			printf("OK: Success\n");
+		show_prompt("mount('anydev', '/', 'tmpfs') ", 0);
+		if (mount("anydev", "/", "tmpfs", 0, NULL))
+			printf("BUG: %s\n", strerror(errno));
+		else
+			printf("OK: Success\n");
 		write_policy("delete allow_mount <NULL> / tmpfs 0\n");
+		write_policy("allow_mount anydev / tmpfs 0\n");
+		show_prompt("mount(NULL, '/', 'tmpfs') ", 0);
+		if (mount(NULL, "/", "tmpfs", 0, NULL))
+			printf("BUG: %s\n", strerror(errno));
+		else
+			printf("OK: Success\n");
+		write_policy("delete allow_mount anydev / tmpfs 0\n");
+		write_status("RESTRICT_MOUNT=permissive\n");
+		show_prompt("mount(NULL, NULL, 'tmpfs') ", 1);
+		if (mount(NULL, NULL, "tmpfs", 0, NULL))
+			printf("OK: %s\n", strerror(errno));
+		else
+			printf("BUG: Did not fail.\n");
+		show_prompt("mount(NULL, NULL, NULL) ", 1);
+		if (mount(NULL, NULL, NULL, 0, NULL))
+			printf("OK: %s\n", strerror(errno));
+		else
+			printf("BUG: Did not fail.\n");
+		show_prompt("mount('/', NULL, NULL) ", 1);
+		if (mount("/", NULL, NULL, 0, NULL))
+			printf("OK: %s\n", strerror(errno));
+		else
+			printf("BUG: Did not fail.\n");
+		show_prompt("mount('/', NULL, 'tmpfs') ", 1);
+		if (mount("/", NULL, "tmpfs", 0, NULL))
+			printf("OK: %s\n", strerror(errno));
+		else
+			printf("BUG: Did not fail.\n");
+		show_prompt("mount('/', '/', 'nonexistentfs') ", 1);
+		if (mount("/", "/", "nonexistentfs", 0, NULL))
+			printf("OK: %s\n", strerror(errno));
+		else
+			printf("BUG: Did not fail.\n");
 		write_status("RESTRICT_MOUNT=disabled\n");
 	}
 
@@ -214,6 +252,21 @@ int main(int argc, char *argv[])
 			printf("OK: Permission denied.\n");
 		else
 			printf("BUG: %s\n", strerror(errno));
+		show_prompt("mount('" TEST_DIR "', MS_REMOUNT)", 1);
+		if (mount(NULL, TEST_DIR, NULL, MS_REMOUNT, NULL) == EOF
+		    && errno == EPERM)
+			printf("OK: Permission denied.\n");
+		else
+			printf("BUG: %s\n", strerror(errno));
+		write_policy("allow_mount something " TEST_DIR
+			     " --remount something 0\n");
+		show_prompt("mount('" TEST_DIR "', MS_REMOUNT)", 0);
+		if (mount(NULL, TEST_DIR, NULL, MS_REMOUNT, NULL))
+			printf("BUG: %s\n", strerror(errno));
+		else
+			printf("OK: Success.\n");
+		write_policy("delete allow_mount something " TEST_DIR
+			     " --remount something 0\n");
 
 		/* Test bind case */
 		show_prompt("mount('" TEST_DIR "', '" TEST_DIR_BIND
