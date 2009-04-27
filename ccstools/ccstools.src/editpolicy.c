@@ -2360,7 +2360,7 @@ usage:
 		copy_file(DISK_POLICY_PROFILE, proc_policy_profile);
 		copy_file(BASE_POLICY_MANAGER, proc_policy_manager);
 		copy_file(DISK_POLICY_MANAGER, proc_policy_manager);
-	} else {
+	} else if (!network_mode) {
 		if (chdir(proc_policy_dir)) {
 			fprintf(stderr,
 				"You can't use this editor for this kernel.\n");
