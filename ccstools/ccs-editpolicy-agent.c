@@ -76,7 +76,7 @@ static void show_tasklist(FILE *fp)
 					fprintf(fp, "\\%c%c%c",
 						(c >> 6) + '0',
 						((c >> 3) & 7) + '0',
-						(c &7) + '0');
+						(c & 7) + '0');
 				}
 			}
 			free(name);

@@ -37,6 +37,7 @@ static char *get_name(const pid_t pid)
 	snprintf(buffer, sizeof(buffer) - 1, "/proc/%u/status", pid);
 	fp = fopen(buffer, "r");
 	if (fp) {
+		static const int offset = sizeof(buffer) / 6;
 		while (memset(buffer, 0, sizeof(buffer)),
 		       fgets(buffer, sizeof(buffer) - 1, fp)) {
 			if (!strncmp(buffer, "Name:\t", 6)) {
@@ -49,39 +50,39 @@ static char *get_name(const pid_t pid)
 			}
 		}
 		fclose(fp);
-		if (buffer[0])
-			return strdup(buffer);
-	}
-	return NULL;
-}
-
-static void printf_encoded(const char *name)
-{
-	if (network_mode) {
-		printf("%s", name);
-		return;
-	}
-	while (1) {
-		unsigned char c = *name++;
-		if (!c)
-			break;
-		if (c == '\\') {
-			c = *name++;
-			if (c == '\\')
-				printf("\\\\");
-			else if (c == 'n')
-				printf("\\012");
-			else
-				break;
-		} else if (c > ' ' && c <= 126) {
-			putchar(c);
-		} else {
-			printf("\\%c%c%c",
-			       (c >> 6) + '0',
-			       ((c >> 3) & 7) + '0',
-			       (c &7) + '0');
+		if (buffer[0] && strlen(buffer) < offset - 1) {
+			const char *src = buffer;
+			char *dest = buffer + offset;
+			while (1) {
+				unsigned char c = *src++;
+				if (!c) {
+					*dest = '\0';
+					break;
+				}
+				if (c == '\\') {
+					c = *src++;
+					if (c == '\\') {
+						memmove(dest, "\\\\", 2);
+						dest += 2;
+					} else if (c == 'n') {
+						memmove(dest, "\\012", 4);
+						dest += 4;
+					} else {
+						break;
+					}
+				} else if (c > ' ' && c <= 126) {
+					*dest++ = c;
+				} else {
+					*dest++ = '\\';
+					*dest++ = (c >> 6) + '0';
+					*dest++ = ((c >> 3) & 7) + '0';
+					*dest++ = (c & 7) + '0';
+				}
+			}
+			return strdup(buffer + offset);
 		}
 	}
+	return NULL;
 }
 
 static struct task_entry *task_list = NULL;
@@ -99,10 +100,8 @@ static void dump(const pid_t pid, const int depth)
 			printf("    ");
 		for (; j < depth; j++)
 			printf("  +-");
-		putchar(' ');
-		printf_encoded(task_list[i].name);
-		printf(" (%u) %s\n", task_list[i].pid,
-		       task_list[i].domain);
+		printf(" %s (%u) %s\n", task_list[i].name,
+		       task_list[i].pid, task_list[i].domain);
 		task_list[i].done = true;
 	}
 	for (i = 0; i < task_list_len; i++) {
@@ -118,10 +117,9 @@ static void dump_unprocessed(void)
 	for (i = 0; i < task_list_len; i++) {
 		if (task_list[i].done)
 			continue;
-		printf("%3d ", task_list[i].profile);
-		printf_encoded(task_list[i].name); 
-		printf(" (%u) %s\n", task_list[i].pid,
-		       task_list[i].domain);
+		printf("%3d %s (%u) %s\n",
+		       task_list[i].profile, task_list[i].name,
+		       task_list[i].pid, task_list[i].domain);
 		task_list[i].done = true;
 	}
 }
