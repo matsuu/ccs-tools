@@ -396,6 +396,9 @@ int simple_add_history(const char *buffer, const char **history,
 		       const int history_count, const int max_history);
 int getch2(void);
 
+extern int ccs_major;
+extern int ccs_minor;
+extern int ccs_rev;
 extern _Bool offline_mode;
 extern const char *policy_dir;
 extern _Bool network_mode;

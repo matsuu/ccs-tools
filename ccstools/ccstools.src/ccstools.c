@@ -1043,6 +1043,10 @@ read_policy:
 
 /* Variables */
 
+int ccs_major = 0;
+int ccs_minor = 0;
+int ccs_rev = 0;
+	
 const char *proc_policy_dir           = "/proc/ccs/",
 	*disk_policy_dir              = "/etc/ccs/",
 	*proc_policy_domain_policy    = "/proc/ccs/domain_policy",
@@ -1145,10 +1149,8 @@ static void change_policy_dir(void)
 _Bool check_remote_host(void)
 {
 	FILE *fp = open_read("version");
-	int major = 0;
-	int minor = 0;
-	int rev = 0;
-	if (!fp || fscanf(fp, "%u.%u.%u", &major, &minor, &rev) < 2) {
+	if (!fp ||
+	    fscanf(fp, "%u.%u.%u", &ccs_major, &ccs_minor, &ccs_rev) < 2) {
 		const u32 ip = ntohl(network_ip);
 		fprintf(stderr, "Can't connect to %u.%u.%u.%u:%u\n",
 			(u8) (ip >> 24), (u8) (ip >> 16),
@@ -1158,10 +1160,10 @@ _Bool check_remote_host(void)
 		return false;
 	}
 	fclose(fp);
-	if (major == 2)
+	if (ccs_major == 2)
 		change_policy_dir();
 	return true;
-}	
+}
 
 int main(int argc, char *argv[])
 {

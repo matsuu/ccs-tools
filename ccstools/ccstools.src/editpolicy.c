@@ -1890,8 +1890,9 @@ out:
 
 static int select_window(struct domain_policy *dp, const int current)
 {
-	const _Bool s_ok = offline_mode || network_mode ||
-		access(proc_policy_system_policy, F_OK) == 0;
+	const _Bool s_ok = offline_mode ||
+		(network_mode && !(ccs_major == 2 && ccs_minor == 2)) ||
+		(!network_mode && access(proc_policy_system_policy, F_OK) == 0);
 	const _Bool e_ok = offline_mode || network_mode ||
 		access(proc_policy_exception_policy, F_OK) == 0;
 	const _Bool d_ok = offline_mode || network_mode ||
@@ -2029,12 +2030,15 @@ start2:
 		    current_screen == SCREEN_ACL_LIST)
 			return SCREEN_DOMAIN_LIST;
 		if (c == '\t') {
-			if (current_screen == SCREEN_DOMAIN_LIST)
+			if (current_screen == SCREEN_DOMAIN_LIST) {
+				if (ccs_major == 2 && ccs_minor == 2)
+					return SCREEN_EXCEPTION_LIST; 
 				return SCREEN_SYSTEM_LIST;
-			else if (current_screen == SCREEN_SYSTEM_LIST)
+			} else if (current_screen == SCREEN_SYSTEM_LIST) {
 				return SCREEN_EXCEPTION_LIST;
-			else
+			} else {
 				return SCREEN_DOMAIN_LIST;
+			}
 		}
 		if (need_reload) {
 			need_reload = false;
