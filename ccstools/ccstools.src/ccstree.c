@@ -147,7 +147,7 @@ int ccstree_main(int argc, char *argv[])
 		}
 	}
 	if (network_mode) {
-		FILE *fp = open_read("proc:process_status");
+		FILE *fp = open_write("proc:process_status");
 		if (!fp) {
 			fprintf(stderr, "Can't connect.\n");
 			return 1;
