@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7+   2009/04/08
+ * Version: 1.6.7+   2009/04/27
  *
  */
 #include "ccstools.h"
@@ -2294,6 +2294,8 @@ int editpolicy_main(int argc, char *argv[])
 				network_ip = inet_addr(ptr);
 				network_port = htons(atoi(cp));
 				network_mode = true;
+				if (!check_remote_host())
+					return 1;
 			} else if (!strcmp(ptr, "s"))
 				current_screen = SCREEN_SYSTEM_LIST;
 			else if (!strcmp(ptr, "e"))
@@ -2320,22 +2322,7 @@ usage:
 		}
 	}
 	editpolicy_init_keyword_map();
-	if (network_mode) {
-		const int fd = socket(AF_INET, SOCK_STREAM, 0);
-		struct sockaddr_in addr;
-		memset(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET;
-		addr.sin_addr.s_addr = network_ip;
-		addr.sin_port = network_port;
-		if (connect(fd, (struct sockaddr *) &addr, sizeof(addr))) {
-			const u32 ip = ntohl(network_ip);
-			fprintf(stderr, "Can't connect to %u.%u.%u.%u:%u\n",
-				(u8) (ip >> 24), (u8) (ip >> 16),
-				(u8) (ip >> 8), (u8) ip, ntohs(network_port));
-                        return 1;
-                }
-		close(fd);
-	} else if (offline_mode) {
+	if (offline_mode) {
 		int fd[2] = { EOF, EOF };
 		if (chdir(policy_dir)) {
 			printf("Directory %s doesn't exist.\n",

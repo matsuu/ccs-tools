@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7   2009/04/01
+ * Version: 1.6.7+   2009/04/27
  *
  */
 
@@ -303,6 +303,7 @@ struct task_entry {
 
 /***** PROTOTYPES DEFINITION START *****/
 
+_Bool check_remote_host(void);
 void out_of_memory(void);
 void normalize_line(unsigned char *line);
 _Bool is_domain_def(const unsigned char *domainname);

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7+   2009/04/08
+ * Version: 1.6.7+   2009/04/27
  *
  */
 #include "ccstools.h"
@@ -128,6 +128,8 @@ int savepolicy_main(int argc, char *argv[])
 			if (network_mode)
 				goto usage;
 			network_mode = true;
+			if (!check_remote_host())
+				return 1;
 			argv[i] = "";
 		}
 	}
@@ -484,11 +486,13 @@ int loadpolicy_main(int argc, char *argv[])
 			argv[i] = "";
 		} else if (cp) {
 			*cp++ = '\0';
-			if (network_mode)
-				goto usage;
 			network_ip = inet_addr(ptr);
 			network_port = htons(atoi(cp));
+			if (network_mode)
+				goto usage;
 			network_mode = true;
+			if (!check_remote_host())
+				return 1;
 			argv[i] = "";
 		}
 	}

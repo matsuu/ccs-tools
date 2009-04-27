@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7+   2009/04/08
+ * Version: 1.6.7+   2009/04/27
  *
  */
 #include "ccstools.h"
@@ -1114,6 +1114,55 @@ _Bool freadline(FILE *fp)
 	return true;
 }
 
+static void change_policy_dir(void)
+{
+	proc_policy_dir = "/sys/kernel/security/tomoyo/";
+	disk_policy_dir = "/etc/tomoyo/";
+	proc_policy_domain_policy
+		= "/sys/kernel/security/tomoyo/domain_policy";
+	proc_policy_exception_policy
+		= "/sys/kernel/security/tomoyo/exception_policy";
+	proc_policy_system_policy
+		= "/sys/kernel/security/tomoyo/system_policy";
+	proc_policy_profile
+		= "/sys/kernel/security/tomoyo/profile";
+	proc_policy_manager
+		= "/sys/kernel/security/tomoyo/manager";
+	proc_policy_meminfo
+		= "/sys/kernel/security/tomoyo/meminfo";
+	proc_policy_query
+		= "/sys/kernel/security/tomoyo/query";
+	proc_policy_grant_log
+		= "/sys/kernel/security/tomoyo/grant_log";
+	proc_policy_reject_log
+		= "/sys/kernel/security/tomoyo/reject_log";
+	proc_policy_domain_status
+		= "/sys/kernel/security/tomoyo/.domain_status";
+	proc_policy_process_status
+		= "/sys/kernel/security/tomoyo/.process_status";
+}
+
+_Bool check_remote_host(void)
+{
+	FILE *fp = open_read("version");
+	int major = 0;
+	int minor = 0;
+	int rev = 0;
+	if (!fp || fscanf(fp, "%u.%u.%u", &major, &minor, &rev) < 2) {
+		const u32 ip = ntohl(network_ip);
+		fprintf(stderr, "Can't connect to %u.%u.%u.%u:%u\n",
+			(u8) (ip >> 24), (u8) (ip >> 16),
+			(u8) (ip >> 8), (u8) ip, ntohs(network_port));
+		if (fp)
+			fclose(fp);
+		return false;
+	}
+	fclose(fp);
+	if (major == 2)
+		change_policy_dir();
+	return true;
+}	
+
 int main(int argc, char *argv[])
 {
 	int ret = 0;
@@ -1122,34 +1171,8 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Function not specified.\n");
 		return 1;
 	}
-	if (!access("/sys/kernel/security/tomoyo/", F_OK)) {
-		proc_policy_dir
-			= "/sys/kernel/security/tomoyo/";
-		disk_policy_dir
-			= "/etc/tomoyo/";
-		proc_policy_domain_policy
-			= "/sys/kernel/security/tomoyo/domain_policy";
-		proc_policy_exception_policy
-			= "/sys/kernel/security/tomoyo/exception_policy";
-		proc_policy_system_policy
-			= "/sys/kernel/security/tomoyo/system_policy";
-		proc_policy_profile
-			= "/sys/kernel/security/tomoyo/profile";
-		proc_policy_manager
-			= "/sys/kernel/security/tomoyo/manager";
-		proc_policy_meminfo
-			= "/sys/kernel/security/tomoyo/meminfo";
-		proc_policy_query
-			= "/sys/kernel/security/tomoyo/query";
-		proc_policy_grant_log
-			= "/sys/kernel/security/tomoyo/grant_log";
-		proc_policy_reject_log
-			= "/sys/kernel/security/tomoyo/reject_log";
-		proc_policy_domain_status
-			= "/sys/kernel/security/tomoyo/.domain_status";
-		proc_policy_process_status
-			= "/sys/kernel/security/tomoyo/.process_status";
-	}
+	if (!access("/sys/kernel/security/tomoyo/", F_OK))
+		change_policy_dir();
 	if (strrchr(argv0, '/'))
 		argv0 = strrchr(argv0, '/') + 1;
 retry:
@@ -1197,7 +1220,7 @@ show_version:
 	 * You should use either "symbolic links with 'alias' directive" or
 	 * "hard links".
 	 */
-	printf("ccstools version 1.6.7+ build 2009/04/08\n");
+	printf("ccstools version 1.6.7+ build 2009/04/27\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }
