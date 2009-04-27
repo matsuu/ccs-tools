@@ -128,11 +128,14 @@ int ccstree_main(int argc, char *argv[])
 {
 	const char *policy_file = proc_policy_process_status;
 	static _Bool show_all = false;
-	if (argc > 1) {
-		char *ptr = argv[1];
+	int i;
+	for (i = 1; i < argc; i++) {
+		char *ptr = argv[i];
 		char *cp = strchr(ptr, ':');
 		if (cp) {
 			*cp++ = '\0';
+			if (network_mode)
+				goto usage;
 			network_ip = inet_addr(ptr);
 			network_port = htons(atoi(cp));
 			network_mode = true;
@@ -141,13 +144,15 @@ int ccstree_main(int argc, char *argv[])
 		} else if (!strcmp(ptr, "-a")) {
 			show_all = true;
 		} else {
+usage:
 			fprintf(stderr, "Usage: %s "
-				"[{-a|remote_ip:remote_port}]}\n", argv[0]);
+				"[-a] [remote_ip:remote_port]\n", argv[0]);
 			return 0;
 		}
 	}
 	if (network_mode) {
-		FILE *fp = open_write("proc:process_status");
+		FILE *fp = open_write(show_all ? "proc:all_process_status" :
+				      "proc:process_status");
 		if (!fp) {
 			fprintf(stderr, "Can't connect.\n");
 			return 1;

@@ -13,13 +13,13 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: ccs-ccstree [-a|remote_ip:remote_port]
+Usage: ccs-ccstree [-a] [remote_ip:remote_port]
 
 This program shows profile index and domainname of currently running process like "pstree" command.
 
  -a    Show all processes including kernel threads.
 
- remote_ip:remote_port     Show all processes  including kernel threads via agent listening at specified IP address and port number. 
+ remote_ip:remote_port     Get process information via agent listening at specified IP address and port number. 
 
 Examples:
 

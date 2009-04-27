@@ -11,7 +11,7 @@
 #include <signal.h>
 #include <dirent.h>
 
-static void show_tasklist(FILE *fp)
+static void show_tasklist(FILE *fp, const _Bool show_all)
 {
 	int status_fd = open(".process_status", O_RDWR);
 	DIR *dir = opendir("/proc/");
@@ -28,6 +28,7 @@ static void show_tasklist(FILE *fp)
 		pid_t ppid = 1;
 		char *name = NULL;
 		char buffer[1024];
+		char test[16];
 		unsigned int pid;
 		struct dirent *dent = readdir(dir);
 		const char *cp;
@@ -37,6 +38,9 @@ static void show_tasklist(FILE *fp)
 		if (dent->d_type != DT_DIR || sscanf(cp, "%u", &pid) != 1)
 			continue;
 		memset(buffer, 0, sizeof(buffer));
+		snprintf(buffer, sizeof(buffer) - 1, "/proc/%u/exe", pid);
+		if (!show_all && readlink(buffer, test, sizeof(test)) <= 0)
+			continue;
 		snprintf(buffer, sizeof(buffer) - 1, "/proc/%u/status", pid);
 		status_fp = fopen(buffer, "r");
 		if (status_fp) {
@@ -114,11 +118,15 @@ static void do_child(const int client)
 			goto out;
 		if (!buffer[i]) {
 			char *cp = strrchr(buffer, '/');
-			if (!strcmp(buffer, "proc:process_status")) {
+			const _Bool ps = !strcmp(buffer,
+						 "proc:process_status");
+			const _Bool ps_all = !strcmp(buffer,
+						     "proc:all_process_status");
+			if (ps || ps_all) {
 				FILE *fp = fdopen(client, "w");
 				/* Open /proc/\$/ for reading. */
 				if (fp) {
-					show_tasklist(fp);
+					show_tasklist(fp, ps_all);
 					fclose(fp);
 				}
 				break;
