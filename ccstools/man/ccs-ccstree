@@ -13,11 +13,13 @@ EOF
 elif [ "$1" = "--help" ]
 then
 cat << EOF
-Usage: ccs-ccstree [-a]
+Usage: ccs-ccstree [-a|remote_ip:remote_port]
 
 This program shows profile index and domainname of currently running process like "pstree" command.
 
  -a    Show all processes including kernel threads.
+
+ remote_ip:remote_port     Show all processes  including kernel threads via agent listening at specified IP address and port number. 
 
 Examples:
 
@@ -29,6 +31,7 @@ cat << EOF | help2man -i - -N -s 8 -n "View TOMOYO Linux's process information" 
 [SEE ALSO]
 
  ccs-setprofile (8)
+ ccs-editpolicy-agent (8)
 
 [NOTES]
 

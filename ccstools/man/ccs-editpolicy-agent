@@ -15,7 +15,7 @@ then
 cat << EOF
 Usage: ccs-editpolicy-agent listen_ip:listen_port
 
-This is an agent program for ccs-editpolicy ccs-loadpolicy ccs-savepolicy .
+This is an agent program for ccs-editpolicy ccs-loadpolicy ccs-savepolicy ccs-ccstree .
 
  listen_ip:listen_port     Listen at specified IP address and port number. 
 
@@ -32,6 +32,7 @@ cat << EOF | help2man -i - -N -s 8 -n "Agent for editing TOMOYO Linux's policy" 
  ccs-editpolicy (8)
  ccs-loadpolicy (8)
  ccs-savepolicy (8)
+ ccs-ccstree (8)
 
 [NOTES]
 
