@@ -296,6 +296,9 @@ struct editpolicy_directive {
 struct task_entry {
 	pid_t pid;
 	pid_t ppid;
+	char *name;
+	char *domain;
+	u8 profile;
 	_Bool done;
 };
 
@@ -343,6 +346,7 @@ void shprintf(const char *fmt, ...)
 _Bool move_proc_to_file(const char *src, const char *base, const char *dest);
 _Bool is_identical_file(const char *file1, const char *file2);
 FILE *open_read(const char *filename);
+FILE *open_write(const char *filename);
 void clear_domain_policy(struct domain_policy *dp);
 _Bool save_domain_policy_with_diff(struct domain_policy *dp,
 				   struct domain_policy *bp,

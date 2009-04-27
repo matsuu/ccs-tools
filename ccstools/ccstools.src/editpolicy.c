@@ -31,7 +31,6 @@ static const struct domain_keeper_entry *
 is_domain_keeper(const struct path_info *domainname, const char *program);
 static const struct domain_initializer_entry *
 is_domain_initializer(const struct path_info *domainname, const char *program);
-static FILE *open_write(const char *filename);
 static int generic_acl_compare(const void *a, const void *b);
 static int generic_acl_compare0(const void *a, const void *b);
 static int string_acl_compare(const void *a, const void *b);
@@ -753,7 +752,7 @@ is_domain_initializer(const struct path_info *domainname, const char *program)
 	return flag;
 }
 
-static FILE *open_write(const char *filename)
+FILE *open_write(const char *filename)
 {
 	if (network_mode) {
 		const int fd = socket(AF_INET, SOCK_STREAM, 0);

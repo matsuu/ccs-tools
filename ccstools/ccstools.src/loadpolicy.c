@@ -301,35 +301,6 @@ usage:
 
 /***** loadpolicy start *****/
 
-static FILE *open_write(const char *filename)
-{
-	if (network_mode) {
-		const int fd = socket(AF_INET, SOCK_STREAM, 0);
-		struct sockaddr_in addr;
-		FILE *fp;
-		memset(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET;
-		addr.sin_addr.s_addr = network_ip;
-		addr.sin_port = network_port;
-		if (connect(fd, (struct sockaddr *) &addr, sizeof(addr))) {
-			close(fd);
-			return NULL;
-		}
-		fp = fdopen(fd, "r+");
-		setbuf(fp, NULL);
-		fprintf(fp, "%s", filename);
-		fputc(0, fp);
-		fflush(fp);
-		if (fgetc(fp) != 0) {
-			fclose(fp);
-			return NULL;
-		}
-		return fp;
-	} else {
-		return fopen(filename, "w+");
-	}
-}
-
 static void move_file_to_proc(const char *base, const char *src,
 			      const char *dest)
 {

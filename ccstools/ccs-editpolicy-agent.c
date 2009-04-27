@@ -9,6 +9,97 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
+#include <dirent.h>
+
+static void show_tasklist(FILE *fp)
+{
+	int status_fd = open(".process_status", O_RDWR);
+	DIR *dir = opendir("/proc/");
+	if (status_fd == EOF || !dir) {
+		if (status_fd != EOF)
+			close(status_fd);
+		if (dir)
+			closedir(dir);
+		return;
+	}
+	fputc(0, fp);
+	while (1) {
+		FILE *status_fp;
+		pid_t ppid = 1;
+		char *name = NULL;
+		char buffer[1024];
+		unsigned int pid;
+		struct dirent *dent = readdir(dir);
+		const char *cp;
+		if (!dent)
+			break;
+		cp = dent->d_name;
+		if (dent->d_type != DT_DIR || sscanf(cp, "%u", &pid) != 1)
+			continue;
+		memset(buffer, 0, sizeof(buffer));
+		snprintf(buffer, sizeof(buffer) - 1, "/proc/%u/status", pid);
+		status_fp = fopen(buffer, "r");
+		if (status_fp) {
+			while (memset(buffer, 0, sizeof(buffer)),
+			       fgets(buffer, sizeof(buffer) - 1, status_fp)) {
+				if (!strncmp(buffer, "Name:\t", 6)) {
+					char *cp = buffer + 6;
+					memmove(buffer, cp, strlen(cp) + 1);
+					cp = strchr(buffer, '\n');
+					if (cp)
+						*cp = '\0';
+					name = strdup(buffer);
+				}
+				if (sscanf(buffer, "PPid: %u", &ppid) == 1)
+					break;
+			}
+			fclose(status_fp);
+		}
+		fprintf(fp, "PID=%u PPID=%u NAME=", pid, ppid);
+		if (name) {
+			cp = name;
+			while (1) {
+				unsigned char c = *cp++;
+				if (!c)
+					break;
+				if (c == '\\') {
+					c = *cp++;
+					if (c == '\\')
+						fprintf(fp, "\\\\");
+					else if (c == 'n')
+						fprintf(fp, "\\012");
+					else
+						break;
+				} else if (c > ' ' && c <= 126) {
+					fputc(c, fp);
+				} else {
+					fprintf(fp, "\\%c%c%c",
+						(c >> 6) + '0',
+						((c >> 3) & 7) + '0',
+						(c &7) + '0');
+				}
+			}
+			free(name);
+		} else {
+			fprintf(fp, "<UNKNOWN>");
+		}
+		fputc('\n', fp);
+		snprintf(buffer, sizeof(buffer) - 1, "%u\n", pid);
+		write(status_fd, buffer, strlen(buffer));
+		memset(buffer, 0, sizeof(buffer));
+		while (1) {
+			int len = read(status_fd, buffer, sizeof(buffer));
+			if (len <= 0)
+				break;
+			fwrite(buffer, len, 1, fp);
+		}
+		fputc('\n', fp);
+	}
+	fputc(0, fp);
+	closedir(dir);
+	close(status_fd);
+	fflush(fp);
+}
 
 static _Bool verbose = 0;
 
@@ -17,59 +108,66 @@ static void do_child(const int client)
 	int i;
 	int fd = EOF;
 	char buffer[1024];
-	while (1) {
-		/* Read filename. */
-		for (i = 0; i < sizeof(buffer) - 1; i++) {
-			if (read(client, buffer + i, 1) != 1)
-				goto out;
-			if (!buffer[i]) {
-				char *cp = strrchr(buffer, '/');
-				if (!cp)
-					cp = buffer;
-				else
-					cp++;
-				/* Open for read/write. */
-				fd = open(cp, O_RDWR);
+	/* Read filename. */
+	for (i = 0; i < sizeof(buffer) - 1; i++) {
+		if (read(client, buffer + i, 1) != 1)
+			goto out;
+		if (!buffer[i]) {
+			char *cp = strrchr(buffer, '/');
+			if (!strcmp(buffer, "proc:process_status")) {
+				FILE *fp = fdopen(client, "w");
+				/* Open /proc/\$/ for reading. */
+				if (fp) {
+					show_tasklist(fp);
+					fclose(fp);
+				}
 				break;
 			}
+			if (!cp)
+				cp = buffer;
+			else
+				cp++;
+			/* Open for read/write. */
+			fd = open(cp, O_RDWR);
+			break;
 		}
-		if (fd == EOF) 
+	}
+	if (fd == EOF) 
+		goto out;
+	/* Return \0 to indicate success. */
+	if (write(client, "", 1) != 1)
+		goto out;
+	if (verbose) {
+		write(2, "opened ", 7);
+		write(2, buffer, strlen(buffer));
+		write(2, "\n", 1);
+	}
+	while (1) {
+		char c;
+		/* Read a byte. */
+		if (read(client, &c, 1) != 1)
 			goto out;
-		/* Return \0 to indicate success. */
+		if (c) {
+			/* Write that byte. */
+			if (write(fd, &c, 1) != 1)
+				goto out;
+			if (verbose)
+				write(1, &c, 1);
+			continue;
+		}
+		/* Read until EOF. */
+		while (1) {
+			int len = read(fd, buffer, sizeof(buffer));
+			if (len == 0)
+				break;
+			/* Don't send \0 because it is EOF marker. */
+			if (len < 0 || memchr(buffer, '\0', len) ||
+			    write(client, buffer, len) != len)
+				goto out;
+		}
+		/* Return \0 to indicate EOF. */
 		if (write(client, "", 1) != 1)
 			goto out;
-		if (verbose) {
-			write(2, "opened ", 7);
-			write(2, buffer, strlen(buffer));
-			write(2, "\n", 1);
-		}
-		while (1) {
-			char c;
-			/* Read a byte. */
-			if (read(client, &c, 1) != 1)
-				goto out;
-			if (c) {
-				/* Write that byte. */
-				if (write(fd, &c, 1) != 1)
-					goto out;
-				if (verbose)
-					write(1, &c, 1);
-				continue;
-			}
-			/* Read until EOF. */
-			while (1) {
-				int len = read(fd, buffer, sizeof(buffer));
-				if (len == 0)
-					break;
-				/* Don't send \0 because it is EOF marker. */
-				if (len < 0 || memchr(buffer, '\0', len) ||
-				    write(client, buffer, len) != len)
-					goto out;
-			}
-			/* Return \0 to indicate EOF. */
-			if (write(client, "", 1) != 1)
-				goto out;
-		}
 	}
  out:
 	if (verbose)

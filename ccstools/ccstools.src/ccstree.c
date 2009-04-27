@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7   2009/04/01
+ * Version: 1.6.7+   2009/04/28
  *
  */
 #include "ccstools.h"
@@ -39,10 +39,8 @@ static char *get_name(const pid_t pid)
 	if (fp) {
 		while (memset(buffer, 0, sizeof(buffer)),
 		       fgets(buffer, sizeof(buffer) - 1, fp)) {
-			if (!strncmp(buffer, "Name:", 5)) {
-				char *cp = buffer + 5;
-				while (*cp == ' ' || *cp == '\t')
-					cp++;
+			if (!strncmp(buffer, "Name:\t", 6)) {
+				char *cp = buffer + 6;
 				memmove(buffer, cp, strlen(cp) + 1);
 				cp = strchr(buffer, '\n');
 				if (cp)
@@ -57,24 +55,33 @@ static char *get_name(const pid_t pid)
 	return NULL;
 }
 
-static int status_fd = EOF;
-
-static const char *read_info(const pid_t pid, int *profile)
+static void printf_encoded(const char *name)
 {
-	char *cp; /* caller must use get()/put(). */
-	shprintf("%d\n", pid);
-	write(status_fd, shared_buffer, strlen(shared_buffer));
-	memset(shared_buffer, 0, sizeof(shared_buffer));
-	read(status_fd, shared_buffer, sizeof(shared_buffer) - 1);
-	cp = strchr(shared_buffer, ' ');
-	if (cp) {
-		*profile = atoi(cp + 1);
-		cp = strchr(cp + 1, ' ');
-		if (cp)
-			return cp + 1;
+	if (network_mode) {
+		printf("%s", name);
+		return;
 	}
-	*profile = -1;
-	return "<UNKNOWN>";
+	while (1) {
+		unsigned char c = *name++;
+		if (!c)
+			break;
+		if (c == '\\') {
+			c = *name++;
+			if (c == '\\')
+				printf("\\\\");
+			else if (c == 'n')
+				printf("\\012");
+			else
+				break;
+		} else if (c > ' ' && c <= 126) {
+			putchar(c);
+		} else {
+			printf("\\%c%c%c",
+			       (c >> 6) + '0',
+			       ((c >> 3) & 7) + '0',
+			       (c &7) + '0');
+		}
+	}
 }
 
 static struct task_entry *task_list = NULL;
@@ -84,23 +91,18 @@ static void dump(const pid_t pid, const int depth)
 {
 	int i;
 	for (i = 0; i < task_list_len; i++) {
-		const char *info;
-		char *name;
 		int j;
-		int profile;
 		if (pid != task_list[i].pid)
 			continue;
-		name = get_name(pid);
-		get();
-		info = read_info(pid, &profile);
-		printf("%3d", profile);
+		printf("%3d", task_list[i].profile);
 		for (j = 0; j < depth - 1; j++)
 			printf("    ");
 		for (; j < depth; j++)
 			printf("  +-");
-		printf(" %s (%u) %s\n", name, pid, info);
-		put();
-		free(name);
+		putchar(' ');
+		printf_encoded(task_list[i].name);
+		printf(" (%u) %s\n", task_list[i].pid,
+		       task_list[i].domain);
 		task_list[i].done = true;
 	}
 	for (i = 0; i < task_list_len; i++) {
@@ -114,18 +116,12 @@ static void dump_unprocessed(void)
 {
 	int i;
 	for (i = 0; i < task_list_len; i++) {
-		const char *info;
-		char *name;
-		int profile;
-		const pid_t pid = task_list[i].pid;
 		if (task_list[i].done)
 			continue;
-		name = get_name(task_list[i].pid);
-		get();
-		info = read_info(pid, &profile);
-		printf("%3d %s (%u) %s\n", profile, name, pid, info);
-		put();
-		free(name);
+		printf("%3d ", task_list[i].profile);
+		printf_encoded(task_list[i].name); 
+		printf(" (%u) %s\n", task_list[i].pid,
+		       task_list[i].domain);
 		task_list[i].done = true;
 	}
 }
@@ -134,30 +130,87 @@ int ccstree_main(int argc, char *argv[])
 {
 	const char *policy_file = proc_policy_process_status;
 	static _Bool show_all = false;
-	if (access(proc_policy_dir, F_OK)) {
-		fprintf(stderr, "You can't use this command "
-			"for this kernel.\n");
-		return 1;
-	}
 	if (argc > 1) {
-		if (!strcmp(argv[1], "-a")) {
+		char *ptr = argv[1];
+		char *cp = strchr(ptr, ':');
+		if (cp) {
+			*cp++ = '\0';
+			network_ip = inet_addr(ptr);
+			network_port = htons(atoi(cp));
+			network_mode = true;
+			if (!check_remote_host())
+				return 1;
+		} else if (!strcmp(ptr, "-a")) {
 			show_all = true;
 		} else {
-			fprintf(stderr, "Usage: %s [-a]\n", argv[0]);
+			fprintf(stderr, "Usage: %s "
+				"[{-a|remote_ip:remote_port}]}\n", argv[0]);
 			return 0;
 		}
 	}
-	status_fd = open(policy_file, O_RDWR);
-	if (status_fd == EOF) {
-		fprintf(stderr, "Can't open %s\n", policy_file);
-		return 1;
-	}
-	{
+	if (network_mode) {
+		FILE *fp = open_read("proc:process_status");
+		if (!fp) {
+			fprintf(stderr, "Can't connect.\n");
+			return 1;
+		}
+		get();
+		while (freadline(fp)) {
+			unsigned int pid = 0;
+			unsigned int ppid = 0;
+			int profile = -1;
+			char *name;
+			char *domain;
+			sscanf(shared_buffer, "PID=%u PPID=%u", &pid, &ppid);
+			name = strstr(shared_buffer, "NAME=");
+			if (name)
+				name = strdup(name + 5);
+			if (!name)
+				name = "<UNKNOWN>";
+			if (!freadline(fp))
+				break;
+			sscanf(shared_buffer, "%u %u", &pid, &profile);
+			domain = strchr(shared_buffer, '<');
+			if (domain)
+				domain = strdup(domain);
+			if (!domain)
+				domain = "<UNKNOWN>";
+			task_list = realloc(task_list,
+					    (task_list_len + 1) *
+					    sizeof(struct task_entry));
+			if (!task_list)
+				out_of_memory();
+			task_list[task_list_len].pid = pid;
+			task_list[task_list_len].ppid = ppid;
+			task_list[task_list_len].profile = profile;
+			task_list[task_list_len].name = name;
+			task_list[task_list_len].domain = domain;
+			task_list[task_list_len].done = false;
+			task_list_len++;
+		}
+		put();
+		fclose(fp);
+	} else {
 		struct dirent **namelist;
 		int i;
-		int n = scandir("/proc/", &namelist, 0, 0);
+		int n;
+		int status_fd;
+		if (access(proc_policy_dir, F_OK)) {
+			fprintf(stderr, "You can't use this command "
+				"for this kernel.\n");
+			return 1;
+		}
+		status_fd = open(policy_file, O_RDWR);
+		if (status_fd == EOF) {
+			fprintf(stderr, "Can't open %s\n", policy_file);
+			return 1;
+		}
+		n = scandir("/proc/", &namelist, 0, 0);
 		for (i = 0; i < n; i++) {
-			pid_t pid;
+			char *name;
+			char *domain;
+			int profile = -1;
+			unsigned int pid = 0;
 			char buffer[128];
 			char test[16];
 			if (sscanf(namelist[i]->d_name, "%u", &pid) != 1)
@@ -165,26 +218,44 @@ int ccstree_main(int argc, char *argv[])
 			memset(buffer, 0, sizeof(buffer));
 			snprintf(buffer, sizeof(buffer) - 1, "/proc/%u/exe",
 				 pid);
-			if (show_all ||
-			    readlink(buffer, test, sizeof(test)) > 0) {
-				task_list = realloc(task_list,
-						    (task_list_len + 1) *
-						    sizeof(struct task_entry));
-				if (!task_list)
-					out_of_memory();
-				task_list[task_list_len].pid = pid;
-				task_list[task_list_len].ppid = get_ppid(pid);
-				task_list[task_list_len].done = false;
-				task_list_len++;
-			}
+			if (!show_all &&
+			    readlink(buffer, test, sizeof(test)) <= 0)
+				goto skip;
+			name = get_name(pid);
+			if (!name)
+				name = "<UNKNOWN>";
+			snprintf(buffer, sizeof(buffer) - 1, "%u\n", pid);
+			write(status_fd, buffer, strlen(buffer));
+			get();
+			memset(shared_buffer, 0, sizeof(shared_buffer));
+			read(status_fd, shared_buffer,
+			     sizeof(shared_buffer) - 1);
+			sscanf(shared_buffer, "%u %u", &pid, &profile);
+			domain = strchr(shared_buffer, '<');
+			if (domain)
+				domain = strdup(domain);
+			if (!domain)
+				domain = "<UNKNOWN>";
+			put();
+			task_list = realloc(task_list, (task_list_len + 1) *
+					    sizeof(struct task_entry));
+			if (!task_list)
+				out_of_memory();
+			task_list[task_list_len].pid = pid;
+			task_list[task_list_len].ppid = get_ppid(pid);
+			task_list[task_list_len].profile = profile;
+			task_list[task_list_len].name = name;
+			task_list[task_list_len].domain = domain;
+			task_list[task_list_len].done = false;
+			task_list_len++;
 skip:
 			free((void *) namelist[i]);
 		}
 		if (n >= 0)
 			free((void *) namelist);
+		close(status_fd);
 	}
 	dump(1, 0);
 	dump_unprocessed();
-	close(status_fd);
 	return 0;
 }
