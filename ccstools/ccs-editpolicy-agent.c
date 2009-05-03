@@ -140,7 +140,7 @@ static void do_child(const int client)
 			break;
 		}
 	}
-	if (fd == EOF) 
+	if (fd == EOF)
 		goto out;
 	/* Return \0 to indicate success. */
 	if (write(client, "", 1) != 1)

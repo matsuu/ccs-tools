@@ -113,7 +113,7 @@ static void scan_dir(const char *dir)
 	if (first) {
 		memset(path, 0, sizeof(path));
 		if (strcmp(dir, "/"))
-			strncpy(path, dir, sizeof(path) - 1); 
+			strncpy(path, dir, sizeof(path) - 1);
 		first = 0;
 	}
 	for (i = 0; i < n; i++) {
@@ -126,7 +126,7 @@ static void scan_dir(const char *dir)
 			scan_symlink(path);
 		else if (type == DT_DIR && strcmp(cp, ".") && strcmp(cp, ".."))
 			scan_dir(path);
-		path[len] = '\0'; 
+		path[len] = '\0';
 		free((void *) namelist[i]);
 	}
 	free((void *) namelist);

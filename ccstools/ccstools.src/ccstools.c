@@ -1046,7 +1046,7 @@ read_policy:
 int ccs_major = 0;
 int ccs_minor = 0;
 int ccs_rev = 0;
-	
+
 const char *proc_policy_dir           = "/proc/ccs/",
 	*disk_policy_dir              = "/etc/ccs/",
 	*proc_policy_domain_policy    = "/proc/ccs/domain_policy",
