@@ -177,6 +177,7 @@ static void clear_status(void)
 		write(profile_fd, mode, strlen(mode));
 	}
 	/* write(profile_fd, "255-SLEEP_PERIOD=1\n", 19); */
+	/* write(profile_fd, "255-TOMOYO_VERBOSE=1\n", 21); */
 	fclose(fp);
 }
 

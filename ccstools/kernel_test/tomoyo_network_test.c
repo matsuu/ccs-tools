@@ -42,7 +42,7 @@ static void show_result2(int result)
 {
 	if (is_enforce) {
 		if (result == EOF) {
-			if (errno == EAGAIN)
+			if (errno == ENOMEM)
 				printf("OK: Permission denied.\n");
 			else
 				printf("FAILED: %s\n", strerror(errno));
