@@ -126,6 +126,16 @@ static void rmdir2(const char *pathname)
 	errno = 0;
 }
 
+static void mkfifo2(const char *pathname)
+{
+	const char *cp = "255-MAC_FOR_FILE=disabled\n";
+	write(profile_fd, cp, strlen(cp));
+	mkfifo(pathname, 0600);
+	cp = "255-MAC_FOR_FILE=enforcing\n";
+	write(profile_fd, cp, strlen(cp));
+	errno = 0;
+}
+
 static void stage_file_test(void)
 {
 	char *filename = "";
@@ -325,16 +335,17 @@ static void stage_file_test(void)
 		}
 	}
 
-	policy = "allow_read /dev/initctl if path1.type=fifo";
+	policy = "allow_read/write /tmp/fifo if path1.type=fifo";
 	if (!has_cond)
-		policy = "allow_read /dev/initctl";
+		policy = "allow_read/write /tmp/fifo";
+	mkfifo2("/tmp/fifo");
 	if (write_policy()) {
-		int fd = open("/dev/initctl", O_RDONLY);
+		int fd = open("/tmp/fifo", O_RDWR);
 		show_result(fd, 1);
 		if (fd != EOF)
 			close(fd);
 		delete_policy();
-		fd = open("/dev/initctl", O_RDONLY);
+		fd = open("/tmp/fifo", O_RDWR);
 		show_result(fd, 0);
 		if (fd != EOF)
 			close(fd);
@@ -593,6 +604,42 @@ static void stage_file_test(void)
 	if (write_policy()) {
 		filename = "/tmp/symlink_source_test";
 		show_result(symlink("/tmp/symlink_dest_test", filename), 1);
+		delete_policy();
+		unlink2(filename);
+		show_result(symlink("/tmp/symlink_dest_test", filename), 0);
+	}
+
+	policy = "allow_symlink /tmp/symlink_source_test if symlink.target=\"/tmp/symlink_\\*_test\"";
+	if (write_policy()) {
+		filename = "/tmp/symlink_source_test";
+		show_result(symlink("/tmp/symlink_dest_test", filename), 1);
+		delete_policy();
+		unlink2(filename);
+		show_result(symlink("/tmp/symlink_dest_test", filename), 0);
+	}
+
+	policy = "allow_symlink /tmp/symlink_source_test if task.uid=0 symlink.target=\"/tmp/symlink_\\*_test\"";
+	if (write_policy()) {
+		filename = "/tmp/symlink_source_test";
+		show_result(symlink("/tmp/symlink_dest_test", filename), 1);
+		delete_policy();
+		unlink2(filename);
+		show_result(symlink("/tmp/symlink_dest_test", filename), 0);
+	}
+
+	policy = "allow_symlink /tmp/symlink_source_test if symlink.target!=\"\\*\"";
+	if (write_policy()) {
+		filename = "/tmp/symlink_source_test";
+		show_result(symlink("/tmp/symlink_dest_test", filename), 1);
+		delete_policy();
+		unlink2(filename);
+		show_result(symlink("/tmp/symlink_dest_test", filename), 0);
+	}
+
+	policy = "allow_symlink /tmp/symlink_source_test if symlink.target!=\"/tmp/symlink_\\*_test\"";
+	if (write_policy()) {
+		filename = "/tmp/symlink_source_test";
+		show_result(symlink("/tmp/symlink_dest_test", filename), 0);
 		delete_policy();
 		unlink2(filename);
 		show_result(symlink("/tmp/symlink_dest_test", filename), 0);
