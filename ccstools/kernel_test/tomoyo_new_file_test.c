@@ -609,7 +609,11 @@ static void stage_file_test(void)
 		show_result(symlink("/tmp/symlink_dest_test", filename), 0);
 	}
 
-	policy = "allow_symlink /tmp/symlink_source_test if symlink.target=\"/tmp/symlink_\\*_test\"";
+	if (!has_cond)
+		goto skip_symlink_target;
+
+	policy = "allow_symlink /tmp/symlink_source_test "
+		"if symlink.target=\"/tmp/symlink_\\*_test\"";
 	if (write_policy()) {
 		filename = "/tmp/symlink_source_test";
 		show_result(symlink("/tmp/symlink_dest_test", filename), 1);
@@ -618,7 +622,8 @@ static void stage_file_test(void)
 		show_result(symlink("/tmp/symlink_dest_test", filename), 0);
 	}
 
-	policy = "allow_symlink /tmp/symlink_source_test if task.uid=0 symlink.target=\"/tmp/symlink_\\*_test\"";
+	policy = "allow_symlink /tmp/symlink_source_test "
+		"if task.uid=0 symlink.target=\"/tmp/symlink_\\*_test\"";
 	if (write_policy()) {
 		filename = "/tmp/symlink_source_test";
 		show_result(symlink("/tmp/symlink_dest_test", filename), 1);
@@ -627,7 +632,8 @@ static void stage_file_test(void)
 		show_result(symlink("/tmp/symlink_dest_test", filename), 0);
 	}
 
-	policy = "allow_symlink /tmp/symlink_source_test if symlink.target!=\"\\*\"";
+	policy = "allow_symlink /tmp/symlink_source_test "
+		"if symlink.target!=\"\\*\"";
 	if (write_policy()) {
 		filename = "/tmp/symlink_source_test";
 		show_result(symlink("/tmp/symlink_dest_test", filename), 1);
@@ -636,7 +642,8 @@ static void stage_file_test(void)
 		show_result(symlink("/tmp/symlink_dest_test", filename), 0);
 	}
 
-	policy = "allow_symlink /tmp/symlink_source_test if symlink.target!=\"/tmp/symlink_\\*_test\"";
+	policy = "allow_symlink /tmp/symlink_source_test "
+		"if symlink.target!=\"/tmp/symlink_\\*_test\"";
 	if (write_policy()) {
 		filename = "/tmp/symlink_source_test";
 		show_result(symlink("/tmp/symlink_dest_test", filename), 0);
@@ -644,6 +651,8 @@ static void stage_file_test(void)
 		unlink2(filename);
 		show_result(symlink("/tmp/symlink_dest_test", filename), 0);
 	}
+
+ skip_symlink_target:
 
 	policy = "allow_link /tmp/link_source_test /tmp/link_dest_test";
 	if (write_policy()) {

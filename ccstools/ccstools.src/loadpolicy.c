@@ -207,6 +207,9 @@ int savepolicy_main(int argc, char *argv[])
 			save_meminfo = 0;
 	}
 
+	if (network_mode && ccs_major == 2 && ccs_minor == 2)
+		save_system_policy = 0;
+
 	if (write_to_stdout) {
 		if (save_profile)
 			cat_file(proc_policy_profile);
@@ -513,6 +516,10 @@ int loadpolicy_main(int argc, char *argv[])
 		printf("Directory %s doesn't exist.\n", policy_dir);
 		return 1;
 	}
+
+	if ((network_mode && ccs_major == 2 && ccs_minor == 2) ||
+	    (!network_mode && access(proc_policy_system_policy, F_OK)))
+		load_system_policy = 0;
 
 	if (load_profile) {
 		if (read_from_stdin)
