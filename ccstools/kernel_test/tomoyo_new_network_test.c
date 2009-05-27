@@ -359,7 +359,8 @@ static void stage_network_test(void)
 					 sizeof(saddr)), 1);
 			delete_policy();
 		}
-		fprintf(fp, "delete address_group TESTADDRESS 0:0:0:0:0:0:0:1\n");
+		fprintf(fp, "delete address_group "
+			"TESTADDRESS 0:0:0:0:0:0:0:1\n");
 		fflush(fp);
 		saddr.sin6_port = htons(40004);
 		fprintf(fp, "address_group TESTADDRESS "

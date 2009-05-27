@@ -91,7 +91,8 @@ int main(int argc, char *argv[])
 			printf("OK: No such device.\n");
 		else
 			printf("BUG: %s\n", strerror(errno));
-		write_policy("delete allow_mount dev\\011name / fs\\011name 0\n");
+		write_policy("delete allow_mount dev\\011name / "
+			     "fs\\011name 0\n");
 		show_prompt("mount('dev\\011name', '/', 'fs\\011name') ", 1);
 		if (mount("dev\tname", "/", "fs\tname", 0, NULL) == EOF &&
 		    errno == EPERM)

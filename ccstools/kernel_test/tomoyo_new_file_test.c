@@ -168,7 +168,8 @@ static void stage_file_test(void)
 	policy = "allow_read/write /proc/sys/net/ipv4/ip_local_port_range "
 		"if 1!=10-100";
 	if (!has_cond)
-		policy = "allow_read/write /proc/sys/net/ipv4/ip_local_port_range";
+		policy = "allow_read/write "
+			"/proc/sys/net/ipv4/ip_local_port_range";
 	if (write_policy()) {
 		static int name[] = { CTL_NET, NET_IPV4,
 				      NET_IPV4_LOCAL_PORT_RANGE };
@@ -766,11 +767,12 @@ static void stage_file_test(void)
 			struct ifreq ifreq;
 			int fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
 			memset(&ifreq, 0, sizeof(ifreq));
-			snprintf(ifreq.ifr_name, sizeof(ifreq.ifr_name) - 1, "lo");
+			snprintf(ifreq.ifr_name, sizeof(ifreq.ifr_name) - 1,
+				 "lo");
 			show_result(ioctl(fd, 35123, &ifreq), 1);
 			delete_policy();
-			policy = "allow_ioctl socket:[family=2:type=2:protocol=17] "
-				"0-35122";
+			policy = "allow_ioctl "
+				"socket:[family=2:type=2:protocol=17] 0-35122";
 			if (write_policy()) {
 				show_result(ioctl(fd, 35123, &ifreq), 0);
 				delete_policy();

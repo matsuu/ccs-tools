@@ -67,7 +67,8 @@ static void show_result3(int result)
 				printf("FAILED: %s\n", strerror(errno));
 		} else {
 			if (write(result, "", 1) == EOF && errno == EPERM)
-				printf("OK: Permission denied after accept().\n");
+				printf("OK: Permission denied after accept()."
+				       "\n");
 			else
 				printf("BUG!(%d)\n", result);
 		}

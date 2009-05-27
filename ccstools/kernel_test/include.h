@@ -75,8 +75,10 @@ static inline int tgkill(int tgid, int tid, int sig)
 #endif
 #ifdef __NR_sys_kexec_load
 struct kexec_segment;
-static inline long sys_kexec_load(unsigned long entry, unsigned long nr_segments,
-			   struct kexec_segment *segments, unsigned long flags)
+static inline long sys_kexec_load(unsigned long entry,
+				  unsigned long nr_segments,
+				  struct kexec_segment *segments,
+				  unsigned long flags)
 {
 	return (long) syscall(__NR_sys_kexec_load, entry, nr_segments,
 			      segments, flags);

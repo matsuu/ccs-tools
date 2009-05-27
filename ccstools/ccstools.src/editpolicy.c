@@ -2032,7 +2032,7 @@ start2:
 		if (c == '\t') {
 			if (current_screen == SCREEN_DOMAIN_LIST) {
 				if (ccs_major == 2 && ccs_minor == 2)
-					return SCREEN_EXCEPTION_LIST; 
+					return SCREEN_EXCEPTION_LIST;
 				return SCREEN_SYSTEM_LIST;
 			} else if (current_screen == SCREEN_SYSTEM_LIST) {
 				return SCREEN_EXCEPTION_LIST;
