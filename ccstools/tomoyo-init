@@ -113,7 +113,7 @@ if [ "x$PROFILE" = "xask" ]; then
       fi
       echo "disable"
       PROFILE=""
-      read -p "> " PROFILE
+      echo -n "> " && read PROFILE
       if [ $CHDIR_OK -eq 1 ]; then
 	  [ -r profile.conf -a "x$PROFILE" = "xdefault" ] && break
 	  [ "x$PROFILE" != "xdefault" -a "x$PROFILE" != "xdisable" -a -r profile-$PROFILE.conf ] && break
