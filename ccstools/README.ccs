@@ -1,7 +1,7 @@
 About this package:
 
 This package contains userland programs
-for TOMOYO Linux version 1.6.7 .
+for TOMOYO Linux version 1.6.8 .
 This package is released under the GPLv2.
 
 http://tomoyo.sourceforge.jp/
@@ -414,3 +414,11 @@ Version 1.6.7 2009/04/01   Feature enhancement release.
   ccs-setlevel:
     This program became obsolete because its functionality was merged into
     ccs-editpolicy and ccs-loadpolicy.
+
+Version 1.6.8 2009/05/28   Bug fix release.
+
+  ccs-ccstree:
+    Add ability to fetch status remotely.
+
+  ccs-editpolicy-agent:
+    Add support for ccs-ccstree.

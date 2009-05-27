@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.7+   2009/04/27
+ * Version: 1.6.8   2009/05/28
  *
  */
 #include "ccstools.h"
@@ -1222,7 +1222,7 @@ show_version:
 	 * You should use either "symbolic links with 'alias' directive" or
 	 * "hard links".
 	 */
-	printf("ccstools version 1.6.7+ build 2009/04/27\n");
+	printf("ccstools version 1.6.8 build 2009/05/28\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }
