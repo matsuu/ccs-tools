@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2005-2009  NTT DATA CORPORATION
  *
- * Version: 1.6.8   2009/05/28
+ * Version: 1.6.8p1   2009/06/23
  *
  */
 #include "ccstools.h"
@@ -20,7 +20,7 @@ int ccsauditd_main(int argc, char *argv[])
 	int fd_in[CCS_AUDITD_MAX_FILES];
 	int fd_out[CCS_AUDITD_MAX_FILES];
 	const char *logfile_path[2] = { "/dev/null", "/dev/null" };
-	if (access(proc_policy_dir, F_OK)) {
+	if (access(procfile_path[0], R_OK) || access(procfile_path[1], R_OK)) {
 		fprintf(stderr, "You can't run this daemon for this kernel.\n");
 		return 0;
 	}

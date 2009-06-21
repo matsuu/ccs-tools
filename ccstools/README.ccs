@@ -1,7 +1,7 @@
 About this package:
 
 This package contains userland programs
-for TOMOYO Linux version 1.6.8 .
+for TOMOYO Linux version 1.6.8 and 2.2.0 .
 This package is released under the GPLv2.
 
 http://tomoyo.sourceforge.jp/
@@ -422,3 +422,8 @@ Version 1.6.8 2009/05/28   Bug fix release.
 
   ccs-editpolicy-agent:
     Add support for ccs-ccstree.
+
+Version 1.6.8p1 2009/06/23   Bug fix release.
+
+  ccs-auditd:
+    Print error message if auditing interface is not available.

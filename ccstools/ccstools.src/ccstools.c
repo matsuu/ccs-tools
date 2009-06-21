@@ -1222,7 +1222,7 @@ show_version:
 	 * You should use either "symbolic links with 'alias' directive" or
 	 * "hard links".
 	 */
-	printf("ccstools version 1.6.8 build 2009/05/28\n");
+	printf("ccstools version 1.6.8p1 build 2009/06/23\n");
 	fprintf(stderr, "Function %s not implemented.\n", argv0);
 	return 1;
 }
