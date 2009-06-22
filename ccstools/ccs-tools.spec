@@ -43,7 +43,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Tue Jun 23 2009 1.6.8-2
-- ccs-auditd: Print error message if auditing interface unavailable.
+- ccs-auditd: Print error message if auditing interface is not available.
 
 * Thu May 28 2009 1.6.8-1
 - Minor update release.
