@@ -1,13 +1,3 @@
-About this package:
-
-This package contains userland programs
-for TOMOYO Linux version 1.6.8 and 2.2.0 .
-This package is released under the GPLv2.
-
-http://tomoyo.sourceforge.jp/
-
-ChangeLog:
-
 Version 1.0   2005/11/11   First release.
 
 Version 1.0.1 2005/12/08   Minor update release.
