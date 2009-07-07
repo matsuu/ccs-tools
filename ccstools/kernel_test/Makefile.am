@@ -1,4 +1,4 @@
-EXTRA_DIST = testall.sh
+EXTRA_DIST = dummyfs.c generate_execve_log.c testall.sh
 
 TESTS = testall.sh
 

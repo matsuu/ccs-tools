@@ -1,4 +1,4 @@
-EXTRA_DIST = ccs-init ccstools.src/ccstools.h domainmatch init_policy.sh tomoyo-init tomoyo_init_policy.sh
+EXTRA_DIST = ccs-init domainmatch env_chk.c from-where.c statvfs.c init_policy.sh tomoyo-init tomoyo_init_policy.sh
 
 root_sbindir = /sbin
 root_sbin_SCRIPTS = ccs-init tomoyo-init 
@@ -7,7 +7,7 @@ ccsdir = $(libdir)/ccs
 ccs_PROGRAMS = ccstools realpath make_alias
 ccs_SCRIPTS = domainmatch init_policy.sh tomoyo_init_policy.sh
 
-ccstools_SOURCES = ccstools.src/ccs-auditd.c ccstools.src/ccs-queryd.c ccstools.src/ccstools.c ccstools.src/ccstree.c ccstools.src/checkpolicy.c ccstools.src/editpolicy.c ccstools.src/editpolicy_color.c ccstools.src/editpolicy_keyword.c ccstools.src/editpolicy_offline.c ccstools.src/editpolicy_optimizer.c ccstools.src/findtemp.c ccstools.src/ld-watch.c ccstools.src/loadpolicy.c ccstools.src/pathmatch.c ccstools.src/patternize.c ccstools.src/readline.c ccstools.src/setlevel.c ccstools.src/setprofile.c
+ccstools_SOURCES = ccstools.src/ccs-auditd.c ccstools.src/ccs-queryd.c ccstools.src/ccstools.c ccstools.src/ccstools.h ccstools.src/ccstree.c ccstools.src/checkpolicy.c ccstools.src/editpolicy.c ccstools.src/editpolicy_color.c ccstools.src/editpolicy_keyword.c ccstools.src/editpolicy_offline.c ccstools.src/editpolicy_optimizer.c ccstools.src/findtemp.c ccstools.src/ld-watch.c ccstools.src/loadpolicy.c ccstools.src/pathmatch.c ccstools.src/patternize.c ccstools.src/readline.c ccstools.src/setlevel.c ccstools.src/setprofile.c
 ccstools_CPPFLAGS = -DCOLOR_ON
 ccstools_LDADD = -lncurses
 
