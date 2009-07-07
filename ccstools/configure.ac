@@ -3,10 +3,9 @@
 
 AC_PREREQ([2.63])
 AC_INIT([ccs-tools], [1.6.8], [tomoyo-dev@lists.sourceforge.jp])
-AC_CONFIG_SRCDIR([ccstools.src/ccstools.c])
+AC_CONFIG_SRCDIR([src/ccstools.src/ccstools.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR([config])
-AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([1.10 dist-bzip2 -Wall])
 
@@ -19,11 +18,8 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 # Checks for libraries.
-# FIXME: Replace `main' with a function in `-lncurses':
 AC_CHECK_LIB([ncurses], [strscr])
-# FIXME: Replace `main' with a function in `-lreadline':
 AC_CHECK_LIB([readline], [readline])
-# FIXME: Replace `main' with a function in `-lutil':
 AC_CHECK_LIB([util], [forkpty])
 
 # Checks for header files.
@@ -48,5 +44,6 @@ AC_CHECK_FUNCS([alarm dup2 ftruncate getcwd gethostbyname gethostname gettimeofd
 AC_CONFIG_FILES([Makefile
                  kernel_test/Makefile
                  man/Makefile
-                 man/man8/Makefile])
+                 man/man8/Makefile
+                 src/Makefile])
 AC_OUTPUT

@@ -15,8 +15,6 @@
 
 @SET_MAKE@
 
-
-
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -34,14 +32,6 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-ccs_PROGRAMS = ccstools$(EXEEXT) realpath$(EXEEXT) make_alias$(EXEEXT)
-misc_PROGRAMS = makesyaoranconf$(EXEEXT) candy$(EXEEXT) \
-	chaplet$(EXEEXT) checktoken$(EXEEXT) gettoken$(EXEEXT) \
-	groovy$(EXEEXT) honey$(EXEEXT) mailauth$(EXEEXT) \
-	proxy$(EXEEXT) timeauth$(EXEEXT) falsh$(EXEEXT) \
-	ccs-notifyd$(EXEEXT) force-logout$(EXEEXT) \
-	audit-exec-param$(EXEEXT) convert-exec-param$(EXEEXT) \
-	ccs-editpolicy-agent$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -57,78 +47,15 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(ccsdir)" "$(DESTDIR)$(miscdir)" \
-	"$(DESTDIR)$(ccsdir)" "$(DESTDIR)$(root_sbindir)" \
-	"$(DESTDIR)$(ccsdir)"
-PROGRAMS = $(ccs_PROGRAMS) $(misc_PROGRAMS)
-audit_exec_param_SOURCES = audit-exec-param.c
-audit_exec_param_OBJECTS = audit-exec-param.$(OBJEXT)
-audit_exec_param_LDADD = $(LDADD)
-candy_SOURCES = candy.c
-candy_OBJECTS = candy.$(OBJEXT)
-candy_LDADD = $(LDADD)
-ccs_editpolicy_agent_SOURCES = ccs-editpolicy-agent.c
-ccs_editpolicy_agent_OBJECTS = ccs-editpolicy-agent.$(OBJEXT)
-ccs_editpolicy_agent_LDADD = $(LDADD)
-ccs_notifyd_SOURCES = ccs-notifyd.c
-ccs_notifyd_OBJECTS = ccs-notifyd.$(OBJEXT)
-ccs_notifyd_LDADD = $(LDADD)
-am_ccstools_OBJECTS = ccstools-ccs-auditd.$(OBJEXT) \
-	ccstools-ccs-queryd.$(OBJEXT) ccstools-ccstools.$(OBJEXT) \
-	ccstools-ccstree.$(OBJEXT) ccstools-checkpolicy.$(OBJEXT) \
-	ccstools-editpolicy.$(OBJEXT) \
-	ccstools-editpolicy_color.$(OBJEXT) \
-	ccstools-editpolicy_keyword.$(OBJEXT) \
-	ccstools-editpolicy_offline.$(OBJEXT) \
-	ccstools-editpolicy_optimizer.$(OBJEXT) \
-	ccstools-findtemp.$(OBJEXT) ccstools-ld-watch.$(OBJEXT) \
-	ccstools-loadpolicy.$(OBJEXT) ccstools-pathmatch.$(OBJEXT) \
-	ccstools-patternize.$(OBJEXT) ccstools-readline.$(OBJEXT) \
-	ccstools-setlevel.$(OBJEXT) ccstools-setprofile.$(OBJEXT)
-ccstools_OBJECTS = $(am_ccstools_OBJECTS)
-ccstools_DEPENDENCIES =
-chaplet_SOURCES = chaplet.c
-chaplet_OBJECTS = chaplet.$(OBJEXT)
-chaplet_LDADD = $(LDADD)
-checktoken_SOURCES = checktoken.c
-checktoken_OBJECTS = checktoken.$(OBJEXT)
-checktoken_LDADD = $(LDADD)
-convert_exec_param_SOURCES = convert-exec-param.c
-convert_exec_param_OBJECTS = convert-exec-param.$(OBJEXT)
-convert_exec_param_LDADD = $(LDADD)
-falsh_SOURCES = falsh.c
-falsh_OBJECTS = falsh.$(OBJEXT)
-falsh_DEPENDENCIES =
-force_logout_SOURCES = force-logout.c
-force_logout_OBJECTS = force-logout.$(OBJEXT)
-force_logout_LDADD = $(LDADD)
-gettoken_SOURCES = gettoken.c
-gettoken_OBJECTS = gettoken.$(OBJEXT)
-gettoken_LDADD = $(LDADD)
-groovy_SOURCES = groovy.c
-groovy_OBJECTS = groovy.$(OBJEXT)
-groovy_LDADD = $(LDADD)
-honey_SOURCES = honey.c
-honey_OBJECTS = honey.$(OBJEXT)
-honey_LDADD = $(LDADD)
-mailauth_SOURCES = mailauth.c
-mailauth_OBJECTS = mailauth.$(OBJEXT)
-mailauth_LDADD = $(LDADD)
-make_alias_SOURCES = make_alias.c
-make_alias_OBJECTS = make_alias.$(OBJEXT)
-make_alias_LDADD = $(LDADD)
-makesyaoranconf_SOURCES = makesyaoranconf.c
-makesyaoranconf_OBJECTS = makesyaoranconf.$(OBJEXT)
-makesyaoranconf_LDADD = $(LDADD)
-proxy_SOURCES = proxy.c
-proxy_OBJECTS = proxy.$(OBJEXT)
-proxy_LDADD = $(LDADD)
-realpath_SOURCES = realpath.c
-realpath_OBJECTS = realpath.$(OBJEXT)
-realpath_LDADD = $(LDADD)
-timeauth_SOURCES = timeauth.c
-timeauth_OBJECTS = timeauth.$(OBJEXT)
-timeauth_LDADD = $(LDADD)
+SOURCES =
+DIST_SOURCES =
+RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
+	html-recursive info-recursive install-data-recursive \
+	install-dvi-recursive install-exec-recursive \
+	install-html-recursive install-info-recursive \
+	install-pdf-recursive install-ps-recursive install-recursive \
+	installcheck-recursive installdirs-recursive pdf-recursive \
+	ps-recursive uninstall-recursive
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -150,32 +77,7 @@ am__nobase_list = $(am__nobase_strip_setup); \
 am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-SCRIPTS = $(ccs_SCRIPTS) $(root_sbin_SCRIPTS)
-DEFAULT_INCLUDES = -I.@am__isrc@
-depcomp = $(SHELL) $(top_srcdir)/config/depcomp
-am__depfiles_maybe = depfiles
-am__mv = mv -f
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-CCLD = $(CC)
-LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = audit-exec-param.c candy.c ccs-editpolicy-agent.c \
-	ccs-notifyd.c $(ccstools_SOURCES) chaplet.c checktoken.c \
-	convert-exec-param.c falsh.c force-logout.c gettoken.c \
-	groovy.c honey.c mailauth.c make_alias.c makesyaoranconf.c \
-	proxy.c realpath.c timeauth.c
-DIST_SOURCES = audit-exec-param.c candy.c ccs-editpolicy-agent.c \
-	ccs-notifyd.c $(ccstools_SOURCES) chaplet.c checktoken.c \
-	convert-exec-param.c falsh.c force-logout.c gettoken.c \
-	groovy.c honey.c mailauth.c make_alias.c makesyaoranconf.c \
-	proxy.c realpath.c timeauth.c
-RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
-	html-recursive info-recursive install-data-recursive \
-	install-dvi-recursive install-exec-recursive \
-	install-html-recursive install-info-recursive \
-	install-pdf-recursive install-ps-recursive install-recursive \
-	installcheck-recursive installdirs-recursive pdf-recursive \
-	ps-recursive uninstall-recursive
+am__installdirs = "$(DESTDIR)$(ccsdir)"
 DATA = $(ccs_DATA)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
@@ -307,25 +209,14 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = kernel_test man
-EXTRA_DIST = ccs-init ccs-tools.spec ccstools.conf ccstools.src/ccstools.h domainmatch init_policy.sh tomoyo-init tomoyo_init_policy.sh
-root_sbindir = /sbin
-root_sbin_SCRIPTS = ccs-init tomoyo-init 
+SUBDIRS = kernel_test man src
+EXTRA_DIST = ccs-tools.spec ccstools.conf
 ccsdir = $(libdir)/ccs
-ccs_SCRIPTS = domainmatch init_policy.sh tomoyo_init_policy.sh
 ccs_DATA = ccstools.conf
-ccstools_SOURCES = ccstools.src/ccs-auditd.c ccstools.src/ccs-queryd.c ccstools.src/ccstools.c ccstools.src/ccstree.c ccstools.src/checkpolicy.c ccstools.src/editpolicy.c ccstools.src/editpolicy_color.c ccstools.src/editpolicy_keyword.c ccstools.src/editpolicy_offline.c ccstools.src/editpolicy_optimizer.c ccstools.src/findtemp.c ccstools.src/ld-watch.c ccstools.src/loadpolicy.c ccstools.src/pathmatch.c ccstools.src/patternize.c ccstools.src/readline.c ccstools.src/setlevel.c ccstools.src/setprofile.c
-ccstools_CPPFLAGS = -DCOLOR_ON
-ccstools_LDADD = -lncurses
-miscdir = $(ccsdir)/misc
-falsh_LDADD = -lncurses -lreadline
-ALIAS_LIST = ccs-auditd ccs-queryd ccstree checkpolicy editpolicy findtemp ld-watch loadpolicy pathmatch patternize savepolicy setlevel setprofile sortpolicy
-SBIN_ALIAS_LIST = $(ALIAS_LIST) domainmatch
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .c .o .obj
 am--refresh:
 	@:
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -377,514 +268,6 @@ $(srcdir)/config.h.in:  $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f config.h stamp-h1
-install-ccsPROGRAMS: $(ccs_PROGRAMS)
-	@$(NORMAL_INSTALL)
-	test -z "$(ccsdir)" || $(MKDIR_P) "$(DESTDIR)$(ccsdir)"
-	@list='$(ccs_PROGRAMS)'; test -n "$(ccsdir)" || list=; \
-	for p in $$list; do echo "$$p $$p"; done | \
-	sed 's/$(EXEEXT)$$//' | \
-	while read p p1; do if test -f $$p; \
-	  then echo "$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n;h' -e 's|.*|.|' \
-	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
-	sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
-	    else { print "f", $$3 "/" $$4, $$1; } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	    test -z "$$files" || { \
-	      echo " $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(ccsdir)$$dir'"; \
-	      $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(ccsdir)$$dir" || exit $$?; \
-	    } \
-	; done
-
-uninstall-ccsPROGRAMS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(ccs_PROGRAMS)'; test -n "$(ccsdir)" || list=; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
-	      -e 's/$$/$(EXEEXT)/' `; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(ccsdir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(ccsdir)" && rm -f $$files
-
-clean-ccsPROGRAMS:
-	-test -z "$(ccs_PROGRAMS)" || rm -f $(ccs_PROGRAMS)
-install-miscPROGRAMS: $(misc_PROGRAMS)
-	@$(NORMAL_INSTALL)
-	test -z "$(miscdir)" || $(MKDIR_P) "$(DESTDIR)$(miscdir)"
-	@list='$(misc_PROGRAMS)'; test -n "$(miscdir)" || list=; \
-	for p in $$list; do echo "$$p $$p"; done | \
-	sed 's/$(EXEEXT)$$//' | \
-	while read p p1; do if test -f $$p; \
-	  then echo "$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n;h' -e 's|.*|.|' \
-	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
-	sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
-	    else { print "f", $$3 "/" $$4, $$1; } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	    test -z "$$files" || { \
-	      echo " $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(miscdir)$$dir'"; \
-	      $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(miscdir)$$dir" || exit $$?; \
-	    } \
-	; done
-
-uninstall-miscPROGRAMS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(misc_PROGRAMS)'; test -n "$(miscdir)" || list=; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
-	      -e 's/$$/$(EXEEXT)/' `; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(miscdir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(miscdir)" && rm -f $$files
-
-clean-miscPROGRAMS:
-	-test -z "$(misc_PROGRAMS)" || rm -f $(misc_PROGRAMS)
-audit-exec-param$(EXEEXT): $(audit_exec_param_OBJECTS) $(audit_exec_param_DEPENDENCIES) 
-	@rm -f audit-exec-param$(EXEEXT)
-	$(LINK) $(audit_exec_param_OBJECTS) $(audit_exec_param_LDADD) $(LIBS)
-candy$(EXEEXT): $(candy_OBJECTS) $(candy_DEPENDENCIES) 
-	@rm -f candy$(EXEEXT)
-	$(LINK) $(candy_OBJECTS) $(candy_LDADD) $(LIBS)
-ccs-editpolicy-agent$(EXEEXT): $(ccs_editpolicy_agent_OBJECTS) $(ccs_editpolicy_agent_DEPENDENCIES) 
-	@rm -f ccs-editpolicy-agent$(EXEEXT)
-	$(LINK) $(ccs_editpolicy_agent_OBJECTS) $(ccs_editpolicy_agent_LDADD) $(LIBS)
-ccs-notifyd$(EXEEXT): $(ccs_notifyd_OBJECTS) $(ccs_notifyd_DEPENDENCIES) 
-	@rm -f ccs-notifyd$(EXEEXT)
-	$(LINK) $(ccs_notifyd_OBJECTS) $(ccs_notifyd_LDADD) $(LIBS)
-ccstools$(EXEEXT): $(ccstools_OBJECTS) $(ccstools_DEPENDENCIES) 
-	@rm -f ccstools$(EXEEXT)
-	$(LINK) $(ccstools_OBJECTS) $(ccstools_LDADD) $(LIBS)
-chaplet$(EXEEXT): $(chaplet_OBJECTS) $(chaplet_DEPENDENCIES) 
-	@rm -f chaplet$(EXEEXT)
-	$(LINK) $(chaplet_OBJECTS) $(chaplet_LDADD) $(LIBS)
-checktoken$(EXEEXT): $(checktoken_OBJECTS) $(checktoken_DEPENDENCIES) 
-	@rm -f checktoken$(EXEEXT)
-	$(LINK) $(checktoken_OBJECTS) $(checktoken_LDADD) $(LIBS)
-convert-exec-param$(EXEEXT): $(convert_exec_param_OBJECTS) $(convert_exec_param_DEPENDENCIES) 
-	@rm -f convert-exec-param$(EXEEXT)
-	$(LINK) $(convert_exec_param_OBJECTS) $(convert_exec_param_LDADD) $(LIBS)
-falsh$(EXEEXT): $(falsh_OBJECTS) $(falsh_DEPENDENCIES) 
-	@rm -f falsh$(EXEEXT)
-	$(LINK) $(falsh_OBJECTS) $(falsh_LDADD) $(LIBS)
-force-logout$(EXEEXT): $(force_logout_OBJECTS) $(force_logout_DEPENDENCIES) 
-	@rm -f force-logout$(EXEEXT)
-	$(LINK) $(force_logout_OBJECTS) $(force_logout_LDADD) $(LIBS)
-gettoken$(EXEEXT): $(gettoken_OBJECTS) $(gettoken_DEPENDENCIES) 
-	@rm -f gettoken$(EXEEXT)
-	$(LINK) $(gettoken_OBJECTS) $(gettoken_LDADD) $(LIBS)
-groovy$(EXEEXT): $(groovy_OBJECTS) $(groovy_DEPENDENCIES) 
-	@rm -f groovy$(EXEEXT)
-	$(LINK) $(groovy_OBJECTS) $(groovy_LDADD) $(LIBS)
-honey$(EXEEXT): $(honey_OBJECTS) $(honey_DEPENDENCIES) 
-	@rm -f honey$(EXEEXT)
-	$(LINK) $(honey_OBJECTS) $(honey_LDADD) $(LIBS)
-mailauth$(EXEEXT): $(mailauth_OBJECTS) $(mailauth_DEPENDENCIES) 
-	@rm -f mailauth$(EXEEXT)
-	$(LINK) $(mailauth_OBJECTS) $(mailauth_LDADD) $(LIBS)
-make_alias$(EXEEXT): $(make_alias_OBJECTS) $(make_alias_DEPENDENCIES) 
-	@rm -f make_alias$(EXEEXT)
-	$(LINK) $(make_alias_OBJECTS) $(make_alias_LDADD) $(LIBS)
-makesyaoranconf$(EXEEXT): $(makesyaoranconf_OBJECTS) $(makesyaoranconf_DEPENDENCIES) 
-	@rm -f makesyaoranconf$(EXEEXT)
-	$(LINK) $(makesyaoranconf_OBJECTS) $(makesyaoranconf_LDADD) $(LIBS)
-proxy$(EXEEXT): $(proxy_OBJECTS) $(proxy_DEPENDENCIES) 
-	@rm -f proxy$(EXEEXT)
-	$(LINK) $(proxy_OBJECTS) $(proxy_LDADD) $(LIBS)
-realpath$(EXEEXT): $(realpath_OBJECTS) $(realpath_DEPENDENCIES) 
-	@rm -f realpath$(EXEEXT)
-	$(LINK) $(realpath_OBJECTS) $(realpath_LDADD) $(LIBS)
-timeauth$(EXEEXT): $(timeauth_OBJECTS) $(timeauth_DEPENDENCIES) 
-	@rm -f timeauth$(EXEEXT)
-	$(LINK) $(timeauth_OBJECTS) $(timeauth_LDADD) $(LIBS)
-install-ccsSCRIPTS: $(ccs_SCRIPTS)
-	@$(NORMAL_INSTALL)
-	test -z "$(ccsdir)" || $(MKDIR_P) "$(DESTDIR)$(ccsdir)"
-	@list='$(ccs_SCRIPTS)'; test -n "$(ccsdir)" || list=; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  if test -f "$$d$$p"; then echo "$$d$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n' \
-	    -e 'h;s|.*|.|' \
-	    -e 'p;x;s,.*/,,;$(transform)' | sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1; } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) { files[d] = files[d] " " $$1; \
-	      if (++n[d] == $(am__install_max)) { \
-		print "f", d, files[d]; n[d] = 0; files[d] = "" } } \
-	    else { print "f", d "/" $$4, $$1 } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	     if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	     test -z "$$files" || { \
-	       echo " $(INSTALL_SCRIPT) $$files '$(DESTDIR)$(ccsdir)$$dir'"; \
-	       $(INSTALL_SCRIPT) $$files "$(DESTDIR)$(ccsdir)$$dir" || exit $$?; \
-	     } \
-	; done
-
-uninstall-ccsSCRIPTS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(ccs_SCRIPTS)'; test -n "$(ccsdir)" || exit 0; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	       sed -e 's,.*/,,;$(transform)'`; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(ccsdir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(ccsdir)" && rm -f $$files
-install-root_sbinSCRIPTS: $(root_sbin_SCRIPTS)
-	@$(NORMAL_INSTALL)
-	test -z "$(root_sbindir)" || $(MKDIR_P) "$(DESTDIR)$(root_sbindir)"
-	@list='$(root_sbin_SCRIPTS)'; test -n "$(root_sbindir)" || list=; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  if test -f "$$d$$p"; then echo "$$d$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n' \
-	    -e 'h;s|.*|.|' \
-	    -e 'p;x;s,.*/,,;$(transform)' | sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1; } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) { files[d] = files[d] " " $$1; \
-	      if (++n[d] == $(am__install_max)) { \
-		print "f", d, files[d]; n[d] = 0; files[d] = "" } } \
-	    else { print "f", d "/" $$4, $$1 } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	     if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	     test -z "$$files" || { \
-	       echo " $(INSTALL_SCRIPT) $$files '$(DESTDIR)$(root_sbindir)$$dir'"; \
-	       $(INSTALL_SCRIPT) $$files "$(DESTDIR)$(root_sbindir)$$dir" || exit $$?; \
-	     } \
-	; done
-
-uninstall-root_sbinSCRIPTS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(root_sbin_SCRIPTS)'; test -n "$(root_sbindir)" || exit 0; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	       sed -e 's,.*/,,;$(transform)'`; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(root_sbindir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(root_sbindir)" && rm -f $$files
-
-mostlyclean-compile:
-	-rm -f *.$(OBJEXT)
-
-distclean-compile:
-	-rm -f *.tab.c
-
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/audit-exec-param.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/candy.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccs-editpolicy-agent.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccs-notifyd.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-ccs-auditd.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-ccs-queryd.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-ccstools.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-ccstree.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-checkpolicy.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-editpolicy.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-editpolicy_color.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-editpolicy_keyword.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-editpolicy_offline.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-editpolicy_optimizer.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-findtemp.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-ld-watch.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-loadpolicy.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-pathmatch.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-patternize.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-readline.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-setlevel.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccstools-setprofile.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chaplet.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/checktoken.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/convert-exec-param.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/falsh.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/force-logout.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gettoken.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/groovy.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/honey.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mailauth.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/make_alias.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/makesyaoranconf.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proxy.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/realpath.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/timeauth.Po@am__quote@
-
-.c.o:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(COMPILE) -c $<
-
-.c.obj:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
-
-ccstools-ccs-auditd.o: ccstools.src/ccs-auditd.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-ccs-auditd.o -MD -MP -MF $(DEPDIR)/ccstools-ccs-auditd.Tpo -c -o ccstools-ccs-auditd.o `test -f 'ccstools.src/ccs-auditd.c' || echo '$(srcdir)/'`ccstools.src/ccs-auditd.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-ccs-auditd.Tpo $(DEPDIR)/ccstools-ccs-auditd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/ccs-auditd.c' object='ccstools-ccs-auditd.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-ccs-auditd.o `test -f 'ccstools.src/ccs-auditd.c' || echo '$(srcdir)/'`ccstools.src/ccs-auditd.c
-
-ccstools-ccs-auditd.obj: ccstools.src/ccs-auditd.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-ccs-auditd.obj -MD -MP -MF $(DEPDIR)/ccstools-ccs-auditd.Tpo -c -o ccstools-ccs-auditd.obj `if test -f 'ccstools.src/ccs-auditd.c'; then $(CYGPATH_W) 'ccstools.src/ccs-auditd.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/ccs-auditd.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-ccs-auditd.Tpo $(DEPDIR)/ccstools-ccs-auditd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/ccs-auditd.c' object='ccstools-ccs-auditd.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-ccs-auditd.obj `if test -f 'ccstools.src/ccs-auditd.c'; then $(CYGPATH_W) 'ccstools.src/ccs-auditd.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/ccs-auditd.c'; fi`
-
-ccstools-ccs-queryd.o: ccstools.src/ccs-queryd.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-ccs-queryd.o -MD -MP -MF $(DEPDIR)/ccstools-ccs-queryd.Tpo -c -o ccstools-ccs-queryd.o `test -f 'ccstools.src/ccs-queryd.c' || echo '$(srcdir)/'`ccstools.src/ccs-queryd.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-ccs-queryd.Tpo $(DEPDIR)/ccstools-ccs-queryd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/ccs-queryd.c' object='ccstools-ccs-queryd.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-ccs-queryd.o `test -f 'ccstools.src/ccs-queryd.c' || echo '$(srcdir)/'`ccstools.src/ccs-queryd.c
-
-ccstools-ccs-queryd.obj: ccstools.src/ccs-queryd.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-ccs-queryd.obj -MD -MP -MF $(DEPDIR)/ccstools-ccs-queryd.Tpo -c -o ccstools-ccs-queryd.obj `if test -f 'ccstools.src/ccs-queryd.c'; then $(CYGPATH_W) 'ccstools.src/ccs-queryd.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/ccs-queryd.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-ccs-queryd.Tpo $(DEPDIR)/ccstools-ccs-queryd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/ccs-queryd.c' object='ccstools-ccs-queryd.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-ccs-queryd.obj `if test -f 'ccstools.src/ccs-queryd.c'; then $(CYGPATH_W) 'ccstools.src/ccs-queryd.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/ccs-queryd.c'; fi`
-
-ccstools-ccstools.o: ccstools.src/ccstools.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-ccstools.o -MD -MP -MF $(DEPDIR)/ccstools-ccstools.Tpo -c -o ccstools-ccstools.o `test -f 'ccstools.src/ccstools.c' || echo '$(srcdir)/'`ccstools.src/ccstools.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-ccstools.Tpo $(DEPDIR)/ccstools-ccstools.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/ccstools.c' object='ccstools-ccstools.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-ccstools.o `test -f 'ccstools.src/ccstools.c' || echo '$(srcdir)/'`ccstools.src/ccstools.c
-
-ccstools-ccstools.obj: ccstools.src/ccstools.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-ccstools.obj -MD -MP -MF $(DEPDIR)/ccstools-ccstools.Tpo -c -o ccstools-ccstools.obj `if test -f 'ccstools.src/ccstools.c'; then $(CYGPATH_W) 'ccstools.src/ccstools.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/ccstools.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-ccstools.Tpo $(DEPDIR)/ccstools-ccstools.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/ccstools.c' object='ccstools-ccstools.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-ccstools.obj `if test -f 'ccstools.src/ccstools.c'; then $(CYGPATH_W) 'ccstools.src/ccstools.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/ccstools.c'; fi`
-
-ccstools-ccstree.o: ccstools.src/ccstree.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-ccstree.o -MD -MP -MF $(DEPDIR)/ccstools-ccstree.Tpo -c -o ccstools-ccstree.o `test -f 'ccstools.src/ccstree.c' || echo '$(srcdir)/'`ccstools.src/ccstree.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-ccstree.Tpo $(DEPDIR)/ccstools-ccstree.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/ccstree.c' object='ccstools-ccstree.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-ccstree.o `test -f 'ccstools.src/ccstree.c' || echo '$(srcdir)/'`ccstools.src/ccstree.c
-
-ccstools-ccstree.obj: ccstools.src/ccstree.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-ccstree.obj -MD -MP -MF $(DEPDIR)/ccstools-ccstree.Tpo -c -o ccstools-ccstree.obj `if test -f 'ccstools.src/ccstree.c'; then $(CYGPATH_W) 'ccstools.src/ccstree.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/ccstree.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-ccstree.Tpo $(DEPDIR)/ccstools-ccstree.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/ccstree.c' object='ccstools-ccstree.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-ccstree.obj `if test -f 'ccstools.src/ccstree.c'; then $(CYGPATH_W) 'ccstools.src/ccstree.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/ccstree.c'; fi`
-
-ccstools-checkpolicy.o: ccstools.src/checkpolicy.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-checkpolicy.o -MD -MP -MF $(DEPDIR)/ccstools-checkpolicy.Tpo -c -o ccstools-checkpolicy.o `test -f 'ccstools.src/checkpolicy.c' || echo '$(srcdir)/'`ccstools.src/checkpolicy.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-checkpolicy.Tpo $(DEPDIR)/ccstools-checkpolicy.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/checkpolicy.c' object='ccstools-checkpolicy.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-checkpolicy.o `test -f 'ccstools.src/checkpolicy.c' || echo '$(srcdir)/'`ccstools.src/checkpolicy.c
-
-ccstools-checkpolicy.obj: ccstools.src/checkpolicy.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-checkpolicy.obj -MD -MP -MF $(DEPDIR)/ccstools-checkpolicy.Tpo -c -o ccstools-checkpolicy.obj `if test -f 'ccstools.src/checkpolicy.c'; then $(CYGPATH_W) 'ccstools.src/checkpolicy.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/checkpolicy.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-checkpolicy.Tpo $(DEPDIR)/ccstools-checkpolicy.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/checkpolicy.c' object='ccstools-checkpolicy.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-checkpolicy.obj `if test -f 'ccstools.src/checkpolicy.c'; then $(CYGPATH_W) 'ccstools.src/checkpolicy.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/checkpolicy.c'; fi`
-
-ccstools-editpolicy.o: ccstools.src/editpolicy.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-editpolicy.o -MD -MP -MF $(DEPDIR)/ccstools-editpolicy.Tpo -c -o ccstools-editpolicy.o `test -f 'ccstools.src/editpolicy.c' || echo '$(srcdir)/'`ccstools.src/editpolicy.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-editpolicy.Tpo $(DEPDIR)/ccstools-editpolicy.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/editpolicy.c' object='ccstools-editpolicy.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-editpolicy.o `test -f 'ccstools.src/editpolicy.c' || echo '$(srcdir)/'`ccstools.src/editpolicy.c
-
-ccstools-editpolicy.obj: ccstools.src/editpolicy.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-editpolicy.obj -MD -MP -MF $(DEPDIR)/ccstools-editpolicy.Tpo -c -o ccstools-editpolicy.obj `if test -f 'ccstools.src/editpolicy.c'; then $(CYGPATH_W) 'ccstools.src/editpolicy.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/editpolicy.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-editpolicy.Tpo $(DEPDIR)/ccstools-editpolicy.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/editpolicy.c' object='ccstools-editpolicy.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-editpolicy.obj `if test -f 'ccstools.src/editpolicy.c'; then $(CYGPATH_W) 'ccstools.src/editpolicy.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/editpolicy.c'; fi`
-
-ccstools-editpolicy_color.o: ccstools.src/editpolicy_color.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-editpolicy_color.o -MD -MP -MF $(DEPDIR)/ccstools-editpolicy_color.Tpo -c -o ccstools-editpolicy_color.o `test -f 'ccstools.src/editpolicy_color.c' || echo '$(srcdir)/'`ccstools.src/editpolicy_color.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-editpolicy_color.Tpo $(DEPDIR)/ccstools-editpolicy_color.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/editpolicy_color.c' object='ccstools-editpolicy_color.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-editpolicy_color.o `test -f 'ccstools.src/editpolicy_color.c' || echo '$(srcdir)/'`ccstools.src/editpolicy_color.c
-
-ccstools-editpolicy_color.obj: ccstools.src/editpolicy_color.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-editpolicy_color.obj -MD -MP -MF $(DEPDIR)/ccstools-editpolicy_color.Tpo -c -o ccstools-editpolicy_color.obj `if test -f 'ccstools.src/editpolicy_color.c'; then $(CYGPATH_W) 'ccstools.src/editpolicy_color.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/editpolicy_color.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-editpolicy_color.Tpo $(DEPDIR)/ccstools-editpolicy_color.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/editpolicy_color.c' object='ccstools-editpolicy_color.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-editpolicy_color.obj `if test -f 'ccstools.src/editpolicy_color.c'; then $(CYGPATH_W) 'ccstools.src/editpolicy_color.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/editpolicy_color.c'; fi`
-
-ccstools-editpolicy_keyword.o: ccstools.src/editpolicy_keyword.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-editpolicy_keyword.o -MD -MP -MF $(DEPDIR)/ccstools-editpolicy_keyword.Tpo -c -o ccstools-editpolicy_keyword.o `test -f 'ccstools.src/editpolicy_keyword.c' || echo '$(srcdir)/'`ccstools.src/editpolicy_keyword.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-editpolicy_keyword.Tpo $(DEPDIR)/ccstools-editpolicy_keyword.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/editpolicy_keyword.c' object='ccstools-editpolicy_keyword.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-editpolicy_keyword.o `test -f 'ccstools.src/editpolicy_keyword.c' || echo '$(srcdir)/'`ccstools.src/editpolicy_keyword.c
-
-ccstools-editpolicy_keyword.obj: ccstools.src/editpolicy_keyword.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-editpolicy_keyword.obj -MD -MP -MF $(DEPDIR)/ccstools-editpolicy_keyword.Tpo -c -o ccstools-editpolicy_keyword.obj `if test -f 'ccstools.src/editpolicy_keyword.c'; then $(CYGPATH_W) 'ccstools.src/editpolicy_keyword.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/editpolicy_keyword.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-editpolicy_keyword.Tpo $(DEPDIR)/ccstools-editpolicy_keyword.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/editpolicy_keyword.c' object='ccstools-editpolicy_keyword.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-editpolicy_keyword.obj `if test -f 'ccstools.src/editpolicy_keyword.c'; then $(CYGPATH_W) 'ccstools.src/editpolicy_keyword.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/editpolicy_keyword.c'; fi`
-
-ccstools-editpolicy_offline.o: ccstools.src/editpolicy_offline.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-editpolicy_offline.o -MD -MP -MF $(DEPDIR)/ccstools-editpolicy_offline.Tpo -c -o ccstools-editpolicy_offline.o `test -f 'ccstools.src/editpolicy_offline.c' || echo '$(srcdir)/'`ccstools.src/editpolicy_offline.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-editpolicy_offline.Tpo $(DEPDIR)/ccstools-editpolicy_offline.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/editpolicy_offline.c' object='ccstools-editpolicy_offline.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-editpolicy_offline.o `test -f 'ccstools.src/editpolicy_offline.c' || echo '$(srcdir)/'`ccstools.src/editpolicy_offline.c
-
-ccstools-editpolicy_offline.obj: ccstools.src/editpolicy_offline.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-editpolicy_offline.obj -MD -MP -MF $(DEPDIR)/ccstools-editpolicy_offline.Tpo -c -o ccstools-editpolicy_offline.obj `if test -f 'ccstools.src/editpolicy_offline.c'; then $(CYGPATH_W) 'ccstools.src/editpolicy_offline.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/editpolicy_offline.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-editpolicy_offline.Tpo $(DEPDIR)/ccstools-editpolicy_offline.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/editpolicy_offline.c' object='ccstools-editpolicy_offline.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-editpolicy_offline.obj `if test -f 'ccstools.src/editpolicy_offline.c'; then $(CYGPATH_W) 'ccstools.src/editpolicy_offline.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/editpolicy_offline.c'; fi`
-
-ccstools-editpolicy_optimizer.o: ccstools.src/editpolicy_optimizer.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-editpolicy_optimizer.o -MD -MP -MF $(DEPDIR)/ccstools-editpolicy_optimizer.Tpo -c -o ccstools-editpolicy_optimizer.o `test -f 'ccstools.src/editpolicy_optimizer.c' || echo '$(srcdir)/'`ccstools.src/editpolicy_optimizer.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-editpolicy_optimizer.Tpo $(DEPDIR)/ccstools-editpolicy_optimizer.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/editpolicy_optimizer.c' object='ccstools-editpolicy_optimizer.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-editpolicy_optimizer.o `test -f 'ccstools.src/editpolicy_optimizer.c' || echo '$(srcdir)/'`ccstools.src/editpolicy_optimizer.c
-
-ccstools-editpolicy_optimizer.obj: ccstools.src/editpolicy_optimizer.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-editpolicy_optimizer.obj -MD -MP -MF $(DEPDIR)/ccstools-editpolicy_optimizer.Tpo -c -o ccstools-editpolicy_optimizer.obj `if test -f 'ccstools.src/editpolicy_optimizer.c'; then $(CYGPATH_W) 'ccstools.src/editpolicy_optimizer.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/editpolicy_optimizer.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-editpolicy_optimizer.Tpo $(DEPDIR)/ccstools-editpolicy_optimizer.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/editpolicy_optimizer.c' object='ccstools-editpolicy_optimizer.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-editpolicy_optimizer.obj `if test -f 'ccstools.src/editpolicy_optimizer.c'; then $(CYGPATH_W) 'ccstools.src/editpolicy_optimizer.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/editpolicy_optimizer.c'; fi`
-
-ccstools-findtemp.o: ccstools.src/findtemp.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-findtemp.o -MD -MP -MF $(DEPDIR)/ccstools-findtemp.Tpo -c -o ccstools-findtemp.o `test -f 'ccstools.src/findtemp.c' || echo '$(srcdir)/'`ccstools.src/findtemp.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-findtemp.Tpo $(DEPDIR)/ccstools-findtemp.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/findtemp.c' object='ccstools-findtemp.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-findtemp.o `test -f 'ccstools.src/findtemp.c' || echo '$(srcdir)/'`ccstools.src/findtemp.c
-
-ccstools-findtemp.obj: ccstools.src/findtemp.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-findtemp.obj -MD -MP -MF $(DEPDIR)/ccstools-findtemp.Tpo -c -o ccstools-findtemp.obj `if test -f 'ccstools.src/findtemp.c'; then $(CYGPATH_W) 'ccstools.src/findtemp.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/findtemp.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-findtemp.Tpo $(DEPDIR)/ccstools-findtemp.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/findtemp.c' object='ccstools-findtemp.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-findtemp.obj `if test -f 'ccstools.src/findtemp.c'; then $(CYGPATH_W) 'ccstools.src/findtemp.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/findtemp.c'; fi`
-
-ccstools-ld-watch.o: ccstools.src/ld-watch.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-ld-watch.o -MD -MP -MF $(DEPDIR)/ccstools-ld-watch.Tpo -c -o ccstools-ld-watch.o `test -f 'ccstools.src/ld-watch.c' || echo '$(srcdir)/'`ccstools.src/ld-watch.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-ld-watch.Tpo $(DEPDIR)/ccstools-ld-watch.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/ld-watch.c' object='ccstools-ld-watch.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-ld-watch.o `test -f 'ccstools.src/ld-watch.c' || echo '$(srcdir)/'`ccstools.src/ld-watch.c
-
-ccstools-ld-watch.obj: ccstools.src/ld-watch.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-ld-watch.obj -MD -MP -MF $(DEPDIR)/ccstools-ld-watch.Tpo -c -o ccstools-ld-watch.obj `if test -f 'ccstools.src/ld-watch.c'; then $(CYGPATH_W) 'ccstools.src/ld-watch.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/ld-watch.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-ld-watch.Tpo $(DEPDIR)/ccstools-ld-watch.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/ld-watch.c' object='ccstools-ld-watch.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-ld-watch.obj `if test -f 'ccstools.src/ld-watch.c'; then $(CYGPATH_W) 'ccstools.src/ld-watch.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/ld-watch.c'; fi`
-
-ccstools-loadpolicy.o: ccstools.src/loadpolicy.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-loadpolicy.o -MD -MP -MF $(DEPDIR)/ccstools-loadpolicy.Tpo -c -o ccstools-loadpolicy.o `test -f 'ccstools.src/loadpolicy.c' || echo '$(srcdir)/'`ccstools.src/loadpolicy.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-loadpolicy.Tpo $(DEPDIR)/ccstools-loadpolicy.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/loadpolicy.c' object='ccstools-loadpolicy.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-loadpolicy.o `test -f 'ccstools.src/loadpolicy.c' || echo '$(srcdir)/'`ccstools.src/loadpolicy.c
-
-ccstools-loadpolicy.obj: ccstools.src/loadpolicy.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-loadpolicy.obj -MD -MP -MF $(DEPDIR)/ccstools-loadpolicy.Tpo -c -o ccstools-loadpolicy.obj `if test -f 'ccstools.src/loadpolicy.c'; then $(CYGPATH_W) 'ccstools.src/loadpolicy.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/loadpolicy.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-loadpolicy.Tpo $(DEPDIR)/ccstools-loadpolicy.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/loadpolicy.c' object='ccstools-loadpolicy.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-loadpolicy.obj `if test -f 'ccstools.src/loadpolicy.c'; then $(CYGPATH_W) 'ccstools.src/loadpolicy.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/loadpolicy.c'; fi`
-
-ccstools-pathmatch.o: ccstools.src/pathmatch.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-pathmatch.o -MD -MP -MF $(DEPDIR)/ccstools-pathmatch.Tpo -c -o ccstools-pathmatch.o `test -f 'ccstools.src/pathmatch.c' || echo '$(srcdir)/'`ccstools.src/pathmatch.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-pathmatch.Tpo $(DEPDIR)/ccstools-pathmatch.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/pathmatch.c' object='ccstools-pathmatch.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-pathmatch.o `test -f 'ccstools.src/pathmatch.c' || echo '$(srcdir)/'`ccstools.src/pathmatch.c
-
-ccstools-pathmatch.obj: ccstools.src/pathmatch.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-pathmatch.obj -MD -MP -MF $(DEPDIR)/ccstools-pathmatch.Tpo -c -o ccstools-pathmatch.obj `if test -f 'ccstools.src/pathmatch.c'; then $(CYGPATH_W) 'ccstools.src/pathmatch.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/pathmatch.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-pathmatch.Tpo $(DEPDIR)/ccstools-pathmatch.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/pathmatch.c' object='ccstools-pathmatch.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-pathmatch.obj `if test -f 'ccstools.src/pathmatch.c'; then $(CYGPATH_W) 'ccstools.src/pathmatch.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/pathmatch.c'; fi`
-
-ccstools-patternize.o: ccstools.src/patternize.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-patternize.o -MD -MP -MF $(DEPDIR)/ccstools-patternize.Tpo -c -o ccstools-patternize.o `test -f 'ccstools.src/patternize.c' || echo '$(srcdir)/'`ccstools.src/patternize.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-patternize.Tpo $(DEPDIR)/ccstools-patternize.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/patternize.c' object='ccstools-patternize.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-patternize.o `test -f 'ccstools.src/patternize.c' || echo '$(srcdir)/'`ccstools.src/patternize.c
-
-ccstools-patternize.obj: ccstools.src/patternize.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-patternize.obj -MD -MP -MF $(DEPDIR)/ccstools-patternize.Tpo -c -o ccstools-patternize.obj `if test -f 'ccstools.src/patternize.c'; then $(CYGPATH_W) 'ccstools.src/patternize.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/patternize.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-patternize.Tpo $(DEPDIR)/ccstools-patternize.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/patternize.c' object='ccstools-patternize.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-patternize.obj `if test -f 'ccstools.src/patternize.c'; then $(CYGPATH_W) 'ccstools.src/patternize.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/patternize.c'; fi`
-
-ccstools-readline.o: ccstools.src/readline.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-readline.o -MD -MP -MF $(DEPDIR)/ccstools-readline.Tpo -c -o ccstools-readline.o `test -f 'ccstools.src/readline.c' || echo '$(srcdir)/'`ccstools.src/readline.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-readline.Tpo $(DEPDIR)/ccstools-readline.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/readline.c' object='ccstools-readline.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-readline.o `test -f 'ccstools.src/readline.c' || echo '$(srcdir)/'`ccstools.src/readline.c
-
-ccstools-readline.obj: ccstools.src/readline.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-readline.obj -MD -MP -MF $(DEPDIR)/ccstools-readline.Tpo -c -o ccstools-readline.obj `if test -f 'ccstools.src/readline.c'; then $(CYGPATH_W) 'ccstools.src/readline.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/readline.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-readline.Tpo $(DEPDIR)/ccstools-readline.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/readline.c' object='ccstools-readline.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-readline.obj `if test -f 'ccstools.src/readline.c'; then $(CYGPATH_W) 'ccstools.src/readline.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/readline.c'; fi`
-
-ccstools-setlevel.o: ccstools.src/setlevel.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-setlevel.o -MD -MP -MF $(DEPDIR)/ccstools-setlevel.Tpo -c -o ccstools-setlevel.o `test -f 'ccstools.src/setlevel.c' || echo '$(srcdir)/'`ccstools.src/setlevel.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-setlevel.Tpo $(DEPDIR)/ccstools-setlevel.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/setlevel.c' object='ccstools-setlevel.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-setlevel.o `test -f 'ccstools.src/setlevel.c' || echo '$(srcdir)/'`ccstools.src/setlevel.c
-
-ccstools-setlevel.obj: ccstools.src/setlevel.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-setlevel.obj -MD -MP -MF $(DEPDIR)/ccstools-setlevel.Tpo -c -o ccstools-setlevel.obj `if test -f 'ccstools.src/setlevel.c'; then $(CYGPATH_W) 'ccstools.src/setlevel.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/setlevel.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-setlevel.Tpo $(DEPDIR)/ccstools-setlevel.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/setlevel.c' object='ccstools-setlevel.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-setlevel.obj `if test -f 'ccstools.src/setlevel.c'; then $(CYGPATH_W) 'ccstools.src/setlevel.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/setlevel.c'; fi`
-
-ccstools-setprofile.o: ccstools.src/setprofile.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-setprofile.o -MD -MP -MF $(DEPDIR)/ccstools-setprofile.Tpo -c -o ccstools-setprofile.o `test -f 'ccstools.src/setprofile.c' || echo '$(srcdir)/'`ccstools.src/setprofile.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-setprofile.Tpo $(DEPDIR)/ccstools-setprofile.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/setprofile.c' object='ccstools-setprofile.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-setprofile.o `test -f 'ccstools.src/setprofile.c' || echo '$(srcdir)/'`ccstools.src/setprofile.c
-
-ccstools-setprofile.obj: ccstools.src/setprofile.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ccstools-setprofile.obj -MD -MP -MF $(DEPDIR)/ccstools-setprofile.Tpo -c -o ccstools-setprofile.obj `if test -f 'ccstools.src/setprofile.c'; then $(CYGPATH_W) 'ccstools.src/setprofile.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/setprofile.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ccstools-setprofile.Tpo $(DEPDIR)/ccstools-setprofile.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ccstools.src/setprofile.c' object='ccstools-setprofile.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ccstools_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ccstools-setprofile.obj `if test -f 'ccstools.src/setprofile.c'; then $(CYGPATH_W) 'ccstools.src/setprofile.c'; else $(CYGPATH_W) '$(srcdir)/ccstools.src/setprofile.c'; fi`
 install-ccsDATA: $(ccs_DATA)
 	@$(NORMAL_INSTALL)
 	test -z "$(ccsdir)" || $(MKDIR_P) "$(DESTDIR)$(ccsdir)"
@@ -1217,10 +600,10 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-recursive
-all-am: Makefile $(PROGRAMS) $(SCRIPTS) $(DATA) config.h
+all-am: Makefile $(DATA) config.h
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(ccsdir)" "$(DESTDIR)$(miscdir)" "$(DESTDIR)$(ccsdir)" "$(DESTDIR)$(root_sbindir)" "$(DESTDIR)$(ccsdir)"; do \
+	for dir in "$(DESTDIR)$(ccsdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-recursive
@@ -1250,15 +633,12 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-recursive
 
-clean-am: clean-ccsPROGRAMS clean-generic clean-miscPROGRAMS \
-	mostlyclean-am
+clean-am: clean-generic mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
-distclean-am: clean-am distclean-compile distclean-generic \
-	distclean-hdr distclean-tags
+distclean-am: clean-am distclean-generic distclean-hdr distclean-tags
 
 dvi: dvi-recursive
 
@@ -1272,11 +652,8 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-ccsDATA install-ccsPROGRAMS \
-	install-ccsSCRIPTS install-miscPROGRAMS \
-	install-root_sbinSCRIPTS
-	@$(NORMAL_INSTALL)
-	$(MAKE) $(AM_MAKEFLAGS) install-data-hook
+install-data-am: install-ccsDATA
+
 install-dvi: install-dvi-recursive
 
 install-dvi-am:
@@ -1306,13 +683,12 @@ installcheck-am:
 maintainer-clean: maintainer-clean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-recursive
 
-mostlyclean-am: mostlyclean-compile mostlyclean-generic
+mostlyclean-am: mostlyclean-generic
 
 pdf: pdf-recursive
 
@@ -1322,42 +698,27 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-ccsDATA uninstall-ccsPROGRAMS \
-	uninstall-ccsSCRIPTS uninstall-miscPROGRAMS \
-	uninstall-root_sbinSCRIPTS
+uninstall-am: uninstall-ccsDATA
 
 .MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) all \
-	ctags-recursive install-am install-data-am install-strip \
-	tags-recursive
+	ctags-recursive install-am install-strip tags-recursive
 
 .PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
-	all all-am am--refresh check check-am clean clean-ccsPROGRAMS \
-	clean-generic clean-miscPROGRAMS ctags ctags-recursive dist \
-	dist-all dist-bzip2 dist-gzip dist-lzma dist-shar dist-tarZ \
-	dist-xz dist-zip distcheck distclean distclean-compile \
-	distclean-generic distclean-hdr distclean-tags distcleancheck \
-	distdir distuninstallcheck dvi dvi-am html html-am info \
-	info-am install install-am install-ccsDATA install-ccsPROGRAMS \
-	install-ccsSCRIPTS install-data install-data-am \
-	install-data-hook install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-miscPROGRAMS install-pdf \
-	install-pdf-am install-ps install-ps-am \
-	install-root_sbinSCRIPTS install-strip installcheck \
-	installcheck-am installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	all all-am am--refresh check check-am clean clean-generic \
+	ctags ctags-recursive dist dist-all dist-bzip2 dist-gzip \
+	dist-lzma dist-shar dist-tarZ dist-xz dist-zip distcheck \
+	distclean distclean-generic distclean-hdr distclean-tags \
+	distcleancheck distdir distuninstallcheck dvi dvi-am html \
+	html-am info info-am install install-am install-ccsDATA \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs installdirs-am \
+	maintainer-clean maintainer-clean-generic mostlyclean \
 	mostlyclean-generic pdf pdf-am ps ps-am tags tags-recursive \
-	uninstall uninstall-am uninstall-ccsDATA uninstall-ccsPROGRAMS \
-	uninstall-ccsSCRIPTS uninstall-miscPROGRAMS \
-	uninstall-root_sbinSCRIPTS
+	uninstall uninstall-am uninstall-ccsDATA
 
-
-install-data-hook:
-	cd $(DESTDIR)$(ccsdir) && \
-	for i in $(ALIAS_LIST); do rm -f $$i; $(LN_S) ccstools $$i; done
-	@mkdir_p@ $(DESTDIR)$(sbindir) && \
-	cd $(DESTDIR)$(sbindir) && \
-	for i in $(SBIN_ALIAS_LIST); do rm -f ccs-`echo $$i | sed 's:^ccs-::'`; $(LN_S) $(ccsdir)/$$i ccs-`echo $$i | sed 's:^ccs-::'`; done
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

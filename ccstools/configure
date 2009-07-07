@@ -600,7 +600,7 @@ PACKAGE_VERSION='1.6.8'
 PACKAGE_STRING='ccs-tools 1.6.8'
 PACKAGE_BUGREPORT='tomoyo-dev@lists.sourceforge.jp'
 
-ac_unique_file="ccstools.src/ccstools.c"
+ac_unique_file="src/ccstools.src/ccstools.c"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -1854,7 +1854,6 @@ fi
 ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
 ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
 ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
-
 
 
 
@@ -3783,7 +3782,6 @@ fi
 
 
 # Checks for libraries.
-# FIXME: Replace `main' with a function in `-lncurses':
 
 
 { $as_echo "$as_me:$LINENO: checking for strscr in -lncurses" >&5
@@ -3860,7 +3858,6 @@ _ACEOF
 
 fi
 
-# FIXME: Replace `main' with a function in `-lreadline':
 
 { $as_echo "$as_me:$LINENO: checking for readline in -lreadline" >&5
 $as_echo_n "checking for readline in -lreadline... " >&6; }
@@ -3936,7 +3933,6 @@ _ACEOF
 
 fi
 
-# FIXME: Replace `main' with a function in `-lutil':
 
 { $as_echo "$as_me:$LINENO: checking for forkpty in -lutil" >&5
 $as_echo_n "checking for forkpty in -lutil... " >&6; }
@@ -6923,7 +6919,7 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile kernel_test/Makefile man/Makefile man/man8/Makefile"
+ac_config_files="$ac_config_files Makefile kernel_test/Makefile man/Makefile man/man8/Makefile src/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -7558,6 +7554,7 @@ do
     "kernel_test/Makefile") CONFIG_FILES="$CONFIG_FILES kernel_test/Makefile" ;;
     "man/Makefile") CONFIG_FILES="$CONFIG_FILES man/Makefile" ;;
     "man/man8/Makefile") CONFIG_FILES="$CONFIG_FILES man/man8/Makefile" ;;
+    "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
 
   *) { { $as_echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 $as_echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
