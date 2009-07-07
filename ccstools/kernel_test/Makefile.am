@@ -1,0 +1,10 @@
+EXTRA_DIST = testall.sh
+
+TESTS = testall.sh
+
+check_SCRIPTS = testall.sh
+check_PROGRAMS = sakura_bind_test sakura_filesystem_test tomoyo_capability_test tomoyo_file_test tomoyo_rewrite_test tomoyo_argv0_test tomoyo_env_test tomoyo_network_test tomoyo_signal_test newns tomoyo_accept_test tomoyo_bprm_test tomoyo_cond_test ccs_policy_io_test tomoyo_new_file_test tomoyo_new_capability_test tomoyo_new_network_test tomoyo_execute_handler_test
+check_HEADERS = include.h
+
+tomoyo_capability_test_LDADD = -lutil
+tomoyo_new_capability_test_LDADD = -lutil

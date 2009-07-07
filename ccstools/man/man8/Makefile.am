@@ -1,0 +1,1 @@
+dist_man_MANS = ccs-auditd.8 ccs-ccstree.8 ccs-checkpolicy.8 ccs-domainmatch.8 ccs-editpolicy-agent.8 ccs-editpolicy.8 ccs-findtemp.8 ccs-init.8 ccs-ld-watch.8 ccs-loadpolicy.8 ccs-notifyd.8 ccs-pathmatch.8 ccs-patternize.8 ccs-queryd.8 ccs-savepolicy.8 ccs-setlevel.8 ccs-setprofile.8 ccs-sortpolicy.8 init_policy.sh.8 tomoyo-init.8 tomoyo_init_policy.sh.8
