@@ -1,45 +1,43 @@
 Summary: TOMOYO Linux tools
 
 Name: ccs-tools
-Version: 1.6.8
+Version: @VERSION@
 Release: 2
 License: GPL
 Group: System Environment/Kernel
 ExclusiveOS: Linux
 Autoreqprov: no
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
-Conflicts: ccs-tools < 1.6.8-2
+Conflicts: ccs-tools < %{version}-%{release}
 
-Source0: http://osdn.dl.sourceforge.jp/tomoyo/30298/ccs-tools-1.6.8-20090623.tar.gz
+Source0: http://osdn.dl.sourceforge.jp/tomoyo/30298/%{name}-%{version}.tar.gz
 
 %description
 This is TOMOYO Linux tools.
 
 %prep
-
-%setup -q -n ccstools
+%setup -q
 
 %build
-
-make -s all
+%configure
+make
 
 %install
-
-make -s install INSTALLDIR=%{buildroot}
+rm -rf $RPM_BUILD_ROOT
+%makeinstall
 
 %clean
-
 rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
 /sbin/ccs-init
 /sbin/tomoyo-init
-/usr/lib/ccs/
-/usr/sbin/
-/usr/share/man/
-%attr(4755,root,root) /usr/lib/ccs/misc/force-logout
-%config(noreplace) /usr/lib/ccs/ccstools.conf
+%{_libdir}/ccs/
+%{_sbindir}/
+${_mandir}/
+%attr(4755,root,root) %{_libdir}/ccs/misc/force-logout
+%config(noreplace) %{_libdir}/ccs/ccstools.conf
 
 %changelog
 * Tue Jun 23 2009 1.6.8-2

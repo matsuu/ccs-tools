@@ -34,9 +34,10 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
-	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
-	config/compile config/depcomp config/install-sh config/missing
+	$(srcdir)/Makefile.in $(srcdir)/ccs-tools.spec.in \
+	$(srcdir)/config.h.in $(top_srcdir)/configure AUTHORS COPYING \
+	ChangeLog INSTALL NEWS config/compile config/depcomp \
+	config/install-sh config/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -45,7 +46,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = ccs-tools.spec
 CONFIG_CLEAN_VPATH_FILES =
 SOURCES =
 DIST_SOURCES =
@@ -210,7 +211,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = kernel_test man src
-EXTRA_DIST = ccs-tools.spec ccstools.conf
+EXTRA_DIST = ccs-tools.spec ccs-tools.spec.in ccstools.conf
 ccsdir = $(libdir)/ccs
 ccs_DATA = ccstools.conf
 all: config.h
@@ -268,6 +269,8 @@ $(srcdir)/config.h.in:  $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f config.h stamp-h1
+ccs-tools.spec: $(top_builddir)/config.status $(srcdir)/ccs-tools.spec.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
 install-ccsDATA: $(ccs_DATA)
 	@$(NORMAL_INSTALL)
 	test -z "$(ccsdir)" || $(MKDIR_P) "$(DESTDIR)$(ccsdir)"

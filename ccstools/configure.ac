@@ -42,6 +42,7 @@ AC_FUNC_REALLOC
 AC_CHECK_FUNCS([alarm dup2 ftruncate getcwd gethostbyname gethostname gettimeofday memchr memmove memset mkdir mkfifo realpath rmdir select setenv sethostname socket stime strchr strcspn strdup strerror strrchr strstr strtoul])
 
 AC_CONFIG_FILES([Makefile
+                 ccs-tools.spec
                  kernel_test/Makefile
                  man/Makefile
                  man/man8/Makefile
